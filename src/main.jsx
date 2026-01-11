@@ -1,3 +1,51 @@
+function VeckoOversikt({ data }) {
+  // Grupp per adressnamn
+  const grupperad = {};
+  data.forEach((rad) => {
+    const namn = rad.adresser?.namn || "Okänd adress";
+    if (!grupperad[namn]) {
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    }
+    grupperad[namn].tid += rad.arbetstid_min || 0;
+    grupperad[namn].grus += rad.sand_kg || 0;
+    grupperad[namn].salt += rad.salt_kg || 0;
+    grupperad[namn].antal++;
+  });
+  // Gör om till lista
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    ...v,
+  }));
+
+  return (
+    <div style={{ marginTop: 40 }}>
+      <h2>Veckoöversikt</h2>
+      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th>Adress</th>
+            <th>Antal lång</th>
+            <th>Totalt (min)</th>
+            <th>Grus (kg)</th>
+            <th>Salt (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((r) => (
+            <tr key={r.namn}>
+              <td>{r.namn}</td>
+              <td style={{ textAlign: "center" }}>{r.antal}</td>
+              <td style={{ textAlign: "right" }}>{r.tid}</td>
+              <td style={{ textAlign: "right" }}>{r.grus}</td>
+              <td style={{ textAlign: "right" }}>{r.salt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
