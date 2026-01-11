@@ -1,38 +1,50 @@
+/ === Veckoöversikt med veckonummer ===
 function VeckoOversikt({ data }) {
-  // Grupp per adressnamn
+  // Hjälpfunktion för att beräkna ISO‑veckonummer
+  function getWeekNumber(dateString) {
+    const date = new Date(dateString);
+    const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = temp.getUTCDay() || 7;
+    temp.setUTCDate(temp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+    return Math.ceil(((temp - yearStart) / 86400000 + 1) / 7);
+  }
+
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    if (!grupperad[namn]) {
-      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    const vecka = getWeekNumber(rad.datum);
+    const key = `${namn}-v${vecka}`;
+
+    if (!grupperad[key]) {
+      grupperad[key] = { namn, vecka, tid: 0, grus: 0, salt: 0, antal: 0 };
     }
-    grupperad[namn].tid += rad.arbetstid_min || 0;
-    grupperad[namn].grus += rad.sand_kg || 0;
-    grupperad[namn].salt += rad.salt_kg || 0;
-    grupperad[namn].antal++;
+    grupperad[key].tid += rad.arbetstid_min || 0;
+    grupperad[key].grus += rad.sand_kg || 0;
+    grupperad[key].salt += rad.salt_kg || 0;
+    grupperad[key].antal++;
   });
-  // Gör om till lista
-  const lista = Object.entries(grupperad).map(([namn, v]) => ({
-    namn,
-    ...v,
-  }));
+
+  const lista = Object.values(grupperad);
 
   return (
     <div style={{ marginTop: 40 }}>
       <h2>Veckoöversikt</h2>
-      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse" }}>
+      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
+            <th>Vecka</th>
             <th>Adress</th>
-            <th>Antal lång</th>
-            <th>Totalt (min)</th>
+            <th>Antal insamlingar</th>
+            <th>Totalt (min)</th>
             <th>Grus (kg)</th>
             <th>Salt (kg)</th>
           </tr>
         </thead>
         <tbody>
           {lista.map((r) => (
-            <tr key={r.namn}>
+            <tr key={`${r.namn}-v${r.vecka}`}>
+              <td style={{ textAlign: "center" }}>v{r.vecka}</td>
               <td>{r.namn}</td>
               <td style={{ textAlign: "center" }}>{r.antal}</td>
               <td style={{ textAlign: "right" }}>{r.tid}</td>
@@ -45,7 +57,6 @@ function VeckoOversikt({ data }) {
     </div>
   );
 }
-
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
