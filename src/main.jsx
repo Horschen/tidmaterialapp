@@ -157,7 +157,7 @@ const { error } = await supabase.from("rapporter").insert([
 </select>
 
 <br /><br />
-<label>Salt (kg): </label>
+ <label>Salt (kg): </label>
       <select value={salt} onChange={(e) => setSalt(e.target.value)}>
         <option value="0">0</option>
         {[
@@ -165,17 +165,15 @@ const { error } = await supabase.from("rapporter").insert([
           75,80,85,90,95,100,105,110,115,120,
           125,130,135,140,145,150,155,160,165,170,175,180,185,190,200
         ].map((val) => (
-          <option key={val} value={val}>
-            {val}
-          </option>
+          <option key={val} value={val}>{val}</option>
         ))}
       </select>
 
-           <br /><br />
+      <br /><br />
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
       <br /><br />
-      <label>Visa vecka: </label>
+      <label>Visa vecka: </label>
       <input
         type="number"
         min="1"
@@ -190,7 +188,6 @@ const { error } = await supabase.from("rapporter").insert([
         <VeckoOversikt
           data={rapporter.filter((r) => {
             if (!filtreradVecka) return true;
-            // beräkna veckonummer
             const d = new Date(r.datum);
             const tmp = new Date(
               Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
@@ -211,7 +208,6 @@ const { error } = await supabase.from("rapporter").insert([
       <p style={{ marginTop: 20 }}>{status}</p>
     </div>
   );
-} // ← stänger App()
+}
 
-// utanför funktionen
 createRoot(document.getElementById("app")).render(<App />);
