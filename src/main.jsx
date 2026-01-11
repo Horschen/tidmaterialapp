@@ -175,8 +175,32 @@ const { error } = await supabase.from("rapporter").insert([
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
       <br /><br />
-      <button onClick={hamtaRapporter}>📅 Visa veckovy</button>
+<label>Visa vecka: </label>
+<input
+  type="number"
+  min="1"
+  max="52"
+  value={filtreradVecka}
+  onChange={(e) => setFiltreradVecka(e.target.value)}
+  style={{ width: "80px", marginLeft: "5px" }}
+/>
+<button onClick={hamtaRapporter}>📅 Uppdatera översikt</button>
 
+{visaOversikt && (
+  <VeckoOversikt data={rapporter.filter((r) => {
+      if (!filtreradVecka) return true;
+      // funktionen för veckonummer igen, samma som i komponenten
+      const d = new Date(r.datum);
+      const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = tmp.getUTCDay() || 7;
+      tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+      const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+      return vecka == filtreradVecka;
+  })} />
+)}
+
+      
       {visaOversikt && <VeckoOversikt data={rapporter} />}
 
       <p style={{ marginTop: 20 }}>{status}</p>
