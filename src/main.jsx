@@ -171,22 +171,11 @@ const { error } = await supabase.from("rapporter").insert([
         ))}
       </select>
 
-      <br /><br />
+           <br /><br />
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
       <br /><br />
-<label>Visa vecka: </label>
-<input
-  type="number"
-  min="1"
-  max="52"
-  value={filtreradVecka}
-  onChange={(e) => setFiltreradVecka(e.target.value)}
-  style={{ width: "80px", marginLeft: "5px" }}
-/>
-<button onClick={hamtaRapporter}>📅 Uppdatera översikt</button>
-
-    <label>Visa vecka: </label>
+      <label>Visa vecka: </label>
       <input
         type="number"
         min="1"
