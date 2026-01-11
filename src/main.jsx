@@ -4,36 +4,22 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function läsAdresser() {
-  const { data, error } = await supabase.from('adresser').select('*').limit(10);
-  const appEl = document.getElementById('app');
-
-  if (error) {
-    appEl.innerHTML = `<p style="color:red">Fel vid läsning: ${error.message}</p>`;
-    return;
+async function testa() {
+  const el = document.getElementById('app');
+  try {
+    const { data, error } = await supabase.from('adresser').select('id').limit(1);
+    if (error) throw error;
+    el.innerHTML = "<h1>✨ Kopplingen till Supabase fungerar ✨</h1>";
+  } catch (e) {
+    el.innerHTML = `<pre style="color:red">${e.message}</pre>`;
   }
-
-  if (!data || data.length === 0) {
-    appEl.innerHTML = "<p>Inga adresser hittades i tabellen.</p>";
-    return;
-  }
-
-  const lista = data.map((rad) => `<li>${rad.namn}</li>`).join('');
-  appEl.innerHTML = `
-    <h1>Tid & Material – SnöJour</h1>
-    <p>Första adresserna i databasen:</p>
-    <ul>${lista}</ul>
-  `;
 }
 
-function App() {
-  return (
-    <div style={{padding:20, fontFamily:"sans-serif"}}>
-      <h2>Laddar data från Supabase...</h2>
-    </div>
-  );
-}
-
+document.body.style.fontFamily = "sans-serif";
 const root = document.getElementById('app');
-createRoot(root).render(<App />);
-läsAdresser();
+if (!root) {
+  document.body.innerHTML = "<p style='color:red'>#app saknas i index.html</p>";
+} else {
+  createRoot(root).render(<p>Laddar testdata…</p>);
+  testa();
+}
