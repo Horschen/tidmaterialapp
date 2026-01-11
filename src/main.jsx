@@ -75,7 +75,7 @@ const { error } = await supabase.from("rapporter").insert([
      <label>Grus (kg): </label>
 <select value={sand} onChange={(e) => setSand(e.target.value)}>
   {[...Array(20)].map((_, i) => (
-    <option key={i + 0} value={i + 0}>
+    <option key={i + 1} value={i + 1}>
       {i + 1}
     </option>
   ))}
