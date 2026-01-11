@@ -1,13 +1,13 @@
-/ === Veckoöversikt med veckonummer ===
+// === Veckoöversikt med veckonummer ===
 function VeckoOversikt({ data }) {
   // Hjälpfunktion för att beräkna ISO‑veckonummer
   function getWeekNumber(dateString) {
     const date = new Date(dateString);
-    const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = temp.getUTCDay() || 7;
-    temp.setUTCDate(temp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
-    return Math.ceil(((temp - yearStart) / 86400000 + 1) / 7);
+    const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    return Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
   }
 
   const grupperad = {};
@@ -22,7 +22,7 @@ function VeckoOversikt({ data }) {
     grupperad[key].tid += rad.arbetstid_min || 0;
     grupperad[key].grus += rad.sand_kg || 0;
     grupperad[key].salt += rad.salt_kg || 0;
-    grupperad[key].antal++;
+    grupperad[key].antal += 1;
   });
 
   const lista = Object.values(grupperad);
@@ -30,12 +30,16 @@ function VeckoOversikt({ data }) {
   return (
     <div style={{ marginTop: 40 }}>
       <h2>Veckoöversikt</h2>
-      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse", width: "100%" }}>
+      <table
+        border="1"
+        cellPadding="5"
+        style={{ borderCollapse: "collapse", width: "100%", fontFamily: "sans-serif" }}
+      >
         <thead>
           <tr>
             <th>Vecka</th>
             <th>Adress</th>
-            <th>Antal insamlingar</th>
+            <th>Antal</th>
             <th>Totalt (min)</th>
             <th>Grus (kg)</th>
             <th>Salt (kg)</th>
@@ -57,6 +61,7 @@ function VeckoOversikt({ data }) {
     </div>
   );
 }
+
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
