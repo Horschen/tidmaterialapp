@@ -40,7 +40,7 @@ export default async function handler(req, res) {
 
   await transporter.sendMail({
     from: '"SnöJour‑Rapport" <no-reply@snojour.se>',
-    to: "hakan@…, lollo@…, jimmy@…",
+    to: "hakan.pengel@outlook.com, lollo@…, jimmy@…",
     subject: "Rapport SnöJour",
     text: "Hej! Här kommer rapporten som PDF.",
     attachments: [{ filename: "rapport.pdf", content: pdfBuffer }],
