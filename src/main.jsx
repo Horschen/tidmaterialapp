@@ -1,28 +1,18 @@
-import { createRoot } from 'react-dom/client';
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_KEY } from './config';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-async function testSupabase() {
-  // vi hämtar de första adresserna ur tabellen du redan importerade
-  const { data, error } = await supabase.from('adresser').select('*').limit(5);
-  if (error) {
-    document.getElementById('app').innerHTML = `<p style="color:red">${error.message}</p>`;
-  } else {
-    const lista = data.map(a => `<li>${a.namn}</li>`).join('');
-    document.getElementById('app').innerHTML = `<h2>Tillgängliga adresser</h2><ul>${lista}</ul>`;
-  }
-}
+  import { createRoot } from 'react-dom/client';
 
 function App() {
   return (
-    <div style={{padding:20}}>
+    <div style={{padding:20, fontFamily:"sans-serif"}}>
       <h1>Tid & Material</h1>
-      <p>Hämtar data från Supabase...</p>
+      <p>Om du ser den här texten fungerar React‑delen.</p>
     </div>
   );
 }
 
-createRoot(document.getElementById('app')).render(<App />);
-testSupabase();
+const rootElement = document.getElementById('app');
+if (!rootElement) {
+  document.body.innerHTML = '<pre style="color:red">Fel: kunde inte hitta #app i index.html</pre>';
+} else {
+  console.log("✅ React körs, renderar komponenten...");
+  createRoot(rootElement).render(<App />);
+}
