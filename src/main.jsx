@@ -79,12 +79,28 @@ function App() {
       </select>
 
       <br /><br />
-      <label>Sand (kg): </label>
-      <input type="number" value={sand} onChange={(e) => setSand(e.target.value)} />
+     <label>Grus (kg): </label>
+<select value={sand} onChange={(e) => setSand(e.target.value)}>
+  {[...Array(20)].map((_, i) => (
+    <option key={i + 1} value={i + 1}>
+      {i + 1}
+    </option>
+  ))}
+</select>
 
-      <br /><br />
-      <label>Salt (kg): </label>
-      <input type="number" value={salt} onChange={(e) => setSalt(e.target.value)} />
+<br /><br />
+<label>Salt (kg): </label>
+<select value={salt} onChange={(e) => setSalt(e.target.value)}>
+  {[
+    5,10,15,20,25,30,35,40,45,50,55,60,65,70,
+    75,80,85,90,95,100,105,110,115,120,
+    125,130,135,140,145,150,155,160,165,170,175,180,185,190,200
+  ].map((val) => (
+    <option key={val} value={val}>
+      {val}
+    </option>
+  ))}
+</select>
 
       <br /><br />
       <button onClick={sparaRapport}>💾 Spara rapport</button>
