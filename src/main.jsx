@@ -1,28 +1,39 @@
 import { createRoot } from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_KEY } from './config';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function testSupabase() {
-  // vi hämtar de första adresserna ur tabellen du redan importerade
-  const { data, error } = await supabase.from('adresser').select('*').limit(5);
+async function läsAdresser() {
+  const { data, error } = await supabase.from('adresser').select('*').limit(10);
+  const appEl = document.getElementById('app');
+
   if (error) {
-    document.getElementById('app').innerHTML = `<p style="color:red">${error.message}</p>`;
-  } else {
-    const lista = data.map(a => `<li>${a.namn}</li>`).join('');
-    document.getElementById('app').innerHTML = `<h2>Tillgängliga adresser</h2><ul>${lista}</ul>`;
+    appEl.innerHTML = `<p style="color:red">Fel vid läsning: ${error.message}</p>`;
+    return;
   }
+
+  if (!data || data.length === 0) {
+    appEl.innerHTML = "<p>Inga adresser hittades i tabellen.</p>";
+    return;
+  }
+
+  const lista = data.map((rad) => `<li>${rad.namn}</li>`).join('');
+  appEl.innerHTML = `
+    <h1>Tid & Material – SnöJour</h1>
+    <p>Första adresserna i databasen:</p>
+    <ul>${lista}</ul>
+  `;
 }
 
 function App() {
   return (
-    <div style={{padding:20}}>
-      <h1>Tid & Material</h1>
-      <p>Hämtar data från Supabase...</p>
+    <div style={{padding:20, fontFamily:"sans-serif"}}>
+      <h2>Laddar data från Supabase...</h2>
     </div>
   );
 }
 
-createRoot(document.getElementById('app')).render(<App />);
-testSupabase();
+const root = document.getElementById('app');
+createRoot(root).render(<App />);
+läsAdresser();
