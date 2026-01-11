@@ -5,45 +5,25 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ======= Veckoöversikt med veckonummer + år =======
+// ======= Veckoöversikt =======
 function VeckoOversikt({ data }) {
-  // Hjälpfunktion – beräkna ISO‑vecka och år
-  function getWeekYear(dateString) {
-    const d = new Date(dateString);
-    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    const week = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-    const year = tmp.getUTCFullYear();
-    return { week, year };
-  }
-
-  // Grupp per adress + vecka + år
+  // Grupp per adressnamn
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    const { week, year } = getWeekYear(rad.datum);
-    const key = `${namn}-v${week}-${year}`;
-
-    if (!grupperad[key]) {
-      grupperad[key] = {
-        namn,
-        vecka: week,
-        år: year,
-        tid: 0,
-        grus: 0,
-        salt: 0,
-        antal: 0,
-      };
+    if (!grupperad[namn]) {
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
     }
-    grupperad[key].tid += rad.arbetstid_min || 0;
-    grupperad[key].grus += rad.sand_kg || 0;
-    grupperad[key].salt += rad.salt_kg || 0;
-    grupperad[key].antal++;
+    grupperad[namn].tid += rad.arbetstid_min || 0;
+    grupperad[namn].grus += rad.sand_kg || 0;
+    grupperad[namn].salt += rad.salt_kg || 0;
+    grupperad[namn].antal++;
   });
 
-  const lista = Object.values(grupperad);
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    ...v,
+  }));
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -59,8 +39,6 @@ function VeckoOversikt({ data }) {
       >
         <thead>
           <tr>
-            <th>År</th>
-            <th>Vecka</th>
             <th>Adress</th>
             <th>Antal</th>
             <th>Totalt (min)</th>
@@ -70,9 +48,7 @@ function VeckoOversikt({ data }) {
         </thead>
         <tbody>
           {lista.map((r) => (
-            <tr key={`${r.namn}-v${r.vecka}-${r.år}`}>
-              <td style={{ textAlign: "center" }}>{r.år}</td>
-              <td style={{ textAlign: "center" }}>v{r.vecka}</td>
+            <tr key={r.namn}>
               <td>{r.namn}</td>
               <td style={{ textAlign: "center" }}>{r.antal}</td>
               <td style={{ textAlign: "right" }}>{r.tid}</td>
@@ -91,6 +67,7 @@ function App() {
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
   const [filtreradVecka, setFiltreradVecka] = useState("");
+  const [filtreratÅr, setFiltreratÅr] = useState("");
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
@@ -144,6 +121,7 @@ function App() {
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h1>Tid & Material – SnöJour</h1>
 
+      {/* ---- Rapportinmatning ---- */}
       <label>Adress :</label>
       <br />
       <select value={valda} onChange={(e) => setValda(e.target.value)}>
@@ -204,6 +182,7 @@ function App() {
       <br />
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
+      {/* ---- Filter & översikt ---- */}
       <br />
       <br />
       <label>Visa vecka: </label>
@@ -213,27 +192,44 @@ function App() {
         max="52"
         value={filtreradVecka}
         onChange={(e) => setFiltreradVecka(e.target.value)}
-        style={{ width: "80px", marginLeft: "5px" }}
+        style={{ width: "70px", marginRight: "15px", marginLeft: "5px" }}
       />
-      <button onClick={hamtaRapporter}>📅 Uppdatera översikt</button>
+
+      <label>År: </label>
+      <input
+        type="number"
+        min="2020"
+        max="2100"
+        value={filtreratÅr}
+        onChange={(e) => setFiltreratÅr(e.target.value)}
+        style={{ width: "90px", marginLeft: "5px" }}
+      />
+
+      <button onClick={hamtaRapporter} style={{ marginLeft: "10px" }}>
+        📅 Uppdatera översikt
+      </button>
 
       {visaOversikt && (
         <VeckoOversikt
           data={rapporter.filter((r) => {
-            if (!filtreradVecka) return true;
             const d = new Date(r.datum);
             const tmp = new Date(
               Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
             );
             const dayNum = tmp.getUTCDay() || 7;
             tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(
-              Date.UTC(tmp.getUTCFullYear(), 0, 1)
-            );
+            const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
             const vecka = Math.ceil(
               ((tmp - yearStart) / 86400000 + 1) / 7
             );
-            return vecka == filtreradVecka;
+            const år = tmp.getUTCFullYear();
+
+            const veckaOK =
+              !filtreradVecka || Number(filtreradVecka) === Number(vecka);
+            const årOK =
+              !filtreratÅr || Number(filtreratÅr) === Number(år);
+
+            return veckaOK && årOK;
           })}
         />
       )}
