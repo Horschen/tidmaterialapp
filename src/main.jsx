@@ -149,9 +149,7 @@ const { error } = await supabase.from("rapporter").insert([
           75,80,85,90,95,100,105,110,115,120,
           125,130,135,140,145,150,155,160,165,170,175,180,185,190,200
         ].map((val) => (
-          <option key={val} value={val}>
-            {val}
-          </option>
+          <option key={val} value={val}>{val}</option>
         ))}
       </select>
 
@@ -159,14 +157,41 @@ const { error } = await supabase.from("rapporter").insert([
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
       <br /><br />
-      <button onClick={hamtaRapporter}>📅 Visa veckovy</button>
+      <label>Visa vecka: </label>
+      <input
+        type="number"
+        min="1"
+        max="52"
+        value={filtreradVecka}
+        onChange={(e) => setFiltreradVecka(e.target.value)}
+        style={{ width: "80px", marginLeft: "5px" }}
+      />
+      <button onClick={hamtaRapporter}>📅 Uppdatera översikt</button>
 
-      {visaOversikt && <VeckoOversikt data={rapporter} />}
+      {visaOversikt && (
+        <VeckoOversikt
+          data={rapporter.filter((r) => {
+            if (!filtreradVecka) return true;
+            const d = new Date(r.datum);
+            const tmp = new Date(
+              Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
+            );
+            const dayNum = tmp.getUTCDay() || 7;
+            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(
+              Date.UTC(tmp.getUTCFullYear(), 0, 1)
+            );
+            const vecka = Math.ceil(
+              ((tmp - yearStart) / 86400000 + 1) / 7
+            );
+            return vecka == filtreradVecka;
+          })}
+        />
+      )}
 
       <p style={{ marginTop: 20 }}>{status}</p>
     </div>
   );
-}  // 👈 detta stänger funktionen App()
+}
 
-// här utanför, i slutet av filen
 createRoot(document.getElementById("app")).render(<App />);
