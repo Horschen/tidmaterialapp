@@ -1,54 +1,38 @@
-// === Veckoöversikt med veckonummer ===
 function VeckoOversikt({ data }) {
-  // Hjälpfunktion för att beräkna ISO‑veckonummer
-  function getWeekNumber(dateString) {
-    const date = new Date(dateString);
-    const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    return Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-  }
-
+  // Grupp per adressnamn
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    const vecka = getWeekNumber(rad.datum);
-    const key = `${namn}-v${vecka}`;
-
-    if (!grupperad[key]) {
-      grupperad[key] = { namn, vecka, tid: 0, grus: 0, salt: 0, antal: 0 };
+    if (!grupperad[namn]) {
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
     }
-    grupperad[key].tid += rad.arbetstid_min || 0;
-    grupperad[key].grus += rad.sand_kg || 0;
-    grupperad[key].salt += rad.salt_kg || 0;
-    grupperad[key].antal += 1;
+    grupperad[namn].tid += rad.arbetstid_min || 0;
+    grupperad[namn].grus += rad.sand_kg || 0;
+    grupperad[namn].salt += rad.salt_kg || 0;
+    grupperad[namn].antal++;
   });
-
-  const lista = Object.values(grupperad);
+  // Gör om till lista
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    ...v,
+  }));
 
   return (
     <div style={{ marginTop: 40 }}>
       <h2>Veckoöversikt</h2>
-      <table
-        border="1"
-        cellPadding="5"
-        style={{ borderCollapse: "collapse", width: "100%", fontFamily: "sans-serif" }}
-      >
+      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th>Vecka</th>
             <th>Adress</th>
-            <th>Antal</th>
-            <th>Totalt (min)</th>
+            <th>Antal lång</th>
+            <th>Totalt (min)</th>
             <th>Grus (kg)</th>
             <th>Salt (kg)</th>
           </tr>
         </thead>
         <tbody>
           {lista.map((r) => (
-            <tr key={`${r.namn}-v${r.vecka}`}>
-              <td style={{ textAlign: "center" }}>v{r.vecka}</td>
+            <tr key={r.namn}>
               <td>{r.namn}</td>
               <td style={{ textAlign: "center" }}>{r.antal}</td>
               <td style={{ textAlign: "right" }}>{r.tid}</td>
@@ -157,7 +141,7 @@ const { error } = await supabase.from("rapporter").insert([
 </select>
 
 <br /><br />
- <label>Salt (kg): </label>
+<label>Salt (kg): </label>
       <select value={salt} onChange={(e) => setSalt(e.target.value)}>
         <option value="0">0</option>
         {[
@@ -165,7 +149,9 @@ const { error } = await supabase.from("rapporter").insert([
           75,80,85,90,95,100,105,110,115,120,
           125,130,135,140,145,150,155,160,165,170,175,180,185,190,200
         ].map((val) => (
-          <option key={val} value={val}>{val}</option>
+          <option key={val} value={val}>
+            {val}
+          </option>
         ))}
       </select>
 
@@ -173,41 +159,14 @@ const { error } = await supabase.from("rapporter").insert([
       <button onClick={sparaRapport}>💾 Spara rapport</button>
 
       <br /><br />
-      <label>Visa vecka: </label>
-      <input
-        type="number"
-        min="1"
-        max="52"
-        value={filtreradVecka}
-        onChange={(e) => setFiltreradVecka(e.target.value)}
-        style={{ width: "80px", marginLeft: "5px" }}
-      />
-      <button onClick={hamtaRapporter}>📅 Uppdatera översikt</button>
+      <button onClick={hamtaRapporter}>📅 Visa veckovy</button>
 
-      {visaOversikt && (
-        <VeckoOversikt
-          data={rapporter.filter((r) => {
-            if (!filtreradVecka) return true;
-            const d = new Date(r.datum);
-            const tmp = new Date(
-              Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())
-            );
-            const dayNum = tmp.getUTCDay() || 7;
-            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(
-              Date.UTC(tmp.getUTCFullYear(), 0, 1)
-            );
-            const vecka = Math.ceil(
-              ((tmp - yearStart) / 86400000 + 1) / 7
-            );
-            return vecka == filtreradVecka;
-          })}
-        />
-      )}
+      {visaOversikt && <VeckoOversikt data={rapporter} />}
 
       <p style={{ marginTop: 20 }}>{status}</p>
     </div>
   );
-}
+}  // 👈 detta stänger funktionen App()
 
+// här utanför, i slutet av filen
 createRoot(document.getElementById("app")).render(<App />);
