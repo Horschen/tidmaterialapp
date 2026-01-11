@@ -3,27 +3,26 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
+// Lägg till pdfmake
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts.js";
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ======= Veckoöversikt =======
 function VeckoOversikt({ data }) {
-  // Grupp per adressnamn
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    if (!grupperad[namn]) {
-      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
-    }
+    if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
     grupperad[namn].tid += rad.arbetstid_min || 0;
     grupperad[namn].grus += rad.sand_kg || 0;
     grupperad[namn].salt += rad.salt_kg || 0;
     grupperad[namn].antal++;
   });
 
-  const lista = Object.entries(grupperad).map(([namn, v]) => ({
-    namn,
-    ...v,
-  }));
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -76,16 +75,19 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [status, setStatus] = useState("");
 
-  // Hämta adresser vid start
+  // === Hämta adresser vid start ===
   useEffect(() => {
     async function laddaAdresser() {
-      const { data, error } = await supabase.from("adresser").select("id, namn");
+      const { data, error } = await supabase
+        .from("adresser")
+        .select("id, namn, gps_url, maskin_mojlig");
       if (error) setStatus(error.message);
       else setAdresser(data);
     }
     laddaAdresser();
   }, []);
 
+  // === Hämta rapporter (till översikt) ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
@@ -96,6 +98,7 @@ function App() {
     setVisaOversikt(true);
   }
 
+  // === Spara rapport ===
   async function sparaRapport() {
     if (!valda) {
       setStatus("Välj en adress först.");
@@ -104,7 +107,7 @@ function App() {
     setStatus("Sparar…");
     const { error } = await supabase.from("rapporter").insert([
       {
-        datum: new Date(),
+        datum: new Date().toISOString(),
         adress_id: valda,
         arbetstid_min: parseInt(arbetstid, 10) || 0,
         team_namn: team,
@@ -117,6 +120,51 @@ function App() {
     else setStatus("✅ Rapport sparad!");
   }
 
+  // === Skapa + förbered mail med PDF ===
+  async function skapaOchSkickaPDF() {
+    if (!valda) {
+      setStatus("Välj en adress först.");
+      return;
+    }
+
+    const adressNamn =
+      adresser.find((a) => a.id === parseInt(valda))?.namn || "Okänd adress";
+
+    const docDef = {
+      content: [
+        { text: "Rapport SnöJour", style: "header", alignment: "center" },
+        "\n",
+        { text: `Datum: ${new Date().toLocaleString()}` },
+        { text: `Adress: ${adressNamn}` },
+        { text: `Arbetstid: ${arbetstid} min` },
+        { text: `Typ: ${team}` },
+        { text: `Grus: ${sand} kg` },
+        { text: `Salt: ${salt} kg` },
+      ],
+      styles: {
+        header: { fontSize: 18, bold: true },
+      },
+    };
+
+    const pdf = pdfMake.createPdf(docDef);
+
+    pdf.getBase64((b64) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      // Starta mail-klient
+      const subject = encodeURIComponent("SnöJour‑rapport");
+      const body = encodeURIComponent(
+        "Hej!\nHär kommer rapporten för dagens arbete.\n" +
+          "Bifoga den PDF som öppnas i webbläsaren."
+      );
+      window.open(`mailto:hakan.pengel@outlook.com?subject=${subject}&body=${body}`);
+      window.open(url);
+      setStatus("📧 PDF skapad – mailklient öppnad.");
+    });
+  }
+
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h1>Tid & Material – SnöJour</h1>
@@ -127,7 +175,13 @@ function App() {
       <select value={valda} onChange={(e) => setValda(e.target.value)}>
         <option value="">-- Välj adress --</option>
         {adresser.map((a) => (
-          <option key={a.id} value={a.id}>
+          <option
+            key={a.id}
+            value={a.id}
+            style={{
+              backgroundColor: a.maskin_mojlig ? "orange" : "white",
+            }}
+          >
             {a.namn}
           </option>
         ))}
@@ -155,9 +209,9 @@ function App() {
       <label>Grus (kg): </label>
       <select value={sand} onChange={(e) => setSand(e.target.value)}>
         <option value="0">0</option>
-        {[...Array(20)].map((_, i) => (
-          <option key={i + 1} value={i + 1}>
-            {i + 1}
+        {[...Array(51)].map((_, i) => (
+          <option key={i} value={i}>
+            {i}
           </option>
         ))}
       </select>
@@ -167,13 +221,9 @@ function App() {
       <label>Salt (kg): </label>
       <select value={salt} onChange={(e) => setSalt(e.target.value)}>
         <option value="0">0</option>
-        {[
-          5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-          95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160,
-          165, 170, 175, 180, 185, 190, 200,
-        ].map((val) => (
-          <option key={val} value={val}>
-            {val}
+        {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+          <option key={v} value={v}>
+            {v}
           </option>
         ))}
       </select>
@@ -181,6 +231,9 @@ function App() {
       <br />
       <br />
       <button onClick={sparaRapport}>💾 Spara rapport</button>
+      <button onClick={skapaOchSkickaPDF} style={{ marginLeft: 10 }}>
+        📧 Skicka rapport till Mail
+      </button>
 
       {/* ---- Filter & översikt ---- */}
       <br />
@@ -219,9 +272,7 @@ function App() {
             const dayNum = tmp.getUTCDay() || 7;
             tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
             const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-            const vecka = Math.ceil(
-              ((tmp - yearStart) / 86400000 + 1) / 7
-            );
+            const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
             const år = tmp.getUTCFullYear();
 
             const veckaOK =
