@@ -31,17 +31,17 @@ function App() {
       return;
     }
     setStatus("Sparar…");
-    const { error } = await supabase.from("rapporter").insert([
-      {
-        datum: new Date(),
-        adress_id: valda,
-        arbetstid_min: parseInt(arbetstid, 10) || 0,
-        team_namn: team,
-        arbetssatt: arbetssatt,
-        sand_kg: parseInt(sand, 10) || 0,
-        salt_kg: parseInt(salt, 10) || 0,
-      },
-    ]);
+const { error } = await supabase.from("rapporter").insert([
+  {
+    datum: new Date(),
+    adress_id: valda,
+    arbetstid_min: parseInt(arbetstid, 10) || 0,
+    team_namn: team,
+    arbetssatt: team === "För hand" ? "hand" : "maskin",
+    sand_kg: parseInt(sand, 10) || 0,
+    salt_kg: parseInt(salt, 10) || 0,
+  },
+]);
     if (error) setStatus("❌ " + error.message);
     else setStatus("✅ Rapport sparad!");
   }
@@ -65,18 +65,11 @@ function App() {
       <input type="number" value={arbetstid} onChange={(e) => setArbetstid(e.target.value)} />
 
       <br /><br />
-    <label>Arbetstyp (Team): </label>
-    <select value={team} onChange={(e) => setTeam(e.target.value)}>
-    <option>För hand</option>
-     <option>Maskin</option>
-     </select>
-
-      <br /><br />
-      <label>Arbetssätt: </label>
-      <select value={arbetssatt} onChange={(e) => setArbetssatt(e.target.value)}>
-        <option value="hand">För hand</option>
-        <option value="maskin">Med maskin</option>
-      </select>
+<label>Arbetstyp (Team): </label>
+<select value={team} onChange={(e) => setTeam(e.target.value)}>
+  <option>För hand</option>
+  <option>Maskin</option>
+</select>
 
       <br /><br />
      <label>Grus (kg): </label>
