@@ -65,13 +65,11 @@ function App() {
       <input type="number" value={arbetstid} onChange={(e) => setArbetstid(e.target.value)} />
 
       <br /><br />
-      <label>Team: </label>
-      <select value={team} onChange={(e) => setTeam(e.target.value)}>
-        <option>Team 1</option>
-        <option>Team 2</option>
-        <option>Team 3</option>
-        <option>Team 4</option>
-      </select>
+    <label>Arbetstyp (Team): </label>
+    <select value={team} onChange={(e) => setTeam(e.target.value)}>
+    <option>För hand</option>
+     <option>Maskin</option>
+     </select>
 
       <br /><br />
       <label>Arbetssätt: </label>
