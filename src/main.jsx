@@ -5,32 +5,44 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ======= Veckoöversikt med veckonummer =======
+// ======= Veckoöversikt med veckonummer + år =======
 function VeckoOversikt({ data }) {
-  // Hjälpfunktion för ISO‑veckonummer
-  function getWeekNumber(dateString) {
+  // Hjälpfunktion – beräkna ISO‑vecka och år
+  function getWeekYear(dateString) {
     const d = new Date(dateString);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = tmp.getUTCDay() || 7;
     tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    return Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    const week = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    const year = tmp.getUTCFullYear();
+    return { week, year };
   }
 
-  // Grupp per adress + vecka
+  // Grupp per adress + vecka + år
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    const vecka = getWeekNumber(rad.datum);
-    const key = `${namn}-v${vecka}`;
+    const { week, year } = getWeekYear(rad.datum);
+    const key = `${namn}-v${week}-${year}`;
+
     if (!grupperad[key]) {
-      grupperad[key] = { namn, vecka, tid: 0, grus: 0, salt: 0, antal: 0 };
+      grupperad[key] = {
+        namn,
+        vecka: week,
+        år: year,
+        tid: 0,
+        grus: 0,
+        salt: 0,
+        antal: 0,
+      };
     }
     grupperad[key].tid += rad.arbetstid_min || 0;
     grupperad[key].grus += rad.sand_kg || 0;
     grupperad[key].salt += rad.salt_kg || 0;
     grupperad[key].antal++;
   });
+
   const lista = Object.values(grupperad);
 
   return (
@@ -39,10 +51,15 @@ function VeckoOversikt({ data }) {
       <table
         border="1"
         cellPadding="5"
-        style={{ borderCollapse: "collapse", width: "100%" }}
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          fontFamily: "sans-serif",
+        }}
       >
         <thead>
           <tr>
+            <th>År</th>
             <th>Vecka</th>
             <th>Adress</th>
             <th>Antal</th>
@@ -53,7 +70,8 @@ function VeckoOversikt({ data }) {
         </thead>
         <tbody>
           {lista.map((r) => (
-            <tr key={`${r.namn}-v${r.vecka}`}>
+            <tr key={`${r.namn}-v${r.vecka}-${r.år}`}>
+              <td style={{ textAlign: "center" }}>{r.år}</td>
               <td style={{ textAlign: "center" }}>v{r.vecka}</td>
               <td>{r.namn}</td>
               <td style={{ textAlign: "center" }}>{r.antal}</td>
