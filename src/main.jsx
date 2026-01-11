@@ -54,6 +54,8 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function App() {
+  const [rapporter, setRapporter] = useState([]);
+  const [visaOversikt, setVisaOversikt] = useState(false);
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
@@ -62,7 +64,15 @@ function App() {
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
   const [status, setStatus] = useState("");
-
+  async function hamtaRapporter() {
+  const { data, error } = await supabase
+    .from("rapporter")
+    .select("*, adresser(namn)")
+    .order("datum", { ascending: false });
+  if (error) setStatus("❌ " + error.message);
+  else setRapporter(data);
+  setVisaOversikt(true);
+}
   // Hämta adresser vid start
   useEffect(() => {
     async function laddaAdresser() {
@@ -152,5 +162,8 @@ const { error } = await supabase.from("rapporter").insert([
     </div>
   );
 }
+<br /><br />
+<button onClick={hamtaRapporter}>📅 Visa veckovy</button>
 
+{visaOversikt && <VeckoOversikt data={rapporter} />}
 createRoot(document.getElementById("app")).render(<App />);
