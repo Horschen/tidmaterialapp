@@ -1,21 +1,124 @@
-Skip to content
-Horschen's projects
-Horschen's projects
+function VeckoOversikt({ data }) {
+  // Grupp per adressnamn
+  const grupperad = {};
+  data.forEach((rad) => {
+    const namn = rad.adresser?.namn || "Okänd adress";
+    if (!grupperad[namn]) {
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    }
+    grupperad[namn].tid += rad.arbetstid_min || 0;
+    grupperad[namn].grus += rad.sand_kg || 0;
+    grupperad[namn].salt += rad.salt_kg || 0;
+    grupperad[namn].antal++;
+  });
+  // Gör om till lista
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    ...v,
+  }));
 
-Hobby
+  return (
+    <div style={{ marginTop: 40 }}>
+      <h2>Veckoöversikt</h2>
+      <table border="1" cellPadding="5" style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th>Adress</th>
+            <th>Antal lång</th>
+            <th>Totalt (min)</th>
+            <th>Grus (kg)</th>
+            <th>Salt (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((r) => (
+            <tr key={r.namn}>
+              <td>{r.namn}</td>
+              <td style={{ textAlign: "center" }}>{r.antal}</td>
+              <td style={{ textAlign: "right" }}>{r.tid}</td>
+              <td style={{ textAlign: "right" }}>{r.grus}</td>
+              <td style={{ textAlign: "right" }}>{r.salt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-tidmaterialapp
+import { createRoot } from "react-dom/client";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
-6kHXLpD9x
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function App() {
+  const [rapporter, setRapporter] = useState([]);
+  const [visaOversikt, setVisaOversikt] = useState(false);
+  const [adresser, setAdresser] = useState([]);
+  const [valda, setValda] = useState("");
+  const [arbetstid, setArbetstid] = useState("");
+  const [team, setTeam] = useState("Team 1");
+  const [arbetssatt, setArbetssatt] = useState("hand");
+  const [sand, setSand] = useState(0);
+  const [salt, setSalt] = useState(0);
+  const [status, setStatus] = useState("");
+  async function hamtaRapporter() {
+  const { data, error } = await supabase
+    .from("rapporter")
+    .select("*, adresser(namn)")
+    .order("datum", { ascending: false });
+  if (error) setStatus("❌ " + error.message);
+  else setRapporter(data);
+  setVisaOversikt(true);
+}
+  // Hämta adresser vid start
+  useEffect(() => {
+    async function laddaAdresser() {
+      const { data, error } = await supabase.from("adresser").select("id, namn");
+      if (error) setStatus(error.message);
+      else setAdresser(data);
+    }
+    laddaAdresser();
+  }, []);
 
-Find…
-F
+  async function sparaRapport() {
+    if (!valda) {
+      setStatus("Välj en adress först.");
+      return;
+    }
+    setStatus("Sparar…");
+const { error } = await supabase.from("rapporter").insert([
+  {
+    datum: new Date(),
+    adress_id: valda,
+    arbetstid_min: parseInt(arbetstid, 10) || 0,
+    team_namn: team,
+    arbetssatt: team === "För hand" ? "hand" : "maskin",
+    sand_kg: parseInt(sand, 10) || 0,
+    salt_kg: parseInt(salt, 10) || 0,
+  },
+]);
+    if (error) setStatus("❌ " + error.message);
+    else setStatus("✅ Rapport sparad!");
+  }
 
-Source
-Output
-src/main.jsx
+  return (
+    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
+      <h1>Tid & Material – SnöJour</h1>
 
+      <label>Adress :</label><br/>
+      <select value={valda} onChange={(e) => setValda(e.target.value)}>
+        <option value="">-- Välj adress --</option>
+        {adresser.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.namn}
+          </option>
+        ))}
+      </select>
+
+      <br /><br />
       <label>Arbetstid (min): </label>
       <input type="number" value={arbetstid} onChange={(e) => setArbetstid(e.target.value)} />
 
@@ -67,4 +170,3 @@ src/main.jsx
 
 // här utanför, i slutet av filen
 createRoot(document.getElementById("app")).render(<App />);
-tidmaterialapp – Deployment Source – Vercel
