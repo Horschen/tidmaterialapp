@@ -27,7 +27,7 @@ function formatTid(minuter) {
 }
 
 // ======= Veckoöversikt =======
-function VeckoOversikt({ data, onSkickaEmail, onExportCsv, filtreradVecka, filtreratÅr }) {
+function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -42,13 +42,12 @@ function VeckoOversikt({ data, onSkickaEmail, onExportCsv, filtreradVecka, filtr
 
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <h2 style={{ margin: 0 }}>Veckoöversikt</h2>
         <button onClick={onSkickaEmail}>📧 Skicka veckorapport via e‑post</button>
-        <button onClick={onExportCsv}>📄 Exportera till Excel (CSV)</button>
       </div>
       <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
-        Vecka {filtreradVecka || "-"} · År {filtratÅr || "-"}
+        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"}
       </div>
 
       <table
@@ -236,14 +235,14 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mailto (semikolon-tabell) ===
+  // === Skicka veckorapport via mailto (text-mejl) ===
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
     }
 
-    // Gruppera per adress
+    // Gruppera per adress (som i översikten)
     const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
@@ -270,32 +269,62 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+    // Kolumnbredder
+    const colAdress = 40;
+    const colAntal = 8;
+    const colTid = 12;
+    const colGrus = 8;
+    const colSalt = 8;
 
-    const dataRader = rader.map((r) =>
-      [
-        r.namn,
-        r.antal,
-        formatTid(r.tid),
-        r.grus,
-        r.salt,
-      ].join(";")
-    );
+    // extra luft mellan kolumner
+    const SEP = "   ";
 
+    function padRight(text, width) {
+      const t = String(text);
+      if (t.length >= width) return t.slice(0, width);
+      return t + " ".repeat(width - t.length);
+    }
+
+    // Rubriker (kortare etiketter)
+    const headAdress = padRight("Adress", colAdress);
+    const headAntal = padRight("Antal", colAntal);
+    const headTid = padRight("Tid (hh:mm)", colTid);
+    const headGrus = padRight("Grus", colGrus);
+    const headSalt = padRight("Salt", colSalt);
+
+    const headerRad =
+      headAdress + SEP + headAntal + SEP + headTid + SEP + headGrus + SEP + headSalt;
+
+    const sepLinje = "-".repeat(headerRad.length);
+
+    // Datatabellens rader
+    const tabellRader = rader.map((r) => {
+      const colA = padRight(r.namn, colAdress);
+      const colB = padRight(r.antal, colAntal);
+      const colC = padRight(formatTid(r.tid), colTid);
+      const colD = padRight(r.grus, colGrus);
+      const colE = padRight(r.salt, colSalt);
+      return colA + SEP + colB + SEP + colC + SEP + colD + SEP + colE;
+    });
+
+    // Totalsummering
     const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
     const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
     const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
     const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
 
+    const totalAdress = padRight("TOTALT", colAdress);
+    const totalAntal = padRight(totalJobb, colAntal);
+    const totalTid = padRight(formatTid(totalTidMin), colTid);
+    const totalGrusCell = padRight(totalGrus, colGrus);
+    const totalSaltCell = padRight(totalSalt, colSalt);
+
     const totalRad =
-      "TOTALT;" +
-      totalJobb +
-      ";" +
-      formatTid(totalTidMin) +
-      ";" +
-      totalGrus +
-      ";" +
-      totalSalt;
+      totalAdress + SEP +
+      totalAntal + SEP +
+      totalTid + SEP +
+      totalGrusCell + SEP +
+      totalSaltCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -304,8 +333,11 @@ function App() {
       "År: " + arText,
       "Filter: " + metodText,
       "",
-      rubrikRad,
-      ...dataRader,
+      sepLinje,
+      headerRad,
+      sepLinje,
+      ...tabellRader,
+      sepLinje,
       totalRad,
       "",
       "Hälsningar,",
@@ -320,90 +352,6 @@ function App() {
     const to = "hakan.pengel@outlook.com";
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
-  }
-
-  // === Exportera veckorapport till CSV (Excel) ===
-  function exporteraVeckorapportCsv() {
-    if (filtreradeRapporter.length === 0) {
-      alert("Det finns inga rapporter för vald vecka/år och filter.");
-      return;
-    }
-
-    const grupperad = {};
-    filtreradeRapporter.forEach((rad) => {
-      const namn = rad.adresser?.namn || "Okänd adress";
-      if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
-      }
-      grupperad[namn].tid += rad.arbetstid_min || 0;
-      grupperad[namn].grus += rad.sand_kg || 0;
-      grupperad[namn].salt += rad.salt_kg || 0;
-      grupperad[namn].antal++;
-    });
-
-    const rader = Object.entries(grupperad).map(([namn, v]) => ({
-      namn,
-      ...v,
-    }));
-
-    const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
-
-    const rubrikRad = [
-      "Adress",
-      "Antal jobb",
-      "Tid (hh:mm)",
-      "Grus (kg)",
-      "Salt (kg)",
-    ];
-
-    const dataRader = rader.map((r) => [
-      r.namn,
-      r.antal,
-      formatTid(r.tid),
-      r.grus,
-      r.salt,
-    ]);
-
-    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
-    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
-    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
-    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
-
-    const totalRad = [
-      "TOTALT",
-      totalJobb,
-      formatTid(totalTidMin),
-      totalGrus,
-      totalSalt,
-    ];
-
-    const allaRader = [rubrikRad, ...dataRader, totalRad];
-
-    const csvStr = allaRader
-      .map((rad) =>
-        rad
-          .map((cell) => {
-            const value = String(cell ?? "");
-            if (value.includes(";") || value.includes('"')) {
-              return '"' + value.replace(/"/g, '""') + '"';
-            }
-            return value;
-          })
-          .join(";")
-      )
-      .join("\n");
-
-    const blob = new Blob([csvStr], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `veckorapport_snojour_v${veckoText}_${arText}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 
   return (
@@ -521,9 +469,8 @@ function App() {
         <VeckoOversikt
           data={filtreradeRapporter}
           onSkickaEmail={skickaVeckorapportEmail}
-          onExportCsv={exporteraVeckorapportCsv}
           filtreradVecka={filtreradVecka}
-          filtreratÅr={filtratÅr}
+          filtreratÅr={filtreratÅr}
         />
       )}
 
