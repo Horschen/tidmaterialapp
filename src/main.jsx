@@ -269,10 +269,61 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // Rubrikrad + datarader (semicolonseparerat)
-    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+    // --------- 1. “Snygg” tabell med fasta kolumnbredder ---------
 
-    const dataRader = rader.map((r) =>
+    // Bestäm maxlängd för adresskolumnen (begränsa så den inte blir galet bred)
+    const maxAdressLängd = 40;
+    const adressLängd = Math.min(
+      maxAdressLängd,
+      Math.max("Adress".length, ...rader.map((r) => r.namn.length))
+    );
+
+    // Hjälpfunktion för att vänsterjustera text
+    function padRight(text, width) {
+      const t = String(text);
+      if (t.length >= width) return t.slice(0, width);
+      return t + " ".repeat(width - t.length);
+    }
+
+    // Kolumnrubriker
+    const headAdress = padRight("Adress", adressLängd);
+    const headAntal = padRight("Antal", 5);
+    const headTid = padRight("Tid", 8); // "hh:mm"
+    const headGrus = padRight("Grus", 8);
+    const headSalt = padRight("Salt", 8);
+
+    const tabellRubrik = `${headAdress}  ${headAntal}  ${headTid}  ${headGrus}  ${headSalt}`;
+
+    // Rader
+    const tabellRader = rader.map((r) => {
+      const colAdress = padRight(r.namn, adressLängd);
+      const colAntal = padRight(r.antal, 5);
+      const colTid = padRight(formatTid(r.tid), 8);
+      const colGrus = padRight(r.grus, 8);
+      const colSalt = padRight(r.salt, 8);
+      return `${colAdress}  ${colAntal}  ${colTid}  ${colGrus}  ${colSalt}`;
+    });
+
+    // Totalsummering
+    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
+    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
+    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
+    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
+
+    const totalAdress = padRight("TOTALT", adressLängd);
+    const totalAntal = padRight(totalJobb, 5);
+    const totalTid = padRight(formatTid(totalTidMin), 8);
+    const totalGrusCell = padRight(totalGrus, 8);
+    const totalSaltCell = padRight(totalSalt, 8);
+
+    const tabellTotalRad = `${totalAdress}  ${totalAntal}  ${totalTid}  ${totalGrusCell}  ${totalSaltCell}`;
+
+    // Separator-linje (----)
+    const sepLinje = "-".repeat(tabellRubrik.length);
+
+    // --------- 2. Rådata (semicolon) för Excel längst ner ---------
+    const rubrikRadCsv = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+    const dataRaderCsv = rader.map((r) =>
       [
         r.namn,
         r.antal,
@@ -281,14 +332,7 @@ function App() {
         r.salt,
       ].join(";")
     );
-
-    // Totalsummering för hela veckan
-    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
-    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
-    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
-    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
-
-    const totalRad =
+    const totalRadCsv =
       "TOTALT;" +
       totalJobb +
       ";" +
@@ -298,6 +342,7 @@ function App() {
       ";" +
       totalSalt;
 
+    // --------- 3. Bygg hela mejltexten ---------
     const bodyLines = [
       "Veckorapport SnöJour",
       "",
@@ -305,9 +350,19 @@ function App() {
       "År: " + arText,
       "Filter: " + metodText,
       "",
-      rubrikRad,
-      ...dataRader,
-      totalRad,
+      "Sammanställning per adress:",
+      "",
+      tabellRubrik,
+      sepLinje,
+      ...tabellRader,
+      sepLinje,
+      tabellTotalRad,
+      "",
+      "",
+      "Rådata (för kopiering till Excel):",
+      rubrikRadCsv,
+      ...dataRaderCsv,
+      totalRadCsv,
       "",
       "Hälsningar,",
       "SnöJour-systemet",
