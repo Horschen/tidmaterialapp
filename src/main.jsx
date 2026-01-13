@@ -372,22 +372,23 @@ function App() {
   }, []);
 
   // === Hämta rapporter ===
-  async function hamtaRapporter() {
-    const { data, error } = await supabase
-      .from("rapporter")
-      .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
-      )
-      .order("datum", { ascending: false });
-    if (error) {
-      setStatus("❌ " + error.message);
-      showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
-    } else {
-      setRapporter(data || []);
-      setVisaOversikt(true);
-      setStatus("✅ Rapporter uppdaterade.");
-    }
+async function hamtaRapporter() {
+  const { data, error } = await supabase
+    .from("rapporter")
+    .select(
+      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
+    )
+    .order("datum", { ascending: false });
+  if (error) {
+    setStatus("❌ " + error.message);
+    showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
+  } else {
+    console.log("Rapporter från Supabase:", data); // LÄGG TILL DETTA
+    setRapporter(data || []);
+    setVisaOversikt(true);
+    setStatus("✅ Rapporter uppdaterade.");
   }
+}
 
   // === Validera fält (adress, syfte, material) ===
   function validateBeforeSaveFields() {
