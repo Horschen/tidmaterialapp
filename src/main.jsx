@@ -235,8 +235,8 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via backend (HTML-mejl) ===
-  async function skickaVeckorapportEmail() {
+  // === Skicka veckorapport via mailto (text-mejl) ===
+  function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
@@ -269,44 +269,112 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    try {
-      setStatus("Skickar veckorapport via e‑post…");
+    // ---------- Bygg en läsbar text-tabell ----------
 
-      const res = await fetch("/api/send-weekly-report", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          vecka: veckoText,
-          år: arText,
-          filterText: metodText,
-          mottagare: "hakan.pengel@outlook.com",
-          rader: rader.map((r) => ({
-            adress: r.namn,
-            antalJobb: r.antal,
-            tidMinuter: r.tid,
-            grusKg: r.grus,
-            saltKg: r.salt,
-          })),
-        }),
-      });
+    // Begränsa adresskolumnens bredd
+    const maxAdressLängd = 40;
+    const adressLängd = Math.min(
+      maxAdressLängd,
+      Math.max("Adress".length, ...rader.map((r) => r.namn.length))
+    );
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Fel vid mejl‑API:", text);
-        setStatus("❌ Kunde inte skicka mejlet: " + text);
-        alert("Kunde inte skicka veckorapporten. Se statusmeddelandet.");
-        return;
-      }
-
-      setStatus("✅ Veckorapport skickad via e‑post.");
-      alert("Veckorapporten har skickats via e‑post.");
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Tekniskt fel vid mejlskick: " + err.message);
-      alert("Tekniskt fel vid mejlskick. Se statusmeddelandet.");
+    // Hjälpfunktion för att vänsterjustera text i en fast bredd
+    function padRight(text, width) {
+      const t = String(text);
+      if (t.length >= width) return t.slice(0, width);
+      return t + " ".repeat(width - t.length);
     }
+
+    // Kolumnrubriker
+    const headAdress = padRight("Adress", adressLängd);
+    const headAntal = padRight("Antal", 5);
+    const headTid = padRight("Tid", 8);
+    const headGrus = padRight("Grus", 8);
+    const headSalt = padRight("Salt", 8);
+
+    const tabellRubrik = `${headAdress}  ${headAntal}  ${headTid}  ${headGrus}  ${headSalt}`;
+
+    // Datatabellens rader
+    const tabellRader = rader.map((r) => {
+      const colAdress = padRight(r.namn, adressLängd);
+      const colAntal = padRight(r.antal, 5);
+      const colTid = padRight(formatTid(r.tid), 8);
+      const colGrus = padRight(r.grus, 8);
+      const colSalt = padRight(r.salt, 8);
+      return `${colAdress}  ${colAntal}  ${colTid}  ${colGrus}  ${colSalt}`;
+    });
+
+    // Totalsummering
+    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
+    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
+    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
+    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
+
+    const totalAdress = padRight("TOTALT", adressLängd);
+    const totalAntal = padRight(totalJobb, 5);
+    const totalTid = padRight(formatTid(totalTidMin), 8);
+    const totalGrusCell = padRight(totalGrus, 8);
+    const totalSaltCell = padRight(totalSalt, 8);
+
+    const tabellTotalRad = `${totalAdress}  ${totalAntal}  ${totalTid}  ${totalGrusCell}  ${totalSaltCell}`;
+
+    const sepLinje = "-".repeat(tabellRubrik.length);
+
+    // --------- Rådata (semicolon) för Excel längst ner ---------
+    const rubrikRadCsv = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+    const dataRaderCsv = rader.map((r) =>
+      [
+        r.namn,
+        r.antal,
+        formatTid(r.tid),
+        r.grus,
+        r.salt,
+      ].join(";")
+    );
+    const totalRadCsv =
+      "TOTALT;" +
+      totalJobb +
+      ";" +
+      formatTid(totalTidMin) +
+      ";" +
+      totalGrus +
+      ";" +
+      totalSalt;
+
+    // --------- Bygg hela mejltexten ---------
+    const bodyLines = [
+      "Veckorapport SnöJour",
+      "",
+      "Vecka: " + veckoText,
+      "År: " + arText,
+      "Filter: " + metodText,
+      "",
+      "Sammanställning per adress:",
+      "",
+      tabellRubrik,
+      sepLinje,
+      ...tabellRader,
+      sepLinje,
+      tabellTotalRad,
+      "",
+      "",
+      "Rådata (för kopiering till Excel):",
+      rubrikRadCsv,
+      ...dataRaderCsv,
+      totalRadCsv,
+      "",
+      "Hälsningar,",
+      "SnöJour-systemet",
+    ];
+
+    const subject = encodeURIComponent(
+      "Veckorapport SnöJour v" + veckoText + " " + arText
+    );
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    const to = "hakan.pengel@outlook.com";
+    window.location.href =
+      "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
   return (
