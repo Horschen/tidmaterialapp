@@ -47,7 +47,7 @@ function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
         <button onClick={onSkickaEmail}>📧 Skicka veckorapport via e‑post</button>
       </div>
       <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
-        Vecka {filtreradVecka || "-"} · År {filtratÅr || "-"}
+        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"}
       </div>
 
       <table
@@ -98,7 +98,7 @@ function App() {
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtratÅr, setFiltratÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
@@ -227,7 +227,7 @@ function App() {
     const år = tmp.getUTCFullYear();
 
     const veckaOK = !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtratÅr || Number(filtratÅr) === Number(år);
+    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
 
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
@@ -261,7 +261,7 @@ function App() {
     }));
 
     const veckoText = filtreradVecka || "-";
-    const arText = filtratÅr || "-";
+    const arText = filtreratÅr || "-";
     const metodText =
       filterMetod === "hand"
         ? "Endast För hand"
@@ -286,7 +286,6 @@ function App() {
             adress: r.namn,
             antalJobb: r.antal,
             tidMinuter: r.tid,
-            tidFormat: formatTid(r.tid),
             grusKg: r.grus,
             saltKg: r.salt,
           })),
@@ -402,8 +401,8 @@ function App() {
         type="number"
         min="2020"
         max="2100"
-        value={filtratÅr}
-        onChange={(e) => setFiltratÅr(e.target.value)}
+        value={filtreratÅr}
+        onChange={(e) => setFiltreratÅr(e.target.value)}
         style={{ width: "90px", marginLeft: "5px" }}
       />
 
@@ -426,7 +425,7 @@ function App() {
           data={filtreradeRapporter}
           onSkickaEmail={skickaVeckorapportEmail}
           filtreradVecka={filtreradVecka}
-          filtreratÅr={filtratÅr}
+          filtreratÅr={filtreratÅr}
         />
       )}
 
