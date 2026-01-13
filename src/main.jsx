@@ -170,7 +170,7 @@ function VeckoOversikt({
 
       <div
         style={{
-          overflowX: "auto", // endast horisontell scroll vid behov
+          overflowX: "auto",
           marginTop: 10,
         }}
       >
@@ -179,7 +179,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 900, // bred tabell för PC
+            minWidth: 900,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 14,
           }}
@@ -206,7 +206,7 @@ function VeckoOversikt({
                 key={r.namn}
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid "#e5e7eb",
+                  borderBottom: "1px solid #e5e7eb",
                   height: 40,
                 }}
               >
@@ -477,8 +477,9 @@ function App() {
       setStatus("Rapport sparad");
       showPopup("👍 Rapport sparad", "success", 4000);
       setArbetstid("");
-      // nollställ paus och "tidsbas" för nästa intervall
-      setSenasteRapportTid(new Date().toISOString());
+      // nollställ paus & startpunkt för nästa intervall
+      const nuIso = new Date().toISOString();
+      setSenasteRapportTid(nuIso);
       setPaus(null);
       setTotalPausSek(0);
     }
@@ -985,7 +986,9 @@ function App() {
       return;
     }
 
-    let fromDate, toDate, beskrivning;
+    let fromDate;
+    let toDate;
+    let beskrivning;
 
     if (!raderaMånad) {
       fromDate = `${årNum}-01-01`;
@@ -1070,7 +1073,7 @@ function App() {
                 marginBottom: 12,
                 padding: "8px 12px",
                 borderRadius: 12,
-                backgroundColor: "#f97316", // orange
+                backgroundColor: "#f97316",
                 color: "#ffffff",
                 fontSize: 14,
               }}
@@ -1539,7 +1542,7 @@ function App() {
                 marginBottom: 12,
                 padding: "8px 12px",
                 borderRadius: 12,
-                backgroundColor: "#f97316", // orange
+                backgroundColor: "#f97316",
                 color: "#ffffff",
                 fontSize: 14,
               }}
