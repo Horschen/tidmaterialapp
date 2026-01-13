@@ -23,9 +23,7 @@ const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
   const m = minuter % 60;
-  return `${h.toString().padStart(2, "0")}:${m
-    .toString()
-    .padStart(2, "0")}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 // ======= Hjälp: format datum/tid =======
@@ -127,7 +125,7 @@ function VeckoOversikt({
           alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 18, marginRight: "auto" }}>
+        <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
           Veckoöversikt
         </h2>
         <button
@@ -175,13 +173,13 @@ function VeckoOversikt({
         }}
       >
         <table
-          cellPadding="12"
+          cellPadding={14}
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 900,
+            minWidth: 1000,
             fontFamily: "system-ui, -apple-system, sans-serif",
-            fontSize: 14,
+            fontSize: 15,
           }}
         >
           <thead>
@@ -207,7 +205,7 @@ function VeckoOversikt({
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                   borderBottom: "1px solid #e5e7eb",
-                  height: 40,
+                  height: 44,
                 }}
               >
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
@@ -274,22 +272,28 @@ function App() {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Primär timer: total pass-tid
   const passTotalSek =
-  aktivtPass != null
-    ? Math.max(
-        0,
-        Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
-      )
-    : 0;
-  const pågåendePassSek =
-  aktivtPass != null
-    ? Math.max(
-        0,
-        Math.floor(
-          (nuTid - new Date(senasteRapportTid || aktivtPass.startTid)) / 1000
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
         )
-      )
-    : 0;
+      : 0;
+
+  // Sekundär timer: tid sedan senaste adress (eller pass-start om första)
+  const pågåendePassSek =
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor(
+            (nuTid -
+              new Date(senasteRapportTid || aktivtPass.startTid)) /
+              1000
+          )
+        )
+      : 0;
 
   const pågåendePausSek =
     paus != null
@@ -495,23 +499,22 @@ function App() {
   }
 
   // === Starta pass ===
-function startaPass() {
-  if (aktivtPass) {
-    showPopup("👎 Ett pass är redan igång.", "error", 3000);
-    setStatus("Ett pass är redan igång. Stoppa passet först.");
-    return;
+  function startaPass() {
+    if (aktivtPass) {
+      showPopup("👎 Ett pass är redan igång.", "error", 3000);
+      setStatus("Ett pass är redan igång. Stoppa passet först.");
+      return;
+    }
+
+    // ingen adress krävs för att starta passet
+    const metod = team === "För hand" ? "hand" : "maskin";
+    const nuIso = new Date().toISOString();
+    setAktivtPass({ startTid: nuIso, metod });
+    setSenasteRapportTid(null);
+    setPaus(null);
+    setTotalPausSek(0);
+    setStatus("⏱️ Pass startat.");
   }
-
-  // ingen adress behövs för att starta passet
-
-  const metod = team === "För hand" ? "hand" : "maskin";
-  const nuIso = new Date().toISOString();
-  setAktivtPass({ startTid: nuIso, metod });
-  setSenasteRapportTid(null);
-  setPaus(null);
-  setTotalPausSek(0);
-  setStatus("⏱️ Pass startat.");
-}
 
   // === Stoppa pass ===
   function stoppaPass() {
@@ -1055,29 +1058,7 @@ function startaPass() {
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
-  {aktivtPass ? (
-  <div
-    style={{
-      marginBottom: 12,
-      padding: "8px 12px",
-      borderRadius: 12,
-      backgroundColor: "#eef2ff",
-      color: "#1d4ed8",
-      fontSize: 14,
-    }}
-  >
-    Pågående pass (
-    {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-    <strong>{formatSekTillHhMmSs(passTotalSek)}</strong>
-    <div style={{ fontSize: 12, color: "#4b5563", marginTop: 4 }}>
-      Senaste adressintervall:{" "}
-      <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-    </div>
-  </div>
-) : (
-  ...
-)}
-
+          {/* Orange paus-ruta överst om paus är igång */}
           {paus && (
             <div
               style={{
@@ -1091,6 +1072,24 @@ function startaPass() {
             >
               Passet pausat –{" "}
               <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
+          )}
+
+          {/* Blå ruta: adress/resa-tid */}
+          {aktivtPass && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående adress/resa (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
             </div>
           )}
 
@@ -1533,7 +1532,17 @@ function startaPass() {
             >
               Pågående pass (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+              <strong>{formatSekTillHhMmSs(passTotalSek)}</strong>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#4b5563",
+                  marginTop: 4,
+                }}
+              >
+                Senaste adressintervall:{" "}
+                <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+              </div>
             </div>
           ) : (
             <p
@@ -1632,7 +1641,7 @@ function startaPass() {
     >
       <div
         style={{
-          maxWidth: 480,
+          maxWidth: 1200,
           margin: "0 auto",
           padding: "12px 12px 72px",
           width: "100%",
