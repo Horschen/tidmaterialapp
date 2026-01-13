@@ -235,7 +235,7 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mailto (text-mejl) ===
+   // === Skicka veckorapport via mailto (text-mejl) ===
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
@@ -269,15 +269,15 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // Kolumnbredder
-    const colAdress = 40;
+    // Kolumnbredder – öka dessa för mer spacing
+    const colAdress = 45;
     const colAntal = 8;
-    const colTid = 12;
+    const colTid = 10;   // "00:40" räcker
     const colGrus = 8;
     const colSalt = 8;
 
-    // extra luft mellan kolumner
-    const SEP = "   ";
+    // Extra luft mellan kolumner
+    const SEP = "    "; // fyra mellanslag
 
     function padRight(text, width) {
       const t = String(text);
@@ -285,10 +285,10 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
-    // Rubriker (kortare etiketter)
+    // Korta rubriker
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
-    const headTid = padRight("Tid (hh:mm)", colTid);
+    const headTid = padRight("Tid", colTid);
     const headGrus = padRight("Grus", colGrus);
     const headSalt = padRight("Salt", colSalt);
 
