@@ -57,68 +57,112 @@ function VeckoOversikt({
       : "Alla jobb";
 
   return (
-    <div style={{ marginTop: 40 }}>
+    <div style={{ marginTop: 32 }}>
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: 10,
           flexWrap: "wrap",
+          gap: 8,
+          alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0 }}>Veckoöversikt</h2>
-        <button onClick={onSkickaEmail}>
-          Skicka veckorapport (e‑posttext)
+        <h2 style={{ margin: 0, fontSize: 20 }}>Veckoöversikt</h2>
+        <button
+          onClick={onSkickaEmail}
+          style={{
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 8,
+            border: "none",
+            background: "#2563eb",
+            color: "#fff",
+          }}
+        >
+          Skicka veckorapport (e‑post)
         </button>
-        <button onClick={onExportCSV}>
-          Ladda ner veckorapport (CSV till Excel)
+        <button
+          onClick={onExportCSV}
+          style={{
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 8,
+            border: "none",
+            background: "#16a34a",
+            color: "#fff",
+          }}
+        >
+          Ladda ner (CSV)
         </button>
       </div>
-      <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
+
+      <div
+        style={{
+          marginTop: 6,
+          fontSize: 12,
+          color: "#4b5563",
+        }}
+      >
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
-      <table
-        border="1"
-        cellPadding="5"
-        style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          fontFamily: "sans-serif",
-          marginTop: 10,
-        }}
-      >
-        <thead>
-          <tr>
-            <th>Adress</th>
-            <th>Antal jobb</th>
-            <th>Totalt (hh:mm)</th>
-            <th>Grus (kg)</th>
-            <th>Salt (kg)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((r) => (
-            <tr key={r.namn}>
-              <td>{r.namn}</td>
-              <td style={{ textAlign: "center" }}>{r.antal}</td>
-              <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
-              <td style={{ textAlign: "right" }}>{r.grus}</td>
-              <td style={{ textAlign: "right" }}>{r.salt}</td>
+      <div style={{ overflowX: "auto", marginTop: 10 }}>
+        <table
+          cellPadding="6"
+          style={{
+            borderCollapse: "collapse",
+            width: "100%",
+            minWidth: 360,
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          <thead>
+            <tr
+              style={{
+                background: "#f3f4f6",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
+              <th style={{ textAlign: "left" }}>Adress</th>
+              <th>Antal jobb</th>
+              <th>Totalt (hh:mm)</th>
+              <th>Grus (kg)</th>
+              <th>Salt (kg)</th>
             </tr>
-          ))}
-          {lista.length === 0 && (
-            <tr>
-              <td
-                colSpan={5}
-                style={{ textAlign: "center", fontStyle: "italic" }}
+          </thead>
+          <tbody>
+            {lista.map((r, idx) => (
+              <tr
+                key={r.namn}
+                style={{
+                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
               >
-                Inga jobb hittades för vald vecka/år och filter.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                <td>{r.namn}</td>
+                <td style={{ textAlign: "center" }}>{r.antal}</td>
+                <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
+                <td style={{ textAlign: "right" }}>{r.grus}</td>
+                <td style={{ textAlign: "right" }}>{r.salt}</td>
+              </tr>
+            ))}
+            {lista.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  style={{
+                    textAlign: "center",
+                    fontStyle: "italic",
+                    padding: 16,
+                  }}
+                >
+                  Inga jobb hittades för vald vecka/år och filter.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -141,7 +185,7 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
-  // För kart-/rutt-funktion (vi använder bara öppna karta, inte rutt)
+  // För kartfunktion (endast öppna karta)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
   const [status, setStatus] = useState("");
@@ -417,7 +461,10 @@ function App() {
       grupperad[namn].antal++;
     });
 
-    const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
+    const lista = Object.entries(grupperad).map(([namn, v]) => ({
+      namn,
+      ...v,
+    }));
 
     const header = [
       "Adress",
@@ -499,159 +546,333 @@ function App() {
     }
   }
 
-  // === OBS: funktionen för Google Maps-rutt är borttagen ===
+  // ====== STILHJÄLPARE FÖR MOBIL ======
+  const sectionStyle = {
+    marginBottom: 28,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: 500,
+  };
+
+  const selectStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+    boxSizing: "border-box",
+  };
+
+  const primaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: 600,
+    marginTop: 8,
+  };
+
+  const secondaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#e5e7eb",
+    color: "#111827",
+    fontWeight: 500,
+    marginTop: 8,
+  };
 
   return (
-    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1>Tid & Material – SnöJour</h1>
-
-      {/* ---- Rapportinmatning ---- */}
-      <h2>Registrera jobb</h2>
-      <label>Adress (för rapport): </label>
-      <br />
-      <select value={valda} onChange={(e) => setValda(e.target.value)}>
-        <option value="">-- Välj adress --</option>
-        {adresser.map((a) => (
-          <option
-            key={a.id}
-            value={a.id}
+    <div
+      style={{
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        backgroundColor: "#f3f4f6",
+        minHeight: "100vh",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 480,
+          margin: "0 auto",
+          padding: "16px 12px 40px",
+        }}
+      >
+        <header style={{ marginBottom: 16 }}>
+          <h1
             style={{
-              backgroundColor: a.maskin_mojlig ? "orange" : "white",
+              fontSize: 24,
+              marginBottom: 4,
+              textAlign: "center",
             }}
           >
-            {a.namn}
-          </option>
-        ))}
-      </select>
+            Tid & Material – SnöJour
+          </h1>
+          <p
+            style={{
+              fontSize: 13,
+              color: "#6b7280",
+              textAlign: "center",
+            }}
+          >
+            Anpassad för användning på mobil (iPhone)
+          </p>
+        </header>
 
-      <br />
-      <br />
-      <label>Arbetstid (min): </label>
-      <input
-        type="number"
-        value={arbetstid}
-        onChange={(e) => setArbetstid(e.target.value)}
-        style={{ width: "80px", marginRight: "10px" }}
-      />
-      <button onClick={sparaRapport}>Spara rapport (manuell tid)</button>
+        {/* ---- Rapportinmatning ---- */}
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Registrera jobb
+          </h2>
 
-      <br />
-      <br />
-      <label>Arbetstyp (Team / metod): </label>
-      <select value={team} onChange={(e) => setTeam(e.target.value)}>
-        <option>För hand</option>
-        <option>Maskin</option>
-      </select>
+          <label style={labelStyle}>Adress (för rapport)</label>
+          <select
+            value={valda}
+            onChange={(e) => setValda(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {adresser.map((a) => (
+              <option
+                key={a.id}
+                value={a.id}
+                style={{
+                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+                }}
+              >
+                {a.namn}
+              </option>
+            ))}
+          </select>
 
-      <br />
-      <br />
-      <label>Grus (kg): </label>
-      <select value={sand} onChange={(e) => setSand(e.target.value)}>
-        <option value="0">0</option>
-        {[...Array(51)].map((_, i) => (
-          <option key={i} value={i}>
-            {i}
-          </option>
-        ))}
-      </select>
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Arbetstid (minuter)</label>
+            <input
+              type="number"
+              value={arbetstid}
+              onChange={(e) => setArbetstid(e.target.value)}
+              style={inputStyle}
+              inputMode="numeric"
+            />
+          </div>
 
-      <br />
-      <br />
-      <label>Salt (kg): </label>
-      <select value={salt} onChange={(e) => setSalt(e.target.value)}>
-        <option value="0">0</option>
-        {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-          <option key={v} value={v}>
-            {v}
-          </option>
-        ))}
-      </select>
+          <button style={primaryButton} onClick={sparaRapport}>
+            Spara rapport (manuell tid)
+          </button>
 
-      <br />
-      <br />
-      {/* Start/Stop för automatisk tidtagning */}
-      {aktivtJobb ? (
-        <button onClick={avslutaJobb}>Avsluta jobb & spara (auto-tid)</button>
-      ) : (
-        <button onClick={startaJobb}>Starta jobb (auto-tid)</button>
-      )}
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+            <select
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              style={selectStyle}
+            >
+              <option>För hand</option>
+              <option>Maskin</option>
+            </select>
+          </div>
 
-      {/* ---- Kartfunktion (endast öppna karta) ---- */}
-      <hr style={{ margin: "30px 0" }} />
-      <h2>Karta</h2>
-      <label>Välj adress (karta): </label>
-      <br />
-      <select
-        value={kartaAdressId}
-        onChange={(e) => setKartaAdressId(e.target.value)}
-      >
-        <option value="">-- Välj adress --</option>
-        {adresser.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.namn}
-          </option>
-        ))}
-      </select>
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Grus (kg)</label>
+            <select
+              value={sand}
+              onChange={(e) => setSand(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {[...Array(51)].map((_, i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      <br />
-      <br />
-      <button
-        onClick={oppnaKartaForKartAdress}
-        disabled={!kartaAdressId}
-        style={{ marginRight: 10 }}
-      >
-        Öppna karta för vald adress
-      </button>
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Salt (kg)</label>
+            <select
+              value={salt}
+              onChange={(e) => setSalt(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* ---- Filter & översikt ---- */}
-      <hr style={{ margin: "30px 0" }} />
-      <h2>Veckorapport</h2>
-      <label>Visa vecka: </label>
-      <input
-        type="number"
-        min="1"
-        max="52"
-        value={filtreradVecka}
-        onChange={(e) => setFiltreradVecka(e.target.value)}
-        style={{ width: "70px", marginRight: "15px", marginLeft: "5px" }}
-      />
+          {aktivtJobb ? (
+            <button style={primaryButton} onClick={avslutaJobb}>
+              Avsluta jobb & spara (auto-tid)
+            </button>
+          ) : (
+            <button style={secondaryButton} onClick={startaJobb}>
+              Starta jobb (auto-tid)
+            </button>
+          )}
+        </section>
 
-      <label>År: </label>
-      <input
-        type="number"
-        min="2020"
-        max="2100"
-        value={filtreratÅr}
-        onChange={(e) => setFiltreratÅr(e.target.value)}
-        style={{ width: "90px", marginLeft: "5px" }}
-      />
+        {/* ---- Kartfunktion (endast öppna karta) ---- */}
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Karta
+          </h2>
 
-      <button onClick={hamtaRapporter} style={{ marginLeft: "10px" }}>
-        Uppdatera översikt
-      </button>
+          <label style={labelStyle}>Välj adress (karta)</label>
+          <select
+            value={kartaAdressId}
+            onChange={(e) => setKartaAdressId(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {adresser.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.namn}
+              </option>
+            ))}
+          </select>
 
-      <select
-        value={filterMetod}
-        onChange={(e) => setFilterMetod(e.target.value)}
-        style={{ marginLeft: "10px" }}
-      >
-        <option value="alla">Alla</option>
-        <option value="hand">Endast För hand</option>
-        <option value="maskin">Endast Maskin</option>
-      </select>
+          <button
+            onClick={oppnaKartaForKartAdress}
+            disabled={!kartaAdressId}
+            style={{
+              ...primaryButton,
+              opacity: kartaAdressId ? 1 : 0.5,
+            }}
+          >
+            Öppna karta för vald adress
+          </button>
+        </section>
 
-      {visaOversikt && (
-        <VeckoOversikt
-          data={filtreradeRapporter}
-          onSkickaEmail={skickaVeckorapportEmail}
-          onExportCSV={exportVeckorapportCSV}
-          filtreradVecka={filtreradVecka}
-          filtreratÅr={filtreratÅr}
-          filterMetod={filterMetod}
-        />
-      )}
+        {/* ---- Filter & översikt ---- */}
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Veckorapport
+          </h2>
 
-      <p style={{ marginTop: 20 }}>{status}</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Vecka</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={filtreradVecka}
+                onChange={(e) => setFiltreradVecka(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>År</label>
+              <input
+                type="number"
+                min="2020"
+                max="2100"
+                value={filtreratÅr}
+                onChange={(e) => setFiltreratÅr(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <label style={labelStyle}>Filtrera på metod</label>
+          <select
+            value={filterMetod}
+            onChange={(e) => setFilterMetod(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="alla">Alla</option>
+            <option value="hand">Endast För hand</option>
+            <option value="maskin">Endast Maskin</option>
+          </select>
+
+          <button
+            style={{ ...secondaryButton, marginTop: 12 }}
+            onClick={hamtaRapporter}
+          >
+            Uppdatera översikt
+          </button>
+
+          {visaOversikt && (
+            <VeckoOversikt
+              data={filtreradeRapporter}
+              onSkickaEmail={skickaVeckorapportEmail}
+              onExportCSV={exportVeckorapportCSV}
+              filtreradVecka={filtreradVecka}
+              filtreratÅr={filtreratÅr}
+              filterMetod={filterMetod}
+            />
+          )}
+        </section>
+
+        {status && (
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              color: status.startsWith("✅")
+                ? "#16a34a"
+                : status.startsWith("❌")
+                ? "#dc2626"
+                : "#4b5563",
+              textAlign: "center",
+            }}
+          >
+            {status}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
