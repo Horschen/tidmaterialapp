@@ -270,13 +270,13 @@ function App() {
         : "Alla jobb";
 
     // Kolumnbredder
-    const colAdress = 40;  // längre för att ge plats
+    const colAdress = 40;
     const colAntal = 8;
     const colTid = 12;
     const colGrus = 8;
     const colSalt = 8;
 
-    // Separatorsträng mellan kolumner (lite extra luft)
+    // extra luft mellan kolumner
     const SEP = "   ";
 
     function padRight(text, width) {
@@ -285,7 +285,7 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
-    // Rubriker – kortare namn
+    // Rubriker (kortare etiketter)
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
     const headTid = padRight("Tid (hh:mm)", colTid);
@@ -353,6 +353,10 @@ function App() {
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
+
+  return (
+    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
+      <h1>Tid & Material – SnöJour</h1>
 
       {/* ---- Rapportinmatning ---- */}
       <label>Adress: </label>
