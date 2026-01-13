@@ -103,7 +103,7 @@ function App() {
   const [filterMetod, setFilterMetod] = useState("alla");
 
   // === Hämta adresser vid start ===
- useEffect(() => {
+useEffect(() => {
   async function laddaAdresser() {
     const { data, error } = await supabase
       .from("adresser")
@@ -111,13 +111,14 @@ function App() {
 
     console.log("Supabase adresser data:", data);
     console.log("Supabase adresser error:", error);
+    if (error) console.log("Supabase adresser error detaljer:", error.message, error.code);
 
     if (error) setStatus("Fel vid laddning av adresser: " + error.message);
     else setAdresser(data || []);
   }
   laddaAdresser();
 }, []);
-
+  
   // === Hämta rapporter ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
