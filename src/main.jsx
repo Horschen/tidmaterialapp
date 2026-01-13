@@ -370,11 +370,11 @@ function App() {
   // === Hämta rapporter ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
-  .from("rapporter")
-  .select(
-    "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
-  )
-  .order("datum", { ascending: false });
+      .from("rapporter")
+      .select(
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
+      )
+      .order("datum", { ascending: false });
     if (error) {
       setStatus("❌ " + error.message);
       showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
@@ -433,11 +433,15 @@ function App() {
         senasteRapportTid != null
           ? new Date(senasteRapportTid)
           : new Date(aktivtPass.startTid);
-      let diffMin = Math.max(Math.round((nu - startTid) / 60000), 0);
 
-      // dra av paus i minuter
-      const pausMin = Math.floor(totalPausSek / 60);
-      diffMin = Math.max(diffMin - pausMin, 0);
+      // rå tid i sekunder mellan två adresser
+      const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
+
+      // dra av paus i sekunder
+      const sekEfterPaus = Math.max(råSek - totalPausSek, 0);
+
+      // omvandla till minuter (avrundat)
+      let diffMin = Math.round(sekEfterPaus / 60);
 
       if (diffMin <= 0) {
         showPopup(
@@ -466,24 +470,24 @@ function App() {
       arbetstidMin = manuell;
     }
 
-    // multiplicera med antal anställda
+    // multiplicera med antal anställda (person-minuter)
     arbetstidMin = arbetstidMin * (antalAnstallda || 1);
 
     setStatus("Sparar…");
 
     const { error } = await supabase.from("rapporter").insert([
-  {
-    datum: new Date().toISOString(),
-    adress_id: valda,
-    arbetstid_min: arbetstidMin, // person-minuter
-    team_namn: team,
-    arbetssatt: metod,
-    sand_kg: parseInt(sand, 10) || 0,
-    salt_kg: parseInt(salt, 10) || 0,
-    syfte: syfteText,
-    antal_anstallda: antalAnstallda, // NYTT
-  },
-]);
+      {
+        datum: new Date().toISOString(),
+        adress_id: valda,
+        arbetstid_min: arbetstidMin, // person-minuter
+        team_namn: team,
+        arbetssatt: metod,
+        sand_kg: parseInt(sand, 10) || 0,
+        salt_kg: parseInt(salt, 10) || 0,
+        syfte: syfteText,
+        antal_anstallda: antalAnstallda,
+      },
+    ]);
     if (error) {
       setStatus("❌ " + error.message);
       showPopup("👎 Fel vid sparning", "error", 3000);
@@ -507,7 +511,6 @@ function App() {
       return;
     }
 
-    // ingen adress krävs för att starta passet
     const metod = team === "För hand" ? "hand" : "maskin";
     const nuIso = new Date().toISOString();
     setAktivtPass({ startTid: nuIso, metod });
