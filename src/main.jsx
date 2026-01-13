@@ -31,15 +31,18 @@ function formatDatumTid(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "-";
+
+  // Svensk lokal tid med format YYYY-MM-DD HH:MM:SS
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
+
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   const ss = String(d.getSeconds()).padStart(2, "0");
+
   return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
-
 // ======= Hjälp: sekunder -> hh:mm:ss =======
 function formatSekTillHhMmSs(sek) {
   const h = Math.floor(sek / 3600);
