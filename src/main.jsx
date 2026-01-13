@@ -235,7 +235,7 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-   // === Skicka veckorapport via mailto (text-mejl) ===
+  // === Skicka veckorapport via mailto (text-mejl) ===
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
@@ -269,12 +269,10 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // ---------- Bygg en läsbar text-tabell ----------
-
     // Kolumnbredder (justera vid behov)
-    const colAdress = 32;   // tecken
+    const colAdress = 32;
     const colAntal = 12;
-    const colTid = 16;
+    const colTid = 18;
     const colGrus = 10;
     const colSalt = 10;
 
@@ -321,7 +319,6 @@ function App() {
     const totalRad =
       totalAdress + totalAntal + totalTid + totalGrusCell + totalSaltCell;
 
-    // --------- Bygg hela mejltexten (utan rådata-delen) ---------
     const bodyLines = [
       "Veckorapport SnöJour",
       "",
@@ -335,141 +332,6 @@ function App() {
       ...tabellRader,
       sepLinje,
       totalRad,
-      "",
-      "Hälsningar,",
-      "SnöJour-systemet",
-    ];
-
-    const subject = encodeURIComponent(
-      "Veckorapport SnöJour v" + veckoText + " " + arText
-    );
-    const body = encodeURIComponent(bodyLines.join("\n"));
-
-    const to = "hakan.pengel@outlook.com";
-    window.location.href =
-      "mailto:" + to + "?subject=" + subject + "&body=" + body;
-  }
-
-    // Gruppera per adress (som i översikten)
-    const grupperad = {};
-    filtreradeRapporter.forEach((rad) => {
-      const namn = rad.adresser?.namn || "Okänd adress";
-      if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
-      }
-      grupperad[namn].tid += rad.arbetstid_min || 0;
-      grupperad[namn].grus += rad.sand_kg || 0;
-      grupperad[namn].salt += rad.salt_kg || 0;
-      grupperad[namn].antal++;
-    });
-
-    const rader = Object.entries(grupperad).map(([namn, v]) => ({
-      namn,
-      ...v,
-    }));
-
-    const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
-    const metodText =
-      filterMetod === "hand"
-        ? "Endast För hand"
-        : filterMetod === "maskin"
-        ? "Endast Maskin"
-        : "Alla jobb";
-
-    // ---------- Bygg en läsbar text-tabell ----------
-
-    // Begränsa adresskolumnens bredd
-    const maxAdressLängd = 40;
-    const adressLängd = Math.min(
-      maxAdressLängd,
-      Math.max("Adress".length, ...rader.map((r) => r.namn.length))
-    );
-
-    // Hjälpfunktion för att vänsterjustera text i en fast bredd
-    function padRight(text, width) {
-      const t = String(text);
-      if (t.length >= width) return t.slice(0, width);
-      return t + " ".repeat(width - t.length);
-    }
-
-    // Kolumnrubriker
-    const headAdress = padRight("Adress", adressLängd);
-    const headAntal = padRight("Antal", 5);
-    const headTid = padRight("Tid", 8);
-    const headGrus = padRight("Grus", 8);
-    const headSalt = padRight("Salt", 8);
-
-    const tabellRubrik = `${headAdress}  ${headAntal}  ${headTid}  ${headGrus}  ${headSalt}`;
-
-    // Datatabellens rader
-    const tabellRader = rader.map((r) => {
-      const colAdress = padRight(r.namn, adressLängd);
-      const colAntal = padRight(r.antal, 5);
-      const colTid = padRight(formatTid(r.tid), 8);
-      const colGrus = padRight(r.grus, 8);
-      const colSalt = padRight(r.salt, 8);
-      return `${colAdress}  ${colAntal}  ${colTid}  ${colGrus}  ${colSalt}`;
-    });
-
-    // Totalsummering
-    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
-    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
-    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
-    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
-
-    const totalAdress = padRight("TOTALT", adressLängd);
-    const totalAntal = padRight(totalJobb, 5);
-    const totalTid = padRight(formatTid(totalTidMin), 8);
-    const totalGrusCell = padRight(totalGrus, 8);
-    const totalSaltCell = padRight(totalSalt, 8);
-
-    const tabellTotalRad = `${totalAdress}  ${totalAntal}  ${totalTid}  ${totalGrusCell}  ${totalSaltCell}`;
-
-    const sepLinje = "-".repeat(tabellRubrik.length);
-
-    // --------- Rådata (semicolon) för Excel längst ner ---------
-    const rubrikRadCsv = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
-    const dataRaderCsv = rader.map((r) =>
-      [
-        r.namn,
-        r.antal,
-        formatTid(r.tid),
-        r.grus,
-        r.salt,
-      ].join(";")
-    );
-    const totalRadCsv =
-      "TOTALT;" +
-      totalJobb +
-      ";" +
-      formatTid(totalTidMin) +
-      ";" +
-      totalGrus +
-      ";" +
-      totalSalt;
-
-    // --------- Bygg hela mejltexten ---------
-    const bodyLines = [
-      "Veckorapport SnöJour",
-      "",
-      "Vecka: " + veckoText,
-      "År: " + arText,
-      "Filter: " + metodText,
-      "",
-      "Sammanställning per adress:",
-      "",
-      tabellRubrik,
-      sepLinje,
-      ...tabellRader,
-      sepLinje,
-      tabellTotalRad,
-      "",
-      "",
-      "Rådata (för kopiering till Excel):",
-      rubrikRadCsv,
-      ...dataRaderCsv,
-      totalRadCsv,
       "",
       "Hälsningar,",
       "SnöJour-systemet",
