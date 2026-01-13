@@ -170,10 +170,8 @@ function VeckoOversikt({
 
       <div
         style={{
-          overflowX: "auto",
-          overflowY: "auto",
+          overflowX: "auto", // endast horisontell scroll vid behov
           marginTop: 10,
-          maxHeight: "70vh", // mer höjd för datorvy
         }}
       >
         <table
@@ -181,7 +179,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 900, // bredare tabell
+            minWidth: 900, // bred tabell för PC
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 14,
           }}
@@ -209,7 +207,7 @@ function VeckoOversikt({
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                   borderBottom: "1px solid #e5e7eb",
-                  height: 40, // lite högre rader
+                  height: 40,
                 }}
               >
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
@@ -265,7 +263,11 @@ function App() {
   const [aktivtPass, setAktivtPass] = useState(null); // { startTid, metod }
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
-  // Timer för pass
+  // Paus
+  const [paus, setPaus] = useState(null); // { startTid }
+  const [totalPausSek, setTotalPausSek] = useState(0);
+
+  // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
@@ -277,6 +279,11 @@ function App() {
           0,
           Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
         )
+      : 0;
+
+  const pågåendePausSek =
+    paus != null
+      ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
       : 0;
 
   // Syften
@@ -412,11 +419,21 @@ function App() {
         senasteRapportTid != null
           ? new Date(senasteRapportTid)
           : new Date(aktivtPass.startTid);
-      const diffMin = Math.max(Math.round((nu - startTid) / 60000), 0);
+      let diffMin = Math.max(Math.round((nu - startTid) / 60000), 0);
+
+      // dra av paus i minuter
+      const pausMin = Math.floor(totalPausSek / 60);
+      diffMin = Math.max(diffMin - pausMin, 0);
 
       if (diffMin <= 0) {
-        showPopup("👎 För kort tid sedan senaste rapport.", "error", 3000);
-        setStatus("För kort intervall för auto-tid, försök igen om en stund.");
+        showPopup(
+          "👎 För kort tid (eller bara paus) sedan senaste rapport.",
+          "error",
+          3000
+        );
+        setStatus(
+          "För kort intervall för auto-tid (eller bara paus), försök igen om en stund."
+        );
         return;
       }
 
@@ -478,6 +495,8 @@ function App() {
     const nuIso = new Date().toISOString();
     setAktivtPass({ startTid: nuIso, metod });
     setSenasteRapportTid(null);
+    setPaus(null);
+    setTotalPausSek(0);
     setStatus("⏱️ Pass startat.");
   }
 
@@ -503,7 +522,41 @@ function App() {
 
     setAktivtPass(null);
     setSenasteRapportTid(null);
+    setPaus(null);
+    setTotalPausSek(0);
     setStatus("Pass stoppat.");
+  }
+
+  // === Start Paus ===
+  function startPaus() {
+    if (!aktivtPass) {
+      showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
+      setStatus("Inget aktivt pass att pausa.");
+      return;
+    }
+    if (paus) {
+      showPopup("👎 Paus är redan igång.", "error", 3000);
+      setStatus("En paus är redan igång.");
+      return;
+    }
+    const nuIso = new Date().toISOString();
+    setPaus({ startTid: nuIso });
+    setStatus("⏸️ Pass pausat.");
+  }
+
+  // === Stop Paus ===
+  function stopPaus() {
+    if (!paus) {
+      showPopup("👎 Ingen paus är igång.", "error", 3000);
+      setStatus("Ingen paus att stoppa.");
+      return;
+    }
+    const nu = new Date();
+    const start = new Date(paus.startTid);
+    const diffSek = Math.max(Math.floor((nu - start) / 1000), 0);
+    setTotalPausSek((prev) => prev + diffSek);
+    setPaus(null);
+    setStatus("Paus stoppad.");
   }
 
   // === Filtrera rapporter på vecka/år/metod ===
@@ -874,7 +927,7 @@ function App() {
     padding: "10px 12px",
     fontSize: 16,
     borderRadius: 10,
-    border: "1px solid #d1d5db",
+    border: "1px solid "#d1d5db",
     backgroundColor: "#f9fafb",
   };
 
@@ -1001,6 +1054,22 @@ function App() {
               Pågående pass (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
               <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+            </div>
+          )}
+
+          {paus && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#f97316", // orange
+                color: "#ffffff",
+                fontSize: 14,
+              }}
+            >
+              Passet pausat –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
             </div>
           )}
 
@@ -1429,10 +1498,6 @@ function App() {
               Pågående pass (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
               <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-              <div style={{ marginTop: 4, fontSize: 12, color: "#4b5563" }}>
-                Välj metod och adress på fliken "Registrera" innan du startar
-                passet.
-              </div>
             </div>
           ) : (
             <p
@@ -1444,6 +1509,22 @@ function App() {
             >
               Inget pass är aktivt just nu.
             </p>
+          )}
+
+          {paus && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#f97316", // orange
+                color: "#ffffff",
+                fontSize: 14,
+              }}
+            >
+              Paus igång –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
           )}
 
           <button
@@ -1463,6 +1544,25 @@ function App() {
             onClick={stoppaPass}
           >
             Stoppa passet
+          </button>
+
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#ea580c",
+            }}
+            onClick={startPaus}
+          >
+            Start Paus
+          </button>
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#f97316",
+            }}
+            onClick={stopPaus}
+          >
+            Stop Paus
           </button>
         </section>
       );
