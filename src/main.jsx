@@ -235,12 +235,120 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mailto (text-mejl) ===
+   // === Skicka veckorapport via mailto (text-mejl) ===
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
     }
+
+    // Gruppera per adress (som i översikten)
+    const grupperad = {};
+    filtreradeRapporter.forEach((rad) => {
+      const namn = rad.adresser?.namn || "Okänd adress";
+      if (!grupperad[namn]) {
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      }
+      grupperad[namn].tid += rad.arbetstid_min || 0;
+      grupperad[namn].grus += rad.sand_kg || 0;
+      grupperad[namn].salt += rad.salt_kg || 0;
+      grupperad[namn].antal++;
+    });
+
+    const rader = Object.entries(grupperad).map(([namn, v]) => ({
+      namn,
+      ...v,
+    }));
+
+    const veckoText = filtreradVecka || "-";
+    const arText = filtreratÅr || "-";
+    const metodText =
+      filterMetod === "hand"
+        ? "Endast För hand"
+        : filterMetod === "maskin"
+        ? "Endast Maskin"
+        : "Alla jobb";
+
+    // ---------- Bygg en läsbar text-tabell ----------
+
+    // Kolumnbredder (justera vid behov)
+    const colAdress = 32;   // tecken
+    const colAntal = 12;
+    const colTid = 16;
+    const colGrus = 10;
+    const colSalt = 10;
+
+    function padRight(text, width) {
+      const t = String(text);
+      if (t.length >= width) return t.slice(0, width);
+      return t + " ".repeat(width - t.length);
+    }
+
+    // Rubriker
+    const headAdress = padRight("Adress", colAdress);
+    const headAntal = padRight("Antal jobb", colAntal);
+    const headTid = padRight("Total Tid (hh:mm)", colTid);
+    const headGrus = padRight("Grus(kg)", colGrus);
+    const headSalt = padRight("Salt(kg)", colSalt);
+
+    const headerRad =
+      headAdress + headAntal + headTid + headGrus + headSalt;
+
+    const sepLinje = "-".repeat(headerRad.length);
+
+    // Datatabellens rader
+    const tabellRader = rader.map((r) => {
+      const colA = padRight(r.namn, colAdress);
+      const colB = padRight(r.antal, colAntal);
+      const colC = padRight(formatTid(r.tid), colTid);
+      const colD = padRight(r.grus, colGrus);
+      const colE = padRight(r.salt, colSalt);
+      return colA + colB + colC + colD + colE;
+    });
+
+    // Totalsummering
+    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
+    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
+    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
+    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
+
+    const totalAdress = padRight("TOTALT", colAdress);
+    const totalAntal = padRight(totalJobb, colAntal);
+    const totalTid = padRight(formatTid(totalTidMin), colTid);
+    const totalGrusCell = padRight(totalGrus, colGrus);
+    const totalSaltCell = padRight(totalSalt, colSalt);
+
+    const totalRad =
+      totalAdress + totalAntal + totalTid + totalGrusCell + totalSaltCell;
+
+    // --------- Bygg hela mejltexten (utan rådata-delen) ---------
+    const bodyLines = [
+      "Veckorapport SnöJour",
+      "",
+      "Vecka: " + veckoText,
+      "År: " + arText,
+      "Filter: " + metodText,
+      "",
+      sepLinje,
+      headerRad,
+      sepLinje,
+      ...tabellRader,
+      sepLinje,
+      totalRad,
+      "",
+      "Hälsningar,",
+      "SnöJour-systemet",
+    ];
+
+    const subject = encodeURIComponent(
+      "Veckorapport SnöJour v" + veckoText + " " + arText
+    );
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    const to = "hakan.pengel@outlook.com";
+    window.location.href =
+      "mailto:" + to + "?subject=" + subject + "&body=" + body;
+  }
 
     // Gruppera per adress (som i översikten)
     const grupperad = {};
