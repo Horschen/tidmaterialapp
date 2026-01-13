@@ -21,6 +21,9 @@ function getCurrentIsoWeekAndYear() {
   return { vecka, år };
 }
 
+// Kör hjälpfunktionen direkt vid inläsning av filen
+const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
+
 // ======= Veckoöversikt =======
 function VeckoOversikt({ data }) {
   const grupperad = {};
@@ -35,7 +38,6 @@ function VeckoOversikt({ data }) {
 
   const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
 
-  // Hjälpfunktion: minuter -> hh:mm
   function formatTid(minuter) {
     const h = Math.floor(minuter / 60);
     const m = minuter % 60;
@@ -81,12 +83,13 @@ function VeckoOversikt({ data }) {
 
 // ======= Huvudappen =======
 function App() {
-  const { vecka: aktuellVecka, år: aktuelltÅr } = getCurrentIsoWeekAndYear();
-
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
-  const [filtreradVecka, setFiltreradVecka] = useState(String(aktuellVecka));
-  const [filtreratÅr, setFiltreratÅr] = useState(String(aktuelltÅr));
+
+  // Förvalda till aktuell vecka/år
+  const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
+  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
+
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
@@ -124,7 +127,7 @@ function App() {
     }
   }
 
-  // === Manuell sparning av rapport (med arbetstid_min från input) ===
+  // === Manuell sparning av rapport ===
   async function sparaRapport() {
     if (!valda) {
       setStatus("Välj en adress först.");
@@ -203,7 +206,7 @@ function App() {
     }
   }
 
-  // === Skapa + öppna PDF och mailklient ===
+  // === Skapa PDF + öppna mailklient ===
   async function skapaOchSkickaPDF() {
     if (!valda) {
       setStatus("Välj en adress först.");
@@ -371,7 +374,6 @@ function App() {
         📅 Uppdatera översikt
       </button>
 
-      {/* Filter för För hand / Maskin */}
       <select
         value={filterMetod}
         onChange={(e) => setFilterMetod(e.target.value)}
