@@ -9,6 +9,18 @@ pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ======= Hjälpfunktion: aktuell ISO-vecka + år =======
+function getCurrentIsoWeekAndYear() {
+  const d = new Date();
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+  const år = tmp.getUTCFullYear();
+  return { vecka, år };
+}
+
 // ======= Veckoöversikt =======
 function VeckoOversikt({ data }) {
   const grupperad = {};
@@ -69,10 +81,12 @@ function VeckoOversikt({ data }) {
 
 // ======= Huvudappen =======
 function App() {
+  const { vecka: aktuellVecka, år: aktuelltÅr } = getCurrentIsoWeekAndYear();
+
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
-  const [filtreradVecka, setFiltreradVecka] = useState("");
-  const [filtreratÅr, setFiltreratÅr] = useState("");
+  const [filtreradVecka, setFiltreradVecka] = useState(String(aktuellVecka));
+  const [filtreratÅr, setFiltreratÅr] = useState(String(aktuelltÅr));
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
