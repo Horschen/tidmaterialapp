@@ -23,7 +23,9 @@ const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
   const m = minuter % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  return `${h.toString().padStart(2, "0")}:${m
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
@@ -35,19 +37,41 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
+  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string> }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
     if (!grupperad[namn]) {
-      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      grupperad[namn] = {
+        tid: 0,
+        grus: 0,
+        salt: 0,
+        antal: 0,
+        syften: new Set(),
+      };
     }
     grupperad[namn].tid += rad.arbetstid_min || 0;
     grupperad[namn].grus += rad.sand_kg || 0;
     grupperad[namn].salt += rad.salt_kg || 0;
     grupperad[namn].antal++;
+
+    if (rad.syfte) {
+      rad.syfte
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((s) => grupperad[namn].syften.add(s));
+    }
   });
 
-  const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    tid: v.tid,
+    grus: v.grus,
+    salt: v.salt,
+    antal: v.antal,
+    syften: Array.from(v.syften).join(", "),
+  }));
 
   const metodText =
     filterMetod === "hand"
@@ -111,7 +135,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 360,
+            minWidth: 420,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 13,
           }}
@@ -128,6 +152,7 @@ function VeckoOversikt({
               <th>Totalt (hh:mm)</th>
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
+              <th>Syften</th>
             </tr>
           </thead>
           <tbody>
@@ -144,12 +169,13 @@ function VeckoOversikt({
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
+                <td style={{ textAlign: "left" }}>{r.syften}</td>
               </tr>
             ))}
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -185,6 +211,21 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
+  // Syften
+  const [syfteOversyn, setSyfteOversyn] = useState(false);
+  const [syfteRojning, setSyfteRojning] = useState(false);
+  const [syfteSaltning, setSyfteSaltning] = useState(false);
+  const [syfteGrusning, setSyfteGrusning] = useState(false);
+
+  function buildSyfteString() {
+    const delar = [];
+    if (syfteOversyn) delar.push("Översyn");
+    if (syfteRojning) delar.push("Röjning");
+    if (syfteSaltning) delar.push("Saltning");
+    if (syfteGrusning) delar.push("Grusning");
+    return delar.join(", ");
+  }
+
   // För kartfunktion (endast öppna karta)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
@@ -207,7 +248,9 @@ function App() {
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
-      .select("*, adresser(namn)")
+      .select(
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, adresser(namn)"
+      )
       .order("datum", { ascending: false });
     if (error) {
       setStatus("❌ " + error.message);
@@ -224,6 +267,12 @@ function App() {
       setStatus("Välj en adress först.");
       return;
     }
+    const syfteText = buildSyfteString();
+    if (!syfteText) {
+      setStatus("Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).");
+      return;
+    }
+
     setStatus("Sparar…");
 
     const metod = team === "För hand" ? "hand" : "maskin";
@@ -237,6 +286,7 @@ function App() {
         arbetssatt: metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
+        syfte: syfteText,
       },
     ]);
     if (error) setStatus("❌ " + error.message);
@@ -247,6 +297,11 @@ function App() {
   function startaJobb() {
     if (!valda) {
       setStatus("Välj en adress först.");
+      return;
+    }
+    const syfteText = buildSyfteString();
+    if (!syfteText) {
+      setStatus("Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).");
       return;
     }
     if (aktivtJobb) {
@@ -260,6 +315,7 @@ function App() {
       startTid: new Date().toISOString(),
       adressId: valda,
       metod,
+      syfte: syfteText,
     });
     setStatus("⏱️ Jobb startat.");
   }
@@ -285,6 +341,7 @@ function App() {
         arbetssatt: aktivtJobb.metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
+        syfte: aktivtJobb.syfte,
       },
     ]);
 
@@ -328,17 +385,35 @@ function App() {
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+        grupperad[namn] = {
+          tid: 0,
+          grus: 0,
+          salt: 0,
+          antal: 0,
+          syften: new Set(),
+        };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
       grupperad[namn].grus += rad.sand_kg || 0;
       grupperad[namn].salt += rad.salt_kg || 0;
       grupperad[namn].antal++;
+
+      if (rad.syfte) {
+        rad.syfte
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .forEach((s) => grupperad[namn].syften.add(s));
+      }
     });
 
     const rader = Object.entries(grupperad).map(([namn, v]) => ({
       namn,
-      ...v,
+      tid: v.tid,
+      grus: v.grus,
+      salt: v.salt,
+      antal: v.antal,
+      syften: Array.from(v.syften).join(", "),
     }));
 
     const veckoText = filtreradVecka || "-";
@@ -350,11 +425,12 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    const colAdress = 40;
-    const colAntal = 8;
-    const colTid = 12;
+    const colAdress = 30;
+    const colAntal = 6;
+    const colTid = 10;
     const colGrus = 8;
     const colSalt = 8;
+    const colSyfte = 25;
 
     const SEP = "   ";
 
@@ -366,9 +442,10 @@ function App() {
 
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
-    const headTid = padRight("Tid (hh:mm)", colTid);
+    const headTid = padRight("Tid", colTid);
     const headGrus = padRight("Grus", colGrus);
     const headSalt = padRight("Salt", colSalt);
+    const headSyfte = padRight("Syften", colSyfte);
 
     const headerRad =
       headAdress +
@@ -379,7 +456,9 @@ function App() {
       SEP +
       headGrus +
       SEP +
-      headSalt;
+      headSalt +
+      SEP +
+      headSyfte;
 
     const sepLinje = "-".repeat(headerRad.length);
 
@@ -389,7 +468,20 @@ function App() {
       const colC = padRight(formatTid(r.tid), colTid);
       const colD = padRight(r.grus, colGrus);
       const colE = padRight(r.salt, colSalt);
-      return colA + SEP + colB + SEP + colC + SEP + colD + SEP + colE;
+      const colF = padRight(r.syften, colSyfte);
+      return (
+        colA +
+        SEP +
+        colB +
+        SEP +
+        colC +
+        SEP +
+        colD +
+        SEP +
+        colE +
+        SEP +
+        colF
+      );
     });
 
     const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
@@ -402,6 +494,7 @@ function App() {
     const totalTid = padRight(formatTid(totalTidMin), colTid);
     const totalGrusCell = padRight(totalGrus, colGrus);
     const totalSaltCell = padRight(totalSalt, colSalt);
+    const totalSyfteCell = padRight("-", colSyfte);
 
     const totalRad =
       totalAdress +
@@ -412,7 +505,9 @@ function App() {
       SEP +
       totalGrusCell +
       SEP +
-      totalSaltCell;
+      totalSaltCell +
+      SEP +
+      totalSyfteCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -453,17 +548,35 @@ function App() {
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+        grupperad[namn] = {
+          tid: 0,
+          grus: 0,
+          salt: 0,
+          antal: 0,
+          syften: new Set(),
+        };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
       grupperad[namn].grus += rad.sand_kg || 0;
       grupperad[namn].salt += rad.salt_kg || 0;
       grupperad[namn].antal++;
+
+      if (rad.syfte) {
+        rad.syfte
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .forEach((s) => grupperad[namn].syften.add(s));
+      }
     });
 
     const lista = Object.entries(grupperad).map(([namn, v]) => ({
       namn,
-      ...v,
+      tid: v.tid,
+      grus: v.grus,
+      salt: v.salt,
+      antal: v.antal,
+      syften: Array.from(v.syften).join(", "),
     }));
 
     const header = [
@@ -473,6 +586,7 @@ function App() {
       "Totalt (hh:mm)",
       "Grus (kg)",
       "Salt (kg)",
+      "Syften",
     ];
 
     const formatTidLokalt = (min) => {
@@ -490,6 +604,7 @@ function App() {
       formatTidLokalt(r.tid),
       r.grus,
       r.salt,
+      r.syften,
     ]);
 
     const csvContent = [header, ...rows]
@@ -668,25 +783,20 @@ function App() {
                   backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
                 }}
               >
-                {a.namn}
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
               </option>
             ))}
           </select>
 
-          <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Arbetstid (minuter)</label>
-            <input
-              type="number"
-              value={arbetstid}
-              onChange={(e) => setArbetstid(e.target.value)}
-              style={inputStyle}
-              inputMode="numeric"
-            />
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: "#4b5563",
+            }}
+          >
+            Adresser märkta (MASKIN) är maskin‑möjliga.
           </div>
-
-          <button style={primaryButton} onClick={sparaRapport}>
-            Spara rapport (manuell tid)
-          </button>
 
           <div style={{ marginTop: 16 }}>
             <label style={labelStyle}>Arbetstyp (Team / metod)</label>
@@ -700,7 +810,72 @@ function App() {
             </select>
           </div>
 
+          {/* Syften */}
           <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Syfte med arbetsuppgift</label>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                fontSize: 15,
+              }}
+            >
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteOversyn}
+                  onChange={(e) => setSyfteOversyn(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Översyn
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteRojning}
+                  onChange={(e) => setSyfteRojning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Röjning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteSaltning}
+                  onChange={(e) => setSyfteSaltning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Saltning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteGrusning}
+                  onChange={(e) => setSyfteGrusning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Grusning
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Arbetstid (minuter)</label>
+            <input
+              type="number"
+              value={arbetstid}
+              onChange={(e) => setArbetstid(e.target.value)}
+              style={inputStyle}
+              inputMode="numeric"
+            />
+          </div>
+
+          <button style={secondaryButton} onClick={sparaRapport}>
+            Spara rapport (manuell tid)
+          </button>
+
+          <div style={{ marginTop: 16 }}>
             <label style={labelStyle}>Grus (kg)</label>
             <select
               value={sand}
@@ -733,11 +908,23 @@ function App() {
           </div>
 
           {aktivtJobb ? (
-            <button style={primaryButton} onClick={avslutaJobb}>
+            <button
+              style={{
+                ...primaryButton,
+                backgroundColor: "#dc2626",
+              }}
+              onClick={avslutaJobb}
+            >
               Avsluta jobb & spara (auto-tid)
             </button>
           ) : (
-            <button style={secondaryButton} onClick={startaJobb}>
+            <button
+              style={{
+                ...primaryButton,
+                backgroundColor: "#16a34a",
+              }}
+              onClick={startaJobb}
+            >
               Starta jobb (auto-tid)
             </button>
           )}
@@ -764,7 +951,7 @@ function App() {
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.namn}
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
               </option>
             ))}
           </select>
@@ -854,24 +1041,24 @@ function App() {
               filterMetod={filterMetod}
             />
           )}
-        </section>
 
-        {status && (
-          <p
-            style={{
-              marginTop: 8,
-              fontSize: 13,
-              color: status.startsWith("✅")
-                ? "#16a34a"
-                : status.startsWith("❌")
-                ? "#dc2626"
-                : "#4b5563",
-              textAlign: "center",
-            }}
-          >
-            {status}
-          </p>
-        )}
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </section>
       </div>
     </div>
   );
