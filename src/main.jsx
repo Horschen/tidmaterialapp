@@ -27,11 +27,20 @@ function formatTid(minuter) {
 }
 
 // ======= Veckoöversikt =======
-function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
+function VeckoOversikt({
+  data,
+  onSkickaEmail,
+  onExportCSV,
+  filtreradVecka,
+  filtreratÅr,
+  filterMetod,
+}) {
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
-    if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    if (!grupperad[namn]) {
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    }
     grupperad[namn].tid += rad.arbetstid_min || 0;
     grupperad[namn].grus += rad.sand_kg || 0;
     grupperad[namn].salt += rad.salt_kg || 0;
@@ -40,14 +49,33 @@ function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
 
   const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
 
+  const metodText =
+    filterMetod === "hand"
+      ? "Endast För hand"
+      : filterMetod === "maskin"
+      ? "Endast Maskin"
+      : "Alla jobb";
+
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
         <h2 style={{ margin: 0 }}>Veckoöversikt</h2>
-        <button onClick={onSkickaEmail}>📧 Skicka veckorapport via e‑post</button>
+        <button onClick={onSkickaEmail}>
+          Skicka veckorapport (e‑posttext)
+        </button>
+        <button onClick={onExportCSV}>
+          Ladda ner veckorapport (CSV till Excel)
+        </button>
       </div>
       <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
-        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"}
+        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
       <table
@@ -81,7 +109,10 @@ function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
           ))}
           {lista.length === 0 && (
             <tr>
-              <td colSpan={5} style={{ textAlign: "center", fontStyle: "italic" }}>
+              <td
+                colSpan={5}
+                style={{ textAlign: "center", fontStyle: "italic" }}
+              >
                 Inga jobb hittades för vald vecka/år och filter.
               </td>
             </tr>
@@ -226,7 +257,8 @@ function App() {
     const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
     const år = tmp.getUTCFullYear();
 
-    const veckaOK = !filtreradVecka || Number(filtreradVecka) === Number(vecka);
+    const veckaOK =
+      !filtreradVecka || Number(filtreradVecka) === Number(vecka);
     const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
 
     const metodOK =
@@ -276,7 +308,6 @@ function App() {
     const colGrus = 8;
     const colSalt = 8;
 
-    // extra luft mellan kolumner
     const SEP = "   ";
 
     function padRight(text, width) {
@@ -285,7 +316,6 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
-    // Rubriker (kortare etiketter)
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
     const headTid = padRight("Tid (hh:mm)", colTid);
@@ -293,11 +323,18 @@ function App() {
     const headSalt = padRight("Salt", colSalt);
 
     const headerRad =
-      headAdress + SEP + headAntal + SEP + headTid + SEP + headGrus + SEP + headSalt;
+      headAdress +
+      SEP +
+      headAntal +
+      SEP +
+      headTid +
+      SEP +
+      headGrus +
+      SEP +
+      headSalt;
 
     const sepLinje = "-".repeat(headerRad.length);
 
-    // Datatabellens rader
     const tabellRader = rader.map((r) => {
       const colA = padRight(r.namn, colAdress);
       const colB = padRight(r.antal, colAntal);
@@ -307,7 +344,6 @@ function App() {
       return colA + SEP + colB + SEP + colC + SEP + colD + SEP + colE;
     });
 
-    // Totalsummering
     const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
     const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
     const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
@@ -320,10 +356,14 @@ function App() {
     const totalSaltCell = padRight(totalSalt, colSalt);
 
     const totalRad =
-      totalAdress + SEP +
-      totalAntal + SEP +
-      totalTid + SEP +
-      totalGrusCell + SEP +
+      totalAdress +
+      SEP +
+      totalAntal +
+      SEP +
+      totalTid +
+      SEP +
+      totalGrusCell +
+      SEP +
       totalSaltCell;
 
     const bodyLines = [
@@ -352,6 +392,89 @@ function App() {
     const to = "hakan.pengel@outlook.com";
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
+  }
+
+  // === Exportera veckorapport till CSV-fil (öppnas i Excel) ===
+  function exportVeckorapportCSV() {
+    if (filtreradeRapporter.length === 0) {
+      alert("Det finns inga rapporter för vald vecka/år och filter.");
+      return;
+    }
+
+    const grupperad = {};
+    filtreradeRapporter.forEach((rad) => {
+      const namn = rad.adresser?.namn || "Okänd adress";
+      if (!grupperad[namn]) {
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      }
+      grupperad[namn].tid += rad.arbetstid_min || 0;
+      grupperad[namn].grus += rad.sand_kg || 0;
+      grupperad[namn].salt += rad.salt_kg || 0;
+      grupperad[namn].antal++;
+    });
+
+    const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
+
+    const header = [
+      "Adress",
+      "Antal jobb",
+      "Totalt (minuter)",
+      "Totalt (hh:mm)",
+      "Grus (kg)",
+      "Salt (kg)",
+    ];
+
+    const formatTidLokalt = (min) => {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return `${h.toString().padStart(2, "0")}:${m
+        .toString()
+        .padStart(2, "0")}`;
+    };
+
+    const rows = lista.map((r) => [
+      r.namn,
+      r.antal,
+      r.tid,
+      formatTidLokalt(r.tid),
+      r.grus,
+      r.salt,
+    ]);
+
+    const csvContent = [header, ...rows]
+      .map((rad) =>
+        rad
+          .map((f) =>
+            `"${(f ?? "")
+              .toString()
+              .replace(/"/g, '""')}"`
+          )
+          .join(";")
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+
+    const metodDel =
+      filterMetod === "hand"
+        ? "for-hand"
+        : filterMetod === "maskin"
+        ? "maskin"
+        : "alla";
+
+    const l = document.createElement("a");
+    l.href = url;
+    l.setAttribute(
+      "download",
+      `rapport-vecka-${filtreradVecka || "x"}-${filtreratÅr || "xxxx"}-${metodDel}.csv`
+    );
+    document.body.appendChild(l);
+    l.click();
+    document.body.removeChild(l);
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -469,8 +592,10 @@ function App() {
         <VeckoOversikt
           data={filtreradeRapporter}
           onSkickaEmail={skickaVeckorapportEmail}
+          onExportCSV={exportVeckorapportCSV}
           filtreradVecka={filtreradVecka}
           filtreratÅr={filtreratÅr}
+          filterMetod={filterMetod}
         />
       )}
 
