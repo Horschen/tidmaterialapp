@@ -269,12 +269,15 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // Kolumnbredder (justera vid behov)
-    const colAdress = 32;
-    const colAntal = 12;
-    const colTid = 18;
-    const colGrus = 10;
-    const colSalt = 10;
+    // Kolumnbredder
+    const colAdress = 40;  // längre för att ge plats
+    const colAntal = 8;
+    const colTid = 12;
+    const colGrus = 8;
+    const colSalt = 8;
+
+    // Separatorsträng mellan kolumner (lite extra luft)
+    const SEP = "   ";
 
     function padRight(text, width) {
       const t = String(text);
@@ -282,15 +285,15 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
-    // Rubriker
+    // Rubriker – kortare namn
     const headAdress = padRight("Adress", colAdress);
-    const headAntal = padRight("Antal jobb", colAntal);
-    const headTid = padRight("Total Tid (hh:mm)", colTid);
-    const headGrus = padRight("Grus(kg)", colGrus);
-    const headSalt = padRight("Salt(kg)", colSalt);
+    const headAntal = padRight("Antal", colAntal);
+    const headTid = padRight("Tid (hh:mm)", colTid);
+    const headGrus = padRight("Grus", colGrus);
+    const headSalt = padRight("Salt", colSalt);
 
     const headerRad =
-      headAdress + headAntal + headTid + headGrus + headSalt;
+      headAdress + SEP + headAntal + SEP + headTid + SEP + headGrus + SEP + headSalt;
 
     const sepLinje = "-".repeat(headerRad.length);
 
@@ -301,7 +304,7 @@ function App() {
       const colC = padRight(formatTid(r.tid), colTid);
       const colD = padRight(r.grus, colGrus);
       const colE = padRight(r.salt, colSalt);
-      return colA + colB + colC + colD + colE;
+      return colA + SEP + colB + SEP + colC + SEP + colD + SEP + colE;
     });
 
     // Totalsummering
@@ -317,7 +320,11 @@ function App() {
     const totalSaltCell = padRight(totalSalt, colSalt);
 
     const totalRad =
-      totalAdress + totalAntal + totalTid + totalGrusCell + totalSaltCell;
+      totalAdress + SEP +
+      totalAntal + SEP +
+      totalTid + SEP +
+      totalGrusCell + SEP +
+      totalSaltCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -346,10 +353,6 @@ function App() {
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
-
-  return (
-    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1>Tid & Material – SnöJour</h1>
 
       {/* ---- Rapportinmatning ---- */}
       <label>Adress: </label>
