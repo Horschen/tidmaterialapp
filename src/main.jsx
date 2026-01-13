@@ -263,8 +263,8 @@ function App() {
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
   // Paus
-  const [paus, setPaus] = useState(null); // { startTid }
-  const [totalPausSek, setTotalPausSek] = useState(0);
+  const [paus, setPaus] = useState(null); // { startTid } när paus pågår
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
@@ -295,6 +295,7 @@ function App() {
         )
       : 0;
 
+  // Pågående paus (sekunder sedan Start Paus)
   const pågåendePausSek =
     paus != null
       ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
@@ -434,14 +435,24 @@ function App() {
           ? new Date(senasteRapportTid)
           : new Date(aktivtPass.startTid);
 
-      // rå tid i sekunder mellan två adresser
+      // Kalendertid i sekunder mellan två adresser
       const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
 
-      // dra av paus i sekunder
-      const sekEfterPaus = Math.max(råSek - totalPausSek, 0);
+      // Person-sekunder kalendertid
+      const personSek = råSek * (antalAnstallda || 1);
 
-      // omvandla till minuter (avrundat)
-      let diffMin = Math.round(sekEfterPaus / 60);
+      // Paus i person-sekunder (paus * antal anställda)
+      const pausPersonSek = (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
+
+      // Tid som ska faktureras i person-sekunder
+      const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
+
+      // Avrunda person-sekunder till person-minuter enligt regel:
+      // - restSek > 25 => avrunda uppåt
+      // - annars nedåt
+      const minHeltal = Math.floor(sekEfterPausPerson / 60);
+      const restSek = sekEfterPausPerson % 60;
+      let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
 
       if (diffMin <= 0) {
         showPopup(
@@ -455,6 +466,7 @@ function App() {
         return;
       }
 
+      // diffMin = person-minuter efter paus
       arbetstidMin = diffMin;
     } else {
       const manuell = parseInt(arbetstid, 10);
@@ -467,11 +479,9 @@ function App() {
         setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
         return;
       }
-      arbetstidMin = manuell;
+      // manuell = kalenderminuter; om du vill kan denna också multipliceras med antal anställda
+      arbetstidMin = manuell * (antalAnstallda || 1);
     }
-
-    // multiplicera med antal anställda (person-minuter)
-    arbetstidMin = arbetstidMin * (antalAnstallda || 1);
 
     setStatus("Sparar…");
 
@@ -499,7 +509,7 @@ function App() {
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
       setPaus(null);
-      setTotalPausSek(0);
+      setPausSekUnderIntervall(0);
     }
   }
 
@@ -516,7 +526,7 @@ function App() {
     setAktivtPass({ startTid: nuIso, metod });
     setSenasteRapportTid(null);
     setPaus(null);
-    setTotalPausSek(0);
+    setPausSekUnderIntervall(0);
     setStatus("⏱️ Pass startat.");
   }
 
@@ -543,7 +553,7 @@ function App() {
     setAktivtPass(null);
     setSenasteRapportTid(null);
     setPaus(null);
-    setTotalPausSek(0);
+    setPausSekUnderIntervall(0);
     setStatus("Pass stoppat.");
   }
 
@@ -561,7 +571,7 @@ function App() {
     }
     const nuIso = new Date().toISOString();
     setPaus({ startTid: nuIso });
-    setStatus("⏸️ Pass pausat.");
+    setStatus("⏸️ Paus startad.");
   }
 
   // === Stop Paus ===
@@ -574,9 +584,9 @@ function App() {
     const nu = new Date();
     const start = new Date(paus.startTid);
     const diffSek = Math.max(Math.floor((nu - start) / 1000), 0);
-    setTotalPausSek((prev) => prev + diffSek);
+    setPausSekUnderIntervall((prev) => prev + diffSek);
     setPaus(null);
-    setStatus("Paus stoppad.");
+    setStatus("Paus stoppad (lagras till nästa rapport).");
   }
 
   // === Filtrera rapporter på vecka/år/metod ===
@@ -1074,8 +1084,26 @@ function App() {
                 fontSize: 14,
               }}
             >
-              Passet pausat –{" "}
+              Paus pågår –{" "}
               <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
+          )}
+
+          {/* Om paus finns registrerad men inte aktiv just nu */}
+          {!paus && pausSekUnderIntervall > 0 && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#fed7aa",
+                color: "#7c2d12",
+                fontSize: 13,
+              }}
+            >
+              Registrerad paus för denna adress/resa:{" "}
+              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
+              (dras av när du sparar rapport)
             </div>
           )}
 
