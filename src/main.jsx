@@ -47,7 +47,7 @@ function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
         <button onClick={onSkickaEmail}>📧 Skicka veckorapport via e‑post</button>
       </div>
       <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
-        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"}
+        Vecka {filtreradVecka || "-"} · År {filtratÅr || "-"}
       </div>
 
       <table
@@ -98,7 +98,7 @@ function App() {
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtratÅr, setFiltratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
@@ -227,7 +227,7 @@ function App() {
     const år = tmp.getUTCFullYear();
 
     const veckaOK = !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
+    const årOK = !filtratÅr || Number(filtratÅr) === Number(år);
 
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
@@ -235,14 +235,14 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mail (på begäran) ===
-  function skickaVeckorapportEmail() {
+  // === Skicka veckorapport via backend (HTML-mejl) ===
+  async function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
     }
 
-    // Gruppera som i tabellen
+    // Gruppera per adress (som i översikten)
     const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
@@ -261,7 +261,7 @@ function App() {
     }));
 
     const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
+    const arText = filtratÅr || "-";
     const metodText =
       filterMetod === "hand"
         ? "Endast För hand"
@@ -269,113 +269,45 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // --------- 1. “Snygg” tabell med fasta kolumnbredder ---------
+    try {
+      setStatus("Skickar veckorapport via e‑post…");
 
-    // Bestäm maxlängd för adresskolumnen (begränsa så den inte blir galet bred)
-    const maxAdressLängd = 40;
-    const adressLängd = Math.min(
-      maxAdressLängd,
-      Math.max("Adress".length, ...rader.map((r) => r.namn.length))
-    );
+      const res = await fetch("/api/send-weekly-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          vecka: veckoText,
+          år: arText,
+          filterText: metodText,
+          mottagare: "hakan.pengel@outlook.com",
+          rader: rader.map((r) => ({
+            adress: r.namn,
+            antalJobb: r.antal,
+            tidMinuter: r.tid,
+            tidFormat: formatTid(r.tid),
+            grusKg: r.grus,
+            saltKg: r.salt,
+          })),
+        }),
+      });
 
-    // Hjälpfunktion för att vänsterjustera text
-    function padRight(text, width) {
-      const t = String(text);
-      if (t.length >= width) return t.slice(0, width);
-      return t + " ".repeat(width - t.length);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Fel vid mejl‑API:", text);
+        setStatus("❌ Kunde inte skicka mejlet: " + text);
+        alert("Kunde inte skicka veckorapporten. Se statusmeddelandet.");
+        return;
+      }
+
+      setStatus("✅ Veckorapport skickad via e‑post.");
+      alert("Veckorapporten har skickats via e‑post.");
+    } catch (err) {
+      console.error(err);
+      setStatus("❌ Tekniskt fel vid mejlskick: " + err.message);
+      alert("Tekniskt fel vid mejlskick. Se statusmeddelandet.");
     }
-
-    // Kolumnrubriker
-    const headAdress = padRight("Adress", adressLängd);
-    const headAntal = padRight("Antal", 5);
-    const headTid = padRight("Tid", 8); // "hh:mm"
-    const headGrus = padRight("Grus", 8);
-    const headSalt = padRight("Salt", 8);
-
-    const tabellRubrik = `${headAdress}  ${headAntal}  ${headTid}  ${headGrus}  ${headSalt}`;
-
-    // Rader
-    const tabellRader = rader.map((r) => {
-      const colAdress = padRight(r.namn, adressLängd);
-      const colAntal = padRight(r.antal, 5);
-      const colTid = padRight(formatTid(r.tid), 8);
-      const colGrus = padRight(r.grus, 8);
-      const colSalt = padRight(r.salt, 8);
-      return `${colAdress}  ${colAntal}  ${colTid}  ${colGrus}  ${colSalt}`;
-    });
-
-    // Totalsummering
-    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
-    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
-    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
-    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
-
-    const totalAdress = padRight("TOTALT", adressLängd);
-    const totalAntal = padRight(totalJobb, 5);
-    const totalTid = padRight(formatTid(totalTidMin), 8);
-    const totalGrusCell = padRight(totalGrus, 8);
-    const totalSaltCell = padRight(totalSalt, 8);
-
-    const tabellTotalRad = `${totalAdress}  ${totalAntal}  ${totalTid}  ${totalGrusCell}  ${totalSaltCell}`;
-
-    // Separator-linje (----)
-    const sepLinje = "-".repeat(tabellRubrik.length);
-
-    // --------- 2. Rådata (semicolon) för Excel längst ner ---------
-    const rubrikRadCsv = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
-    const dataRaderCsv = rader.map((r) =>
-      [
-        r.namn,
-        r.antal,
-        formatTid(r.tid),
-        r.grus,
-        r.salt,
-      ].join(";")
-    );
-    const totalRadCsv =
-      "TOTALT;" +
-      totalJobb +
-      ";" +
-      formatTid(totalTidMin) +
-      ";" +
-      totalGrus +
-      ";" +
-      totalSalt;
-
-    // --------- 3. Bygg hela mejltexten ---------
-    const bodyLines = [
-      "Veckorapport SnöJour",
-      "",
-      "Vecka: " + veckoText,
-      "År: " + arText,
-      "Filter: " + metodText,
-      "",
-      "Sammanställning per adress:",
-      "",
-      tabellRubrik,
-      sepLinje,
-      ...tabellRader,
-      sepLinje,
-      tabellTotalRad,
-      "",
-      "",
-      "Rådata (för kopiering till Excel):",
-      rubrikRadCsv,
-      ...dataRaderCsv,
-      totalRadCsv,
-      "",
-      "Hälsningar,",
-      "SnöJour-systemet",
-    ];
-
-    const subject = encodeURIComponent(
-      "Veckorapport SnöJour v" + veckoText + " " + arText
-    );
-    const body = encodeURIComponent(bodyLines.join("\n"));
-
-    const to = "hakan.pengel@outlook.com";
-    window.location.href =
-      "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
   return (
@@ -470,8 +402,8 @@ function App() {
         type="number"
         min="2020"
         max="2100"
-        value={filtreratÅr}
-        onChange={(e) => setFiltreratÅr(e.target.value)}
+        value={filtratÅr}
+        onChange={(e) => setFiltratÅr(e.target.value)}
         style={{ width: "90px", marginLeft: "5px" }}
       />
 
@@ -494,7 +426,7 @@ function App() {
           data={filtreradeRapporter}
           onSkickaEmail={skickaVeckorapportEmail}
           filtreradVecka={filtreradVecka}
-          filtreratÅr={filtreratÅr}
+          filtreratÅr={filtratÅr}
         />
       )}
 
