@@ -90,7 +90,9 @@ function VeckoOversikt({
           alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 18 }}>Veckoöversikt</h2>
+        <h2 style={{ margin: 0, fontSize: 18, marginRight: "auto" }}>
+          Veckoöversikt
+        </h2>
         <button
           onClick={onSkickaEmail}
           style={{
@@ -234,6 +236,13 @@ function App() {
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
+  // Popup-notifiering
+  const [popup, setPopup] = useState(null); // { text, type } eller null
+  function showPopup(text, type = "success") {
+    setPopup({ text, type });
+    setTimeout(() => setPopup(null), 4000);
+  }
+
   // === Dela-funktion (Web Share API + fallback) ===
   async function delaApp() {
     const shareUrl = window.location.href;
@@ -243,8 +252,8 @@ function App() {
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url: shareUrl });
-      } catch (err) {
-        // användaren kan ha avbrutit delning, inget felmeddelande behövs
+      } catch (_) {
+        // användaren kan avbryta, inget fel behövs
       }
     } else {
       const mailto = `mailto:?subject=${encodeURIComponent(
@@ -311,8 +320,13 @@ function App() {
         syfte: syfteText,
       },
     ]);
-    if (error) setStatus("❌ " + error.message);
-    else setStatus("✅ Rapport sparad (manuell tid).");
+    if (error) {
+      setStatus("❌ " + error.message);
+    } else {
+      setStatus("Rapport sparad");
+      showPopup("👍 Rapport sparad", "success");
+      setArbetstid("");
+    }
   }
 
   // === Starta jobb (auto-tid) ===
@@ -370,7 +384,8 @@ function App() {
     if (error) {
       setStatus("❌ " + error.message);
     } else {
-      setStatus(`✅ Jobb sparat: ${diffMin} min.`);
+      setStatus("Rapport sparad");
+      showPopup("👍 Rapport sparad", "success");
       setAktivtJobb(null);
       setArbetstid("");
     }
@@ -916,23 +931,6 @@ function App() {
               Starta jobb (auto-tid)
             </button>
           )}
-
-          {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
-            </p>
-          )}
         </section>
       );
     }
@@ -1074,6 +1072,20 @@ function App() {
     );
   }
 
+  // Popup-stil
+  const popupStyle =
+    popup && popup.type === "success"
+      ? {
+          backgroundColor: "#16a34a",
+          color: "#ffffff",
+          borderColor: "#15803d",
+        }
+      : {
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          borderColor: "#b91c1c",
+        };
+
   return (
     <div
       style={{
@@ -1092,6 +1104,7 @@ function App() {
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
+          position: "relative",
         }}
       >
         <header
@@ -1137,6 +1150,28 @@ function App() {
             Dela
           </button>
         </header>
+
+        {/* Popup-notis */}
+        {popup && (
+          <div
+            style={{
+              position: "fixed",
+              top: 12,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 50,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: `1px solid ${popupStyle.borderColor}`,
+              backgroundColor: popupStyle.backgroundColor,
+              color: popupStyle.color,
+              fontSize: 14,
+              boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+            }}
+          >
+            {popup.text}
+          </div>
+        )}
 
         {renderContent()}
       </div>
