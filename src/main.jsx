@@ -129,7 +129,7 @@ function App() {
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtreratÅr, setFiltratetÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
@@ -467,7 +467,7 @@ function App() {
     l.href = url;
     l.setAttribute(
       "download",
-      `rapport-vecka-${filtreradVecka || "x"}-${filtratetÅr || "xxxx"}-${metodDel}.csv`
+      `rapport-vecka-${filtreradVecka || "x"}-${filtreratÅr || "xxxx"}-${metodDel}.csv`
     );
     document.body.appendChild(l);
     l.click();
@@ -510,7 +510,6 @@ function App() {
       return;
     }
 
-    // Övriga adresser med gps_url
     const andra = adresser.filter(
       (a) => a.id !== startAdr.id && a.gps_url
     );
@@ -520,11 +519,9 @@ function App() {
       return;
     }
 
-    // Google Maps: origin = startAdr, destination = sista, waypoints = några emellan
     const destination = andra[andra.length - 1].gps_url;
     const mitten = andra.slice(0, -1);
 
-    // Max ~9 waypoints i URL: vi tar de första 9 i listan
     const waypoints = mitten.slice(0, 9).map((a) => a.gps_url);
 
     const params = new URLSearchParams();
@@ -650,8 +647,8 @@ function App() {
         type="number"
         min="2020"
         max="2100"
-        value={filtratetÅr}
-        onChange={(e) => setFiltratetÅr(e.target.value)}
+        value={filtreratÅr}
+        onChange={(e) => setFiltreratÅr(e.target.value)}
         style={{ width: "90px", marginLeft: "5px" }}
       />
 
@@ -675,7 +672,7 @@ function App() {
           onSkickaEmail={skickaVeckorapportEmail}
           onExportCSV={exportVeckorapportCSV}
           filtreradVecka={filtreradVecka}
-          filtreratÅr={filtratetÅr}
+          filtreratÅr={filtreratÅr}
           filterMetod={filterMetod}
         />
       )}
