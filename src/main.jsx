@@ -37,7 +37,6 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
-  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string> }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -236,17 +235,18 @@ function App() {
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
-  // Popup-notifiering
-  const [popup, setPopup] = useState(null); // { text, type } eller null
-  function showPopup(text, type = "success") {
+  // Popup-notifiering: { text, type: 'success' | 'error' }
+  const [popup, setPopup] = useState(null);
+  function showPopup(text, type = "success", durationMs = 4000) {
     setPopup({ text, type });
-    setTimeout(() => setPopup(null), 4000);
+    setTimeout(() => setPopup(null), durationMs);
   }
 
   // === Dela-funktion (Web Share API + fallback) ===
   async function delaApp() {
     const shareUrl = window.location.href;
-    const text = "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
+    const text =
+      "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
     const title = "SnöJour – Tid & Material";
 
     if (navigator.share) {
@@ -285,6 +285,7 @@ function App() {
       .order("datum", { ascending: false });
     if (error) {
       setStatus("❌ " + error.message);
+      showPopup("👎 Fel vid hämtning av rapporter", "error", 2000);
     } else {
       setRapporter(data || []);
       setVisaOversikt(true);
@@ -292,21 +293,47 @@ function App() {
     }
   }
 
-  // === Manuell sparning av rapport ===
-  async function sparaRapport() {
+  // === Validering före sparning/start ===
+  function validateBeforeSave() {
     if (!valda) {
+      showPopup("👎 Välj en adress först.", "error", 2000);
       setStatus("Välj en adress först.");
-      return;
+      return false;
     }
+
     const syfteText = buildSyfteString();
     if (!syfteText) {
+      showPopup("👎 Välj minst ett syfte.", "error", 2000);
       setStatus("Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).");
-      return;
+      return false;
     }
+
+    const sandInt = parseInt(sand, 10) || 0;
+    const saltInt = parseInt(salt, 10) || 0;
+
+    if (syfteSaltning && saltInt === 0) {
+      showPopup("👎 Ange Salt (kg) när du väljer Saltning.", "error", 2000);
+      setStatus("Ange Salt (kg) om du väljer syfte Saltning.");
+      return false;
+    }
+
+    if (syfteGrusning && sandInt === 0) {
+      showPopup("👎 Ange Grus (kg) när du väljer Grusning.", "error", 2000);
+      setStatus("Ange Grus (kg) om du väljer syfte Grusning.");
+      return false;
+    }
+
+    return true;
+  }
+
+  // === Manuell sparning av rapport ===
+  async function sparaRapport() {
+    if (!validateBeforeSave()) return;
 
     setStatus("Sparar…");
 
     const metod = team === "För hand" ? "hand" : "maskin";
+    const syfteText = buildSyfteString();
 
     const { error } = await supabase.from("rapporter").insert([
       {
@@ -322,30 +349,26 @@ function App() {
     ]);
     if (error) {
       setStatus("❌ " + error.message);
+      showPopup("👎 Fel vid sparning", "error", 2000);
     } else {
       setStatus("Rapport sparad");
-      showPopup("👍 Rapport sparad", "success");
+      showPopup("👍 Rapport sparad", "success", 4000);
       setArbetstid("");
     }
   }
 
   // === Starta jobb (auto-tid) ===
   function startaJobb() {
-    if (!valda) {
-      setStatus("Välj en adress först.");
-      return;
-    }
-    const syfteText = buildSyfteString();
-    if (!syfteText) {
-      setStatus("Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).");
-      return;
-    }
+    if (!validateBeforeSave()) return;
+
     if (aktivtJobb) {
       setStatus("Du har redan ett aktivt jobb. Avsluta det först.");
+      showPopup("👎 Avsluta pågående jobb först.", "error", 2000);
       return;
     }
 
     const metod = team === "För hand" ? "hand" : "maskin";
+    const syfteText = buildSyfteString();
 
     setAktivtJobb({
       startTid: new Date().toISOString(),
@@ -360,6 +383,7 @@ function App() {
   async function avslutaJobb() {
     if (!aktivtJobb) {
       setStatus("Inget aktivt jobb att avsluta.");
+      showPopup("👎 Inget aktivt jobb.", "error", 2000);
       return;
     }
 
@@ -383,9 +407,10 @@ function App() {
 
     if (error) {
       setStatus("❌ " + error.message);
+      showPopup("👎 Fel vid sparning", "error", 2000);
     } else {
       setStatus("Rapport sparad");
-      showPopup("👍 Rapport sparad", "success");
+      showPopup("👍 Rapport sparad", "success", 4000);
       setAktivtJobb(null);
       setArbetstid("");
     }
@@ -885,6 +910,7 @@ function App() {
               onChange={(e) => setSand(e.target.value)}
               style={selectStyle}
             >
+              {/* EN "0" här */}
               <option value="0">0</option>
               {[...Array(51)].map((_, i) => (
                 <option key={i} value={i}>
@@ -901,6 +927,7 @@ function App() {
               onChange={(e) => setSalt(e.target.value)}
               style={selectStyle}
             >
+              {/* EN "0" här */}
               <option value="0">0</option>
               {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
                 <option key={v} value={v}>
@@ -1072,18 +1099,18 @@ function App() {
     );
   }
 
-  // Popup-stil
+  // Popup-stil (grön / röd, större, centrerad)
   const popupStyle =
-    popup && popup.type === "success"
+    popup && popup.type === "error"
       ? {
-          backgroundColor: "#16a34a",
-          color: "#ffffff",
-          borderColor: "#15803d",
-        }
-      : {
           backgroundColor: "#dc2626",
           color: "#ffffff",
           borderColor: "#b91c1c",
+        }
+      : {
+          backgroundColor: "#16a34a",
+          color: "#ffffff",
+          borderColor: "#15803d",
         };
 
   return (
@@ -1151,22 +1178,25 @@ function App() {
           </button>
         </header>
 
-        {/* Popup-notis */}
+        {/* Popup-notis – centrerad, större */}
         {popup && (
           <div
             style={{
               position: "fixed",
-              top: 12,
+              top: "50%",
               left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 50,
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: `1px solid ${popupStyle.borderColor}`,
+              transform: "translate(-50%, -50%)",
+              zIndex: 100,
+              padding: "24px 32px",
+              borderRadius: 24,
+              border: `2px solid ${popupStyle.borderColor}`,
               backgroundColor: popupStyle.backgroundColor,
               color: popupStyle.color,
-              fontSize: 14,
-              boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+              fontSize: 20,
+              fontWeight: 600,
+              textAlign: "center",
+              maxWidth: "80%",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
             }}
           >
             {popup.text}
