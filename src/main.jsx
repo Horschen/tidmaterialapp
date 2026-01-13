@@ -236,75 +236,119 @@ function App() {
   });
 
   // === Skicka veckorapport via mail (på begäran) ===
-  function skickaVeckorapportEmail() {
-    if (filtreradeRapporter.length === 0) {
-      alert("Det finns inga rapporter för vald vecka/år och filter.");
-      return;
-    }
-
-    // Gruppera som i tabellen
-    const grupperad = {};
-    filtreradeRapporter.forEach((rad) => {
-      const namn = rad.adresser?.namn || "Okänd adress";
-      if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
-      grupperad[namn].tid += rad.arbetstid_min || 0;
-      grupperad[namn].grus += rad.sand_kg || 0;
-      grupperad[namn].salt += rad.salt_kg || 0;
-      grupperad[namn].antal++;
-    });
-
-    const rader = Object.entries(grupperad).map(([namn, v]) => ({
-      namn,
-      ...v,
-    }));
-
-    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
-
-    const dataRader = rader.map((r) => {
-      return [
-        r.namn,
-        r.antal,
-        formatTid(r.tid),
-        r.grus,
-        r.salt,
-      ].join(";");
-    });
-
-    const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
-    const metodText =
-      filterMetod === "hand"
-        ? "Endast För hand"
-        : filterMetod === "maskin"
-        ? "Endast Maskin"
-        : "Alla jobb";
-
-    const bodyLines = [
-      `Veckorapport SnöJour`,
-      "",
-      `Vecka: ${veckoText}`,
-      `År: ${arText}`,
-      `Filter: ${metodText}`,
-      "",
-      rubrikRad,
-      ...dataRader,
-      "",
-      "Hälsningar,",
-      "SnöJour-systemet",
-    ];
-
-    const subject = encodeURIComponent(`Veckorapport SnöJour v${veckoText} ${arText}`);
-    const body = encodeURIComponent(bodyLines.join("\n"));
-
-    // Här kan du lägga fler mottagare, separerade med komma
-    const to = "hakan.pengel@outlook.com";
-
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+function skickaVeckorapportEmail() {
+  if (filtreradeRapporter.length === 0) {
+    alert("Det finns inga rapporter för vald vecka/år och filter.");
+    return;
   }
 
-  return (
-    <div style={{ padding: 20, fontFamily: "sans-serif" }}>
-      <h1>Tid & Material – SnöJour</h1>
+  // Gruppera som i tabellen
+  const grupperad = {};
+  filtreradeRapporter.forEach((rad) => {
+    const namn = rad.adresser?.namn || "Okänd adress";
+    if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+    grupperad[namn].tid += rad.arbetstid_min || 0;
+    grupperad[namn].grus += rad.sand_kg || 0;
+    grupperad[namn].salt += rad.salt_kg || 0;
+    grupperad[namn].antal++;
+  });
+
+  const rader = Object.entries(grupperad).map(([namn, v]) => ({
+    namn,
+    ...v,
+  }));
+
+  const veckoText = filtreradVecka || "-";
+  const arText = filtreratÅr || "-";
+  const metodText =
+    filterMetod === "hand"
+      ? "Endast För hand"
+      : filterMetod === "maskin"
+      ? "Endast Maskin"
+      : "Alla jobb";
+
+  // TEXT-version (fallback om HTML inte stöds)
+  const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+  const dataRader = rader.map((r) =>
+    [
+      r.namn,
+      r.antal,
+      formatTid(r.tid),
+      r.grus,
+      r.salt,
+    ].join(";")
+  );
+
+  const textBodyLines = [
+    `Veckorapport SnöJour`,
+    "",
+    `Vecka: ${veckoText}`,
+    `År: ${arText}`,
+    `Filter: ${metodText}`,
+    "",
+    rubrikRad,
+    ...dataRader,
+    "",
+    "Hälsningar,",
+    "SnöJour-systemet",
+  ];
+  const textBody = textBodyLines.join("\n");
+
+  // HTML-version med snygg tabell
+  const htmlRows = rader
+    .map(
+      (r) => `
+        <tr>
+          <td style="padding:6px 8px;border:1px solid #ddd;">${r.namn}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">${r.antal}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">${formatTid(r.tid)}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">${r.grus}</td>
+          <td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">${r.salt}</td>
+        </tr>`
+    )
+    .join("");
+
+  const htmlBody = `
+    <div style="font-family:Arial, sans-serif; font-size:14px; color:#333;">
+      <h2 style="margin-bottom:4px;">Veckorapport SnöJour</h2>
+      <div style="margin-bottom:12px; color:#555;">
+        <div><strong>Vecka:</strong> ${veckoText}</div>
+        <div><strong>År:</strong> ${arText}</div>
+        <div><strong>Filter:</strong> ${metodText}</div>
+      </div>
+
+      <table style="border-collapse:collapse; width:100%; max-width:800px;">
+        <thead>
+          <tr style="background:#f2f2f2;">
+            <th style="padding:6px 8px;border:1px solid #ddd;text-align:left;">Adress</th>
+            <th style="padding:6px 8px;border:1px solid #ddd;text-align:center;">Antal jobb</th>
+            <th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Tid (hh:mm)</th>
+            <th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Grus (kg)</th>
+            <th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Salt (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${htmlRows || `<tr><td colspan="5" style="padding:8px;border:1px solid #ddd;font-style:italic;text-align:center;">Inga jobb</td></tr>`}
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px;">
+        Vänliga hälsningar,<br />
+        <strong>SnöJour-systemet</strong>
+      </div>
+    </div>
+  `;
+
+  // OBS: mailto stödjer egentligen inte ren HTML som standard,
+  // men vi lägger HTML:en i body ändå – vissa klienter tolkar det.
+  // Vill du vara säker på HTML-stöd bör du skicka via en riktig mailserver/ backend.
+  const body = encodeURIComponent(htmlBody + "\n\n\n" + textBody);
+
+  const subject = encodeURIComponent(`Veckorapport SnöJour v${veckoText} ${arText}`);
+  const to = "hakan.pengel@outlook.com";
+
+  window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+}
 
       {/* ---- Rapportinmatning ---- */}
       <label>Adress: </label>
