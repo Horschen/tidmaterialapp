@@ -169,7 +169,7 @@ function VeckoOversikt({
 
 // ======= Huvudappen =======
 function App() {
-  // vilken flik som är aktiv: "registrera" | "karta" | "rapport"
+  // aktiv flik: "registrera" | "karta" | "rapport"
   const [activeTab, setActiveTab] = useState("registrera");
 
   const [rapporter, setRapporter] = useState([]);
@@ -191,11 +191,11 @@ function App() {
   // För kartfunktion (endast öppna karta)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
-  const [status, setStatus] = useState("");     // text
+  const [status, setStatus] = useState(""); // text
   const [statusType, setStatusType] = useState("info"); // "info" | "success" | "error"
   const [filterMetod, setFilterMetod] = useState("alla");
 
-  // === Hjälpfunktion för statusmeddelande (med typ) ===
+  // hjälp för status
   function setStatusMessage(message, type = "info") {
     setStatus(message);
     setStatusType(type);
@@ -270,7 +270,10 @@ function App() {
       return;
     }
     if (aktivtJobb) {
-      setStatusMessage("Du har redan ett aktivt jobb. Avsluta det först.", "error");
+      setStatusMessage(
+        "Du har redan ett aktivt jobb. Avsluta det först.",
+        "error"
+      );
       return;
     }
 
@@ -625,7 +628,6 @@ function App() {
     marginTop: 8,
   };
 
-  // Status-ruta stil
   const statusColors =
     statusType === "success"
       ? { bg: "#dcfce7", border: "#16a34a", text: "#166534" }
@@ -633,7 +635,7 @@ function App() {
       ? { bg: "#fee2e2", border: "#dc2626", text: "#991b1b" }
       : { bg: "#e5e7eb", border: "#9ca3af", text: "#374151" };
 
-  // === Vilken sektion ska visas beroende på aktiv flik ===
+  // ====== INNEHÅLL PER FLIK ======
   function renderContent() {
     if (activeTab === "registrera") {
       return (
@@ -656,14 +658,8 @@ function App() {
           >
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
-              <option
-                key={a.id}
-                value={a.id}
-                style={{
-                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
-                }}
-              >
-                {a.namn}
+              <option key={a.id} value={a.id}>
+                {a.namn} {a.maskin_mojlig ? "(Maskin)" : "(För hand)"}
               </option>
             ))}
           </select>
@@ -727,12 +723,11 @@ function App() {
             </select>
           </div>
 
-          {/* Stor start/stop-knapp för auto-tid */}
           {aktivtJobb ? (
             <button
               style={{
                 ...primaryButton,
-                backgroundColor: "#dc2626", // röd
+                backgroundColor: "#dc2626",
               }}
               onClick={avslutaJobb}
             >
@@ -742,7 +737,7 @@ function App() {
             <button
               style={{
                 ...primaryButton,
-                backgroundColor: "#16a34a", // grön
+                backgroundColor: "#16a34a",
               }}
               onClick={startaJobb}
             >
@@ -775,7 +770,7 @@ function App() {
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.namn}
+                {a.namn} {a.maskin_mojlig ? "(Maskin)" : "(För hand)"}
               </option>
             ))}
           </select>
@@ -887,7 +882,7 @@ function App() {
         style={{
           maxWidth: 480,
           margin: "0 auto",
-          padding: "12px 12px 72px", // extra padding under för bottenmenyn
+          padding: "12px 12px 72px",
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
@@ -911,11 +906,10 @@ function App() {
               margin: 0,
             }}
           >
-            Mobilvy – användarvänlig för iPhone
+            Mobilvy – fungerar på iPhone & Android
           </p>
         </header>
 
-        {/* Status-ruta */}
         {status && (
           <div
             style={{
@@ -933,11 +927,9 @@ function App() {
           </div>
         )}
 
-        {/* Huvudinnehåll beroende på vald flik */}
         {renderContent()}
       </div>
 
-      {/* Bottenmeny med flikar */}
       <nav
         style={{
           position: "fixed",
