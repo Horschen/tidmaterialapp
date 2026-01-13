@@ -37,7 +37,6 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
-  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string> }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -81,7 +80,7 @@ function VeckoOversikt({
       : "Alla jobb";
 
   return (
-    <div style={{ marginTop: 32 }}>
+    <div style={{ marginTop: 16 }}>
       <div
         style={{
           display: "flex",
@@ -90,7 +89,7 @@ function VeckoOversikt({
           alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 20 }}>Veckoöversikt</h2>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Veckoöversikt</h2>
         <button
           onClick={onSkickaEmail}
           style={{
@@ -102,7 +101,7 @@ function VeckoOversikt({
             color: "#fff",
           }}
         >
-          Skicka veckorapport (e‑post)
+          Skicka (e‑post)
         </button>
         <button
           onClick={onExportCSV}
@@ -195,11 +194,25 @@ function VeckoOversikt({
 
 // ======= Huvudappen =======
 function App() {
+  const [activeTab, setActiveTab] = useState("registrera"); // registrera | karta | rapport
+
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅr, setFiltratÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅr, setFiltrerATtÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅrState, setFiltreratÅrState] = useState(String(AKTUELLT_ÅR));
+  // rätt: använd EN state
+  const [filtreratÅrStateReal, setFiltreratÅrReal] = useState(String(AKTUELLT_ÅR));
+  // För att undvika förvirring: vi använder EN variabel:
+  const [filtreratÅrFinal, setFiltreratÅrFinal] = useState(String(AKTUELLT_ÅR));
+  // För tydlighet rensar jag detta i nästa rad:
+  const [filtreratÅrKorr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
+  // I resten av koden använder vi filtreratÅrKorr / setFiltreratÅr.
+
+  const filtreratÅrValue = filtreratÅrKorr;
+  const setFiltreratÅrValue = setFiltreratÅr;
 
   const [adresser, setAdresser] = useState([]);
 
@@ -366,7 +379,7 @@ function App() {
 
     const veckaOK =
       !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
+    const årOK = !filtreratÅrKorr || Number(filtreratÅrKorr) === Number(år);
 
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
@@ -417,7 +430,7 @@ function App() {
     }));
 
     const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
+    const arText = filtreratÅrKorr || "-";
     const metodText =
       filterMetod === "hand"
         ? "Endast För hand"
@@ -637,7 +650,7 @@ function App() {
       "download",
       `rapport-vecka-${
         filtreradVecka || "x"
-      }-${filtreratÅr || "xxxx"}-${metodDel}.csv`
+      }-${filtreratÅrKorr || "xxxx"}-${metodDel}.csv`
     );
     document.body.appendChild(l);
     l.click();
@@ -720,43 +733,10 @@ function App() {
     marginTop: 8,
   };
 
-  return (
-    <div
-      style={{
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        backgroundColor: "#f3f4f6",
-        minHeight: "100vh",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          margin: "0 auto",
-          padding: "16px 12px 40px",
-        }}
-      >
-        <header style={{ marginBottom: 16 }}>
-          <h1
-            style={{
-              fontSize: 24,
-              marginBottom: 4,
-              textAlign: "center",
-            }}
-          >
-            Tid & Material – SnöJour
-          </h1>
-          <p
-            style={{
-              fontSize: 13,
-              color: "#6b7280",
-              textAlign: "center",
-            }}
-          >
-            Anpassad för användning på mobil (iPhone)
-          </p>
-        </header>
-
-        {/* ---- Rapportinmatning ---- */}
+  // ====== INNEHÅLL PER FLIK ======
+  function renderContent() {
+    if (activeTab === "registrera") {
+      return (
         <section style={sectionStyle}>
           <h2
             style={{
@@ -810,7 +790,6 @@ function App() {
             </select>
           </div>
 
-          {/* Syften */}
           <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Syfte med arbetsuppgift</label>
             <div
@@ -928,9 +907,29 @@ function App() {
               Starta jobb (auto-tid)
             </button>
           )}
-        </section>
 
-        {/* ---- Kartfunktion (endast öppna karta) ---- */}
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (activeTab === "karta") {
+      return (
         <section style={sectionStyle}>
           <h2
             style={{
@@ -962,104 +961,223 @@ function App() {
             style={{
               ...primaryButton,
               opacity: kartaAdressId ? 1 : 0.5,
+              marginTop: 16,
             }}
           >
             Öppna karta för vald adress
           </button>
         </section>
+      );
+    }
 
-        {/* ---- Filter & översikt ---- */}
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Veckorapport
-          </h2>
+    // rapport-fliken
+    return (
+      <section style={sectionStyle}>
+        <h2
+          style={{
+            fontSize: 18,
+            marginTop: 0,
+            marginBottom: 12,
+          }}
+        >
+          Veckorapport
+        </h2>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <div>
-              <label style={labelStyle}>Vecka</label>
-              <input
-                type="number"
-                min="1"
-                max="52"
-                value={filtreradVecka}
-                onChange={(e) => setFiltreradVecka(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>År</label>
-              <input
-                type="number"
-                min="2020"
-                max="2100"
-                value={filtreratÅr}
-                onChange={(e) => setFiltreratÅr(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          <div>
+            <label style={labelStyle}>Vecka</label>
+            <input
+              type="number"
+              min="1"
+              max="52"
+              value={filtreradVecka}
+              onChange={(e) => setFiltreradVecka(e.target.value)}
+              style={inputStyle}
+            />
           </div>
 
-          <label style={labelStyle}>Filtrera på metod</label>
-          <select
-            value={filterMetod}
-            onChange={(e) => setFilterMetod(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="alla">Alla</option>
-            <option value="hand">Endast För hand</option>
-            <option value="maskin">Endast Maskin</option>
-          </select>
-
-          <button
-            style={{ ...secondaryButton, marginTop: 12 }}
-            onClick={hamtaRapporter}
-          >
-            Uppdatera översikt
-          </button>
-
-          {visaOversikt && (
-            <VeckoOversikt
-              data={filtreradeRapporter}
-              onSkickaEmail={skickaVeckorapportEmail}
-              onExportCSV={exportVeckorapportCSV}
-              filtreradVecka={filtreradVecka}
-              filtreratÅr={filtreratÅr}
-              filterMetod={filterMetod}
+          <div>
+            <label style={labelStyle}>År</label>
+            <input
+              type="number"
+              min="2020"
+              max="2100"
+              value={filtreratÅrKorr}
+              onChange={(e) => setFiltreratÅr(e.target.value)}
+              style={inputStyle}
             />
-          )}
+          </div>
+        </div>
 
-          {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
-            </p>
-          )}
-        </section>
+        <label style={labelStyle}>Filtrera på metod</label>
+        <select
+          value={filterMetod}
+          onChange={(e) => setFilterMetod(e.target.value)}
+          style={selectStyle}
+        >
+          <option value="alla">Alla</option>
+          <option value="hand">Endast För hand</option>
+          <option value="maskin">Endast Maskin</option>
+        </select>
+
+        <button
+          style={{ ...secondaryButton, marginTop: 12 }}
+          onClick={hamtaRapporter}
+        >
+          Uppdatera översikt
+        </button>
+
+        {visaOversikt && (
+          <VeckoOversikt
+            data={filtreradeRapporter}
+            onSkickaEmail={skickaVeckorapportEmail}
+            onExportCSV={exportVeckorapportCSV}
+            filtreradVecka={filtreradVecka}
+            filtreratÅr={filtreratÅrKorr}
+            filterMetod={filterMetod}
+          />
+        )}
+
+        {status && (
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              color: status.startsWith("✅")
+                ? "#16a34a"
+                : status.startsWith("❌")
+                ? "#dc2626"
+                : "#4b5563",
+              textAlign: "center",
+            }}
+          >
+            {status}
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        backgroundColor: "#f3f4f6",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 480,
+          margin: "0 auto",
+          padding: "12px 12px 72px",
+          width: "100%",
+          boxSizing: "border-box",
+          flex: 1,
+        }}
+      >
+        <header style={{ marginBottom: 8 }}>
+          <h1
+            style={{
+              fontSize: 22,
+              marginBottom: 2,
+              textAlign: "center",
+            }}
+          >
+            Tid & Material – SnöJour
+          </h1>
+          <p
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              textAlign: "center",
+              margin: 0,
+            }}
+          >
+            Mobilvy – användarvänlig för iPhone
+          </p>
+        </header>
+
+        {renderContent()}
       </div>
+
+      {/* Bottenmeny med flikar */}
+      <nav
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#ffffff",
+          borderTop: "1px solid #e5e7eb",
+          padding: "6px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          maxWidth: 480,
+          margin: "0 auto",
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("registrera")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "registrera" ? "#2563eb" : "transparent",
+            color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Registrera jobb
+        </button>
+        <button
+          onClick={() => setActiveTab("karta")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "karta" ? "#2563eb" : "transparent",
+            color: activeTab === "karta" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Karta
+        </button>
+        <button
+          onClick={() => setActiveTab("rapport")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "rapport" ? "#2563eb" : "transparent",
+            color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Veckorapport
+        </button>
+      </nav>
     </div>
   );
 }
