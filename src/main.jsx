@@ -370,11 +370,11 @@ function App() {
   // === Hämta rapporter ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
-      .from("rapporter")
-      .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, adresser(namn)"
-      )
-      .order("datum", { ascending: false });
+  .from("rapporter")
+  .select(
+    "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
+  )
+  .order("datum", { ascending: false });
     if (error) {
       setStatus("❌ " + error.message);
       showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
@@ -472,17 +472,18 @@ function App() {
     setStatus("Sparar…");
 
     const { error } = await supabase.from("rapporter").insert([
-      {
-        datum: new Date().toISOString(),
-        adress_id: valda,
-        arbetstid_min: arbetstidMin,
-        team_namn: team,
-        arbetssatt: metod,
-        sand_kg: parseInt(sand, 10) || 0,
-        salt_kg: parseInt(salt, 10) || 0,
-        syfte: syfteText,
-      },
-    ]);
+  {
+    datum: new Date().toISOString(),
+    adress_id: valda,
+    arbetstid_min: arbetstidMin, // person-minuter
+    team_namn: team,
+    arbetssatt: metod,
+    sand_kg: parseInt(sand, 10) || 0,
+    salt_kg: parseInt(salt, 10) || 0,
+    syfte: syfteText,
+    antal_anstallda: antalAnstallda, // NYTT
+  },
+]);
     if (error) {
       setStatus("❌ " + error.message);
       showPopup("👎 Fel vid sparning", "error", 3000);
