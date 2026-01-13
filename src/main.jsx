@@ -169,7 +169,6 @@ function VeckoOversikt({
 
 // ======= Huvudappen =======
 function App() {
-  // aktiv flik: "registrera" | "karta" | "rapport"
   const [activeTab, setActiveTab] = useState("registrera");
 
   const [rapporter, setRapporter] = useState([]);
@@ -180,7 +179,6 @@ function App() {
 
   const [adresser, setAdresser] = useState([]);
 
-  // För rapportinmatning
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
@@ -188,14 +186,25 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
-  // För kartfunktion (endast öppna karta)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
-  const [status, setStatus] = useState(""); // text
-  const [statusType, setStatusType] = useState("info"); // "info" | "success" | "error"
+  const [status, setStatus] = useState("");
+  const [statusType, setStatusType] = useState("info");
   const [filterMetod, setFilterMetod] = useState("alla");
 
-  // hjälp för status
+  // Nytt: syfte med arbetsuppgift
+  const [syfteRojning, setSyfteRojning] = useState(false);
+  const [syfteOversyn, setSyfteOversyn] = useState(false);
+
+  function buildSyfteString() {
+    const delar = [];
+    if (syfteRojning) delar.push("Röjning");
+    if (syfteOversyn) delar.push("Översyn");
+    if (syfteSaltning) delar.push("Saltning");
+    if (syfteGrusning) delar.push("Grusning");
+    return delar.join(", ");
+  }
+
   function setStatusMessage(message, type = "info") {
     setStatus(message);
     setStatusType(type);
@@ -240,6 +249,12 @@ function App() {
       setStatusMessage("Välj en adress först.", "error");
       return;
     }
+    const syfteText = buildSyfteString();
+    if (!syfteText) {
+      setStatusMessage("Välj minst ett syfte (Röjning/Översyn).", "error");
+      return;
+    }
+
     setStatusMessage("Sparar…", "info");
 
     const metod = team === "För hand" ? "hand" : "maskin";
@@ -253,6 +268,7 @@ function App() {
         arbetssatt: metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
+        syfte: syfteText, // NYTT FÄLT
       },
     ]);
     if (error) {
@@ -269,6 +285,12 @@ function App() {
       setStatusMessage("Välj en adress först.", "error");
       return;
     }
+    const syfteText = buildSyfteString();
+    if (!syfteText) {
+      setStatusMessage("Välj minst ett syfte (Röjning/Översyn).", "error");
+      return;
+    }
+
     if (aktivtJobb) {
       setStatusMessage(
         "Du har redan ett aktivt jobb. Avsluta det först.",
@@ -283,6 +305,7 @@ function App() {
       startTid: new Date().toISOString(),
       adressId: valda,
       metod,
+      syfte: syfteText, // spara syftet med jobbet
     });
     setStatusMessage("Jobb startat (auto-tid).", "info");
   }
@@ -308,6 +331,7 @@ function App() {
         arbetssatt: aktivtJobb.metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
+        syfte: aktivtJobb.syfte, // syftet från när jobbet startades
       },
     ]);
 
@@ -569,7 +593,7 @@ function App() {
     }
   }
 
-  // ====== STILHJÄLPARE FÖR MOBIL ======
+  // ====== STILHJÄLPARE ======
   const sectionStyle = {
     marginBottom: 28,
     padding: 16,
@@ -635,6 +659,14 @@ function App() {
       ? { bg: "#fee2e2", border: "#dc2626", text: "#991b1b" }
       : { bg: "#e5e7eb", border: "#9ca3af", text: "#374151" };
 
+  const legendDotStyle = {
+    display: "inline-block",
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    marginRight: 6,
+  };
+
   // ====== INNEHÅLL PER FLIK ======
   function renderContent() {
     if (activeTab === "registrera") {
@@ -659,12 +691,85 @@ function App() {
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(Maskin)" : "(För hand)"}
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
               </option>
             ))}
           </select>
 
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: "#4b5563",
+              display: "flex",
+              gap: 12,
+            }}
+          >
+            <span>
+              <span
+                style={{
+                  ...legendDotStyle,
+                  backgroundColor: "#f97316",
+                }}
+              />
+              Maskin
+            </span>
+            <span>
+              <span
+                style={{
+                  ...legendDotStyle,
+                  backgroundColor: "#6b7280",
+                }}
+              />
+              För hand
+            </span>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+            <select
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              style={selectStyle}
+            >
+              <option>För hand</option>
+              <option>Maskin</option>
+            </select>
+          </div>
+
+          {/* NYTT: Syfte med arbetsuppgift, med checkboxar */}
           <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Syfte med arbetsuppgift</label>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                fontSize: 15,
+              }}
+            >
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteRojning}
+                  onChange={(e) => setSyfteRojning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Röjning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteOversyn}
+                  onChange={(e) => setSyfteOversyn(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Översyn
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
             <label style={labelStyle}>Arbetstid (minuter)</label>
             <input
               type="number"
@@ -680,18 +785,6 @@ function App() {
           </button>
 
           <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
-            <select
-              value={team}
-              onChange={(e) => setTeam(e.target.value)}
-              style={selectStyle}
-            >
-              <option>För hand</option>
-              <option>Maskin</option>
-            </select>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
             <label style={labelStyle}>Grus (kg)</label>
             <select
               value={sand}
@@ -770,10 +863,39 @@ function App() {
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(Maskin)" : "(För hand)"}
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
               </option>
             ))}
           </select>
+
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: "#4b5563",
+              display: "flex",
+              gap: 12,
+            }}
+          >
+            <span>
+              <span
+                style={{
+                  ...legendDotStyle,
+                  backgroundColor: "#f97316",
+                }}
+              />
+              Maskin
+            </span>
+            <span>
+              <span
+                style={{
+                  ...legendDotStyle,
+                  backgroundColor: "#6b7280",
+                }}
+              />
+              För hand
+            </span>
+          </div>
 
           <button
             onClick={oppnaKartaForKartAdress}
