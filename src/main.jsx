@@ -206,7 +206,7 @@ function VeckoOversikt({
                 key={r.namn}
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid "#e5e7eb",
                   height: 40,
                 }}
               >
@@ -256,6 +256,7 @@ function App() {
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
+  const [antalAnstallda, setAntalAnstallda] = useState(1);
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
 
@@ -438,7 +439,6 @@ function App() {
       }
 
       arbetstidMin = diffMin;
-      setSenasteRapportTid(nu.toISOString());
     } else {
       const manuell = parseInt(arbetstid, 10);
       if (!manuell || manuell <= 0) {
@@ -452,6 +452,9 @@ function App() {
       }
       arbetstidMin = manuell;
     }
+
+    // multiplicera med antal anställda
+    arbetstidMin = arbetstidMin * (antalAnstallda || 1);
 
     setStatus("Sparar…");
 
@@ -474,6 +477,10 @@ function App() {
       setStatus("Rapport sparad");
       showPopup("👍 Rapport sparad", "success", 4000);
       setArbetstid("");
+      // nollställ paus och "tidsbas" för nästa intervall
+      setSenasteRapportTid(new Date().toISOString());
+      setPaus(null);
+      setTotalPausSek(0);
     }
   }
 
@@ -927,7 +934,7 @@ function App() {
     padding: "10px 12px",
     fontSize: 16,
     borderRadius: 10,
-    border: "1px solid "#d1d5db",
+    border: "1px solid #d1d5db",
     backgroundColor: "#f9fafb",
   };
 
@@ -1122,6 +1129,21 @@ function App() {
             >
               <option>För hand</option>
               <option>Maskin</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Antal anställda</label>
+            <select
+              value={antalAnstallda}
+              onChange={(e) => setAntalAnstallda(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </div>
 
