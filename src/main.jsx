@@ -23,9 +23,7 @@ const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
   const m = minuter % 60;
-  return `${h.toString().padStart(2, "0")}:${m
-    .toString()
-    .padStart(2, "0")}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
@@ -37,42 +35,19 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
-  // grupperad[adressnamn] = { tid, grus, salt, antal, syften: Set<string> }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
     if (!grupperad[namn]) {
-      grupperad[namn] = {
-        tid: 0,
-        grus: 0,
-        salt: 0,
-        antal: 0,
-        syften: new Set(), // NYTT
-      };
+      grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
     }
     grupperad[namn].tid += rad.arbetstid_min || 0;
     grupperad[namn].grus += rad.sand_kg || 0;
     grupperad[namn].salt += rad.salt_kg || 0;
     grupperad[namn].antal++;
-
-    // syfte är en kommaseparerad text, t.ex. "Översyn, Röjning"
-    if (rad.syfte) {
-      rad.syfte
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .forEach((s) => grupperad[namn].syften.add(s));
-    }
   });
 
-  const lista = Object.entries(grupperad).map(([namn, v]) => ({
-    namn,
-    tid: v.tid,
-    grus: v.grus,
-    salt: v.salt,
-    antal: v.antal,
-    syften: Array.from(v.syften).join(", "), // NYTT: samlad syftesträng
-  }));
+  const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
 
   const metodText =
     filterMetod === "hand"
@@ -82,7 +57,7 @@ function VeckoOversikt({
       : "Alla jobb";
 
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 32 }}>
       <div
         style={{
           display: "flex",
@@ -91,26 +66,26 @@ function VeckoOversikt({
           alignItems: "center",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 18 }}>Veckoöversikt</h2>
+        <h2 style={{ margin: 0, fontSize: 20 }}>Veckoöversikt</h2>
         <button
           onClick={onSkickaEmail}
           style={{
             padding: "8px 12px",
             fontSize: 14,
-            borderRadius: 999,
+            borderRadius: 8,
             border: "none",
             background: "#2563eb",
             color: "#fff",
           }}
         >
-          Skicka (e‑post)
+          Skicka veckorapport (e‑post)
         </button>
         <button
           onClick={onExportCSV}
           style={{
             padding: "8px 12px",
             fontSize: 14,
-            borderRadius: 999,
+            borderRadius: 8,
             border: "none",
             background: "#16a34a",
             color: "#fff",
@@ -136,7 +111,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 420,
+            minWidth: 360,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 13,
           }}
@@ -153,7 +128,6 @@ function VeckoOversikt({
               <th>Totalt (hh:mm)</th>
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
-              <th>Syften</th> {/* NY kolumn */}
             </tr>
           </thead>
           <tbody>
@@ -170,13 +144,12 @@ function VeckoOversikt({
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
-                <td style={{ textAlign: "left" }}>{r.syften}</td>
               </tr>
             ))}
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -196,8 +169,6 @@ function VeckoOversikt({
 
 // ======= Huvudappen =======
 function App() {
-  const [activeTab, setActiveTab] = useState("registrera");
-
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
 
@@ -206,6 +177,7 @@ function App() {
 
   const [adresser, setAdresser] = useState([]);
 
+  // För rapportinmatning
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
@@ -213,31 +185,11 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
+  // För kartfunktion (endast öppna karta)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
   const [status, setStatus] = useState("");
-  const [statusType, setStatusType] = useState("info");
   const [filterMetod, setFilterMetod] = useState("alla");
-
-  // Syften
-  const [syfteOversyn, setSyfteOversyn] = useState(false);
-  const [syfteRojning, setSyfteRojning] = useState(false);
-  const [syfteSaltning, setSyfteSaltning] = useState(false);
-  const [syfteGrusning, setSyfteGrusning] = useState(false);
-
-  function buildSyfteString() {
-    const delar = [];
-    if (syfteOversyn) delar.push("Översyn");
-    if (syfteRojning) delar.push("Röjning");
-    if (syfteSaltning) delar.push("Saltning");
-    if (syfteGrusning) delar.push("Grusning");
-    return delar.join(", ");
-  }
-
-  function setStatusMessage(message, type = "info") {
-    setStatus(message);
-    setStatusType(type);
-  }
 
   // === Hämta adresser vid start ===
   useEffect(() => {
@@ -245,14 +197,8 @@ function App() {
       const { data, error } = await supabase
         .from("adresser")
         .select("id, namn, gps_url, maskin_mojlig");
-      if (error) {
-        setStatusMessage(
-          "Fel vid laddning av adresser: " + error.message,
-          "error"
-        );
-      } else {
-        setAdresser(data || []);
-      }
+      if (error) setStatus("Fel vid laddning av adresser: " + error.message);
+      else setAdresser(data || []);
     }
     laddaAdresser();
   }, []);
@@ -261,34 +207,24 @@ function App() {
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
-      // NYTT: vi hämtar även syfte
-      .select("id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, adresser(namn)")
+      .select("*, adresser(namn)")
       .order("datum", { ascending: false });
     if (error) {
-      setStatusMessage(error.message, "error");
+      setStatus("❌ " + error.message);
     } else {
       setRapporter(data || []);
       setVisaOversikt(true);
-      setStatusMessage("Rapporter uppdaterade.", "success");
+      setStatus("✅ Rapporter uppdaterade.");
     }
   }
 
   // === Manuell sparning av rapport ===
   async function sparaRapport() {
     if (!valda) {
-      setStatusMessage("Välj en adress först.", "error");
+      setStatus("Välj en adress först.");
       return;
     }
-    const syfteText = buildSyfteString();
-    if (!syfteText) {
-      setStatusMessage(
-        "Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).",
-        "error"
-      );
-      return;
-    }
-
-    setStatusMessage("Sparar…", "info");
+    setStatus("Sparar…");
 
     const metod = team === "För hand" ? "hand" : "maskin";
 
@@ -301,37 +237,20 @@ function App() {
         arbetssatt: metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
-        syfte: syfteText,
       },
     ]);
-    if (error) {
-      setStatusMessage(error.message, "error");
-    } else {
-      setStatusMessage("Rapport sparad (manuell tid).", "success");
-      setArbetstid("");
-    }
+    if (error) setStatus("❌ " + error.message);
+    else setStatus("✅ Rapport sparad (manuell tid).");
   }
 
   // === Starta jobb (auto-tid) ===
   function startaJobb() {
     if (!valda) {
-      setStatusMessage("Välj en adress först.", "error");
+      setStatus("Välj en adress först.");
       return;
     }
-    const syfteText = buildSyfteString();
-    if (!syfteText) {
-      setStatusMessage(
-        "Välj minst ett syfte (Översyn/Röjning/Saltning/Grusning).",
-        "error"
-      );
-      return;
-    }
-
     if (aktivtJobb) {
-      setStatusMessage(
-        "Du har redan ett aktivt jobb. Avsluta det först.",
-        "error"
-      );
+      setStatus("Du har redan ett aktivt jobb. Avsluta det först.");
       return;
     }
 
@@ -341,15 +260,14 @@ function App() {
       startTid: new Date().toISOString(),
       adressId: valda,
       metod,
-      syfte: syfteText,
     });
-    setStatusMessage("Jobb startat (auto-tid).", "info");
+    setStatus("⏱️ Jobb startat.");
   }
 
   // === Avsluta jobb (auto-tid) ===
   async function avslutaJobb() {
     if (!aktivtJobb) {
-      setStatusMessage("Inget aktivt jobb att avsluta.", "error");
+      setStatus("Inget aktivt jobb att avsluta.");
       return;
     }
 
@@ -357,7 +275,7 @@ function App() {
     const slut = new Date();
     const diffMin = Math.max(Math.round((slut - start) / 60000), 0);
 
-    setStatusMessage("Sparar…", "info");
+    setStatus("Sparar…");
     const { error } = await supabase.from("rapporter").insert([
       {
         datum: new Date().toISOString(),
@@ -367,14 +285,13 @@ function App() {
         arbetssatt: aktivtJobb.metod,
         sand_kg: parseInt(sand, 10) || 0,
         salt_kg: parseInt(salt, 10) || 0,
-        syfte: aktivtJobb.syfte,
       },
     ]);
 
     if (error) {
-      setStatusMessage(error.message, "error");
+      setStatus("❌ " + error.message);
     } else {
-      setStatusMessage(`Jobb sparat: ${diffMin} min (auto-tid).`, "success");
+      setStatus(`✅ Jobb sparat: ${diffMin} min.`);
       setAktivtJobb(null);
       setArbetstid("");
     }
@@ -407,34 +324,21 @@ function App() {
       return;
     }
 
-    // Samma gruppering som i VeckoOversikt, men med syften
     const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0, syften: new Set() };
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
       grupperad[namn].grus += rad.sand_kg || 0;
       grupperad[namn].salt += rad.salt_kg || 0;
       grupperad[namn].antal++;
-
-      if (rad.syfte) {
-        rad.syfte
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .forEach((s) => grupperad[namn].syften.add(s));
-      }
     });
 
     const rader = Object.entries(grupperad).map(([namn, v]) => ({
       namn,
-      tid: v.tid,
-      grus: v.grus,
-      salt: v.salt,
-      antal: v.antal,
-      syften: Array.from(v.syften).join(", "),
+      ...v,
     }));
 
     const veckoText = filtreradVecka || "-";
@@ -446,13 +350,11 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // kolumnbredder (justerade för extra kolumn)
-    const colAdress = 30;
-    const colAntal = 6;
-    const colTid = 10;
+    const colAdress = 40;
+    const colAntal = 8;
+    const colTid = 12;
     const colGrus = 8;
     const colSalt = 8;
-    const colSyfte = 25;
 
     const SEP = "   ";
 
@@ -464,10 +366,9 @@ function App() {
 
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
-    const headTid = padRight("Tid", colTid);
+    const headTid = padRight("Tid (hh:mm)", colTid);
     const headGrus = padRight("Grus", colGrus);
     const headSalt = padRight("Salt", colSalt);
-    const headSyfte = padRight("Syften", colSyfte);
 
     const headerRad =
       headAdress +
@@ -478,9 +379,7 @@ function App() {
       SEP +
       headGrus +
       SEP +
-      headSalt +
-      SEP +
-      headSyfte;
+      headSalt;
 
     const sepLinje = "-".repeat(headerRad.length);
 
@@ -490,20 +389,7 @@ function App() {
       const colC = padRight(formatTid(r.tid), colTid);
       const colD = padRight(r.grus, colGrus);
       const colE = padRight(r.salt, colSalt);
-      const colF = padRight(r.syften, colSyfte);
-      return (
-        colA +
-        SEP +
-        colB +
-        SEP +
-        colC +
-        SEP +
-        colD +
-        SEP +
-        colE +
-        SEP +
-        colF
-      );
+      return colA + SEP + colB + SEP + colC + SEP + colD + SEP + colE;
     });
 
     const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
@@ -516,7 +402,6 @@ function App() {
     const totalTid = padRight(formatTid(totalTidMin), colTid);
     const totalGrusCell = padRight(totalGrus, colGrus);
     const totalSaltCell = padRight(totalSalt, colSalt);
-    const totalSyfteCell = padRight("-", colSyfte);
 
     const totalRad =
       totalAdress +
@@ -527,9 +412,7 @@ function App() {
       SEP +
       totalGrusCell +
       SEP +
-      totalSaltCell +
-      SEP +
-      totalSyfteCell;
+      totalSaltCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -570,29 +453,17 @@ function App() {
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
-        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0, syften: new Set() };
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
       grupperad[namn].grus += rad.sand_kg || 0;
       grupperad[namn].salt += rad.salt_kg || 0;
       grupperad[namn].antal++;
-
-      if (rad.syfte) {
-        rad.syfte
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .forEach((s) => grupperad[namn].syften.add(s));
-      }
     });
 
     const lista = Object.entries(grupperad).map(([namn, v]) => ({
       namn,
-      tid: v.tid,
-      grus: v.grus,
-      salt: v.salt,
-      antal: v.antal,
-      syften: Array.from(v.syften).join(", "),
+      ...v,
     }));
 
     const header = [
@@ -602,7 +473,6 @@ function App() {
       "Totalt (hh:mm)",
       "Grus (kg)",
       "Salt (kg)",
-      "Syften", // NY kolumn
     ];
 
     const formatTidLokalt = (min) => {
@@ -620,7 +490,6 @@ function App() {
       formatTidLokalt(r.tid),
       r.grus,
       r.salt,
-      r.syften,
     ]);
 
     const csvContent = [header, ...rows]
@@ -677,7 +546,7 @@ function App() {
     }
   }
 
-  // ====== STILHJÄLPARE ======
+  // ====== STILHJÄLPARE FÖR MOBIL ======
   const sectionStyle = {
     marginBottom: 28,
     padding: 16,
@@ -714,14 +583,14 @@ function App() {
 
   const primaryButton = {
     width: "100%",
-    padding: "14px 18px",
+    padding: "12px 16px",
     fontSize: 16,
     borderRadius: 999,
     border: "none",
     backgroundColor: "#2563eb",
     color: "#ffffff",
-    fontWeight: 700,
-    marginTop: 12,
+    fontWeight: 600,
+    marginTop: 8,
   };
 
   const secondaryButton = {
@@ -736,25 +605,43 @@ function App() {
     marginTop: 8,
   };
 
-  const statusColors =
-    statusType === "success"
-      ? { bg: "#dcfce7", border: "#16a34a", text: "#166534" }
-      : statusType === "error"
-      ? { bg: "#fee2e2", border: "#dc2626", text: "#991b1b" }
-      : { bg: "#e5e7eb", border: "#9ca3af", text: "#374151" };
+  return (
+    <div
+      style={{
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        backgroundColor: "#f3f4f6",
+        minHeight: "100vh",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 480,
+          margin: "0 auto",
+          padding: "16px 12px 40px",
+        }}
+      >
+        <header style={{ marginBottom: 16 }}>
+          <h1
+            style={{
+              fontSize: 24,
+              marginBottom: 4,
+              textAlign: "center",
+            }}
+          >
+            Tid & Material – SnöJour
+          </h1>
+          <p
+            style={{
+              fontSize: 13,
+              color: "#6b7280",
+              textAlign: "center",
+            }}
+          >
+            Anpassad för användning på mobil (iPhone)
+          </p>
+        </header>
 
-  const legendDotStyle = {
-    display: "inline-block",
-    width: 10,
-    height: 10,
-    borderRadius: "50%",
-    marginRight: 6,
-  };
-
-  // ====== INNEHÅLL PER FLIK ======
-  function renderContent() {
-    if (activeTab === "registrera") {
-      return (
+        {/* ---- Rapportinmatning ---- */}
         <section style={sectionStyle}>
           <h2
             style={{
@@ -774,40 +661,32 @@ function App() {
           >
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+              <option
+                key={a.id}
+                value={a.id}
+                style={{
+                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+                }}
+              >
+                {a.namn}
               </option>
             ))}
           </select>
 
-          <div
-            style={{
-              marginTop: 6,
-              fontSize: 12,
-              color: "#4b5563",
-              display: "flex",
-              gap: 12,
-            }}
-          >
-            <span>
-              <span
-                style={{
-                  ...legendDotStyle,
-                  backgroundColor: "#f97316",
-                }}
-              />
-              Maskin
-            </span>
-            <span>
-              <span
-                style={{
-                  ...legendDotStyle,
-                  backgroundColor: "#6b7280",
-                }}
-              />
-              För hand
-            </span>
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Arbetstid (minuter)</label>
+            <input
+              type="number"
+              value={arbetstid}
+              onChange={(e) => setArbetstid(e.target.value)}
+              style={inputStyle}
+              inputMode="numeric"
+            />
           </div>
+
+          <button style={primaryButton} onClick={sparaRapport}>
+            Spara rapport (manuell tid)
+          </button>
 
           <div style={{ marginTop: 16 }}>
             <label style={labelStyle}>Arbetstyp (Team / metod)</label>
@@ -821,72 +700,7 @@ function App() {
             </select>
           </div>
 
-          {/* Syften */}
           <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Syfte med arbetsuppgift</label>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                fontSize: 15,
-              }}
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteOversyn}
-                  onChange={(e) => setSyfteOversyn(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Översyn
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteRojning}
-                  onChange={(e) => setSyfteRojning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Röjning
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteSaltning}
-                  onChange={(e) => setSyfteSaltning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Saltning
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteGrusning}
-                  onChange={(e) => setSyfteGrusning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Grusning
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Arbetstid (minuter)</label>
-            <input
-              type="number"
-              value={arbetstid}
-              onChange={(e) => setArbetstid(e.target.value)}
-              style={inputStyle}
-              inputMode="numeric"
-            />
-          </div>
-
-          <button style={secondaryButton} onClick={sparaRapport}>
-            Spara rapport (manuell tid)
-          </button>
-
-          <div style={{ marginTop: 16 }}>
             <label style={labelStyle}>Grus (kg)</label>
             <select
               value={sand}
@@ -919,32 +733,17 @@ function App() {
           </div>
 
           {aktivtJobb ? (
-            <button
-              style={{
-                ...primaryButton,
-                backgroundColor: "#dc2626",
-              }}
-              onClick={avslutaJobb}
-            >
+            <button style={primaryButton} onClick={avslutaJobb}>
               Avsluta jobb & spara (auto-tid)
             </button>
           ) : (
-            <button
-              style={{
-                ...primaryButton,
-                backgroundColor: "#16a34a",
-              }}
-              onClick={startaJobb}
-            >
+            <button style={secondaryButton} onClick={startaJobb}>
               Starta jobb (auto-tid)
             </button>
           )}
         </section>
-      );
-    }
 
-    if (activeTab === "karta") {
-      return (
+        {/* ---- Kartfunktion (endast öppna karta) ---- */}
         <section style={sectionStyle}>
           <h2
             style={{
@@ -965,39 +764,10 @@ function App() {
             <option value="">-- Välj adress --</option>
             {adresser.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+                {a.namn}
               </option>
             ))}
           </select>
-
-          <div
-            style={{
-              marginTop: 6,
-              fontSize: 12,
-              color: "#4b5563",
-              display: "flex",
-              gap: 12,
-            }}
-          >
-            <span>
-              <span
-                style={{
-                  ...legendDotStyle,
-                  backgroundColor: "#f97316",
-                }}
-              />
-              Maskin
-            </span>
-            <span>
-              <span
-                style={{
-                  ...legendDotStyle,
-                  backgroundColor: "#6b7280",
-                }}
-              />
-              För hand
-            </span>
-          </div>
 
           <button
             onClick={oppnaKartaForKartAdress}
@@ -1005,222 +775,104 @@ function App() {
             style={{
               ...primaryButton,
               opacity: kartaAdressId ? 1 : 0.5,
-              marginTop: 16,
             }}
           >
             Öppna karta för vald adress
           </button>
         </section>
-      );
-    }
 
-    // activeTab === "rapport"
-    return (
-      <section style={sectionStyle}>
-        <h2
-          style={{
-            fontSize: 18,
-            marginTop: 0,
-            marginBottom: 12,
-          }}
-        >
-          Veckorapport
-        </h2>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 8,
-            marginBottom: 8,
-          }}
-        >
-          <div>
-            <label style={labelStyle}>Vecka</label>
-            <input
-              type="number"
-              min="1"
-              max="52"
-              value={filtreradVecka}
-              onChange={(e) => setFiltreradVecka(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>År</label>
-            <input
-              type="number"
-              min="2020"
-              max="2100"
-              value={filtreratÅr}
-              onChange={(e) => setFiltreratÅr(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        <label style={labelStyle}>Filtrera på metod</label>
-        <select
-          value={filterMetod}
-          onChange={(e) => setFilterMetod(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="alla">Alla</option>
-          <option value="hand">Endast För hand</option>
-          <option value="maskin">Endast Maskin</option>
-        </select>
-
-        <button
-          style={{ ...secondaryButton, marginTop: 12 }}
-          onClick={hamtaRapporter}
-        >
-          Uppdatera översikt
-        </button>
-
-        {visaOversikt && (
-          <VeckoOversikt
-            data={filtreradeRapporter}
-            onSkickaEmail={skickaVeckorapportEmail}
-            onExportCSV={exportVeckorapportCSV}
-            filtreradVecka={filtreradVecka}
-            filtreratÅr={filtreratÅr}
-            filterMetod={filterMetod}
-          />
-        )}
-      </section>
-    );
-  }
-
-  return (
-    <div
-      style={{
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        backgroundColor: "#f3f4f6",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          margin: "0 auto",
-          padding: "12px 12px 72px",
-          width: "100%",
-          boxSizing: "border-box",
-          flex: 1,
-        }}
-      >
-        <header style={{ marginBottom: 8 }}>
-          <h1
+        {/* ---- Filter & översikt ---- */}
+        <section style={sectionStyle}>
+          <h2
             style={{
-              fontSize: 22,
-              marginBottom: 2,
-              textAlign: "center",
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
             }}
           >
-            Tid & Material – SnöJour
-          </h1>
-          <p
-            style={{
-              fontSize: 12,
-              color: "#6b7280",
-              textAlign: "center",
-              margin: 0,
-            }}
-          >
-            Mobilvy – fungerar på iPhone & Android
-          </p>
-        </header>
+            Veckorapport
+          </h2>
 
-        {status && (
           <div
             style={{
-              margin: "10px 0 16px",
-              padding: "8px 12px",
-              borderRadius: 999,
-              backgroundColor: statusColors.bg,
-              border: `1px solid ${statusColors.border}`,
-              color: statusColors.text,
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Vecka</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={filtreradVecka}
+                onChange={(e) => setFiltreradVecka(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>År</label>
+              <input
+                type="number"
+                min="2020"
+                max="2100"
+                value={filtreratÅr}
+                onChange={(e) => setFiltreratÅr(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <label style={labelStyle}>Filtrera på metod</label>
+          <select
+            value={filterMetod}
+            onChange={(e) => setFilterMetod(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="alla">Alla</option>
+            <option value="hand">Endast För hand</option>
+            <option value="maskin">Endast Maskin</option>
+          </select>
+
+          <button
+            style={{ ...secondaryButton, marginTop: 12 }}
+            onClick={hamtaRapporter}
+          >
+            Uppdatera översikt
+          </button>
+
+          {visaOversikt && (
+            <VeckoOversikt
+              data={filtreradeRapporter}
+              onSkickaEmail={skickaVeckorapportEmail}
+              onExportCSV={exportVeckorapportCSV}
+              filtreradVecka={filtreradVecka}
+              filtreratÅr={filtreratÅr}
+              filterMetod={filterMetod}
+            />
+          )}
+        </section>
+
+        {status && (
+          <p
+            style={{
+              marginTop: 8,
               fontSize: 13,
+              color: status.startsWith("✅")
+                ? "#16a34a"
+                : status.startsWith("❌")
+                ? "#dc2626"
+                : "#4b5563",
               textAlign: "center",
             }}
           >
             {status}
-          </div>
+          </p>
         )}
-
-        {renderContent()}
       </div>
-
-      <nav
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#ffffff",
-          borderTop: "1px solid #e5e7eb",
-          padding: "6px 12px",
-          display: "flex",
-          justifyContent: "space-between",
-          maxWidth: 480,
-          margin: "0 auto",
-        }}
-      >
-        <button
-          onClick={() => setActiveTab("registrera")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "8px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "registrera" ? "#2563eb" : "transparent",
-            color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Registrera
-        </button>
-        <button
-          onClick={() => setActiveTab("karta")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "8px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "karta" ? "#2563eb" : "transparent",
-            color: activeTab === "karta" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Karta
-        </button>
-        <button
-          onClick={() => setActiveTab("rapport")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "8px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "rapport" ? "#2563eb" : "transparent",
-            color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Veckorapport
-        </button>
-      </nav>
     </div>
   );
 }
