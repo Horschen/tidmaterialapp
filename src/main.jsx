@@ -37,6 +37,7 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
+  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string> }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -200,19 +201,7 @@ function App() {
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtreratÅr, setFiltratÅr] = useState(String(AKTUELLT_ÅR));
-  const [filtreratÅr, setFiltrerATtÅr] = useState(String(AKTUELLT_ÅR));
-  const [filtreratÅrState, setFiltreratÅrState] = useState(String(AKTUELLT_ÅR));
-  // rätt: använd EN state
-  const [filtreratÅrStateReal, setFiltreratÅrReal] = useState(String(AKTUELLT_ÅR));
-  // För att undvika förvirring: vi använder EN variabel:
-  const [filtreratÅrFinal, setFiltreratÅrFinal] = useState(String(AKTUELLT_ÅR));
-  // För tydlighet rensar jag detta i nästa rad:
-  const [filtreratÅrKorr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
-  // I resten av koden använder vi filtreratÅrKorr / setFiltreratÅr.
-
-  const filtreratÅrValue = filtreratÅrKorr;
-  const setFiltreratÅrValue = setFiltreratÅr;
+  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
 
@@ -244,6 +233,26 @@ function App() {
 
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
+
+  // === Dela-funktion (Web Share API + fallback) ===
+  async function delaApp() {
+    const shareUrl = window.location.href;
+    const text = "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
+    const title = "SnöJour – Tid & Material";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url: shareUrl });
+      } catch (err) {
+        // användaren kan ha avbrutit delning, inget felmeddelande behövs
+      }
+    } else {
+      const mailto = `mailto:?subject=${encodeURIComponent(
+        title
+      )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
+      window.location.href = mailto;
+    }
+  }
 
   // === Hämta adresser vid start ===
   useEffect(() => {
@@ -379,7 +388,7 @@ function App() {
 
     const veckaOK =
       !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅrKorr || Number(filtreratÅrKorr) === Number(år);
+    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
 
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
@@ -430,7 +439,7 @@ function App() {
     }));
 
     const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅrKorr || "-";
+    const arText = filtreratÅr || "-";
     const metodText =
       filterMetod === "hand"
         ? "Endast För hand"
@@ -650,7 +659,7 @@ function App() {
       "download",
       `rapport-vecka-${
         filtreradVecka || "x"
-      }-${filtreratÅrKorr || "xxxx"}-${metodDel}.csv`
+      }-${filtreratÅr || "xxxx"}-${metodDel}.csv`
     );
     document.body.appendChild(l);
     l.click();
@@ -1009,7 +1018,7 @@ function App() {
               type="number"
               min="2020"
               max="2100"
-              value={filtreratÅrKorr}
+              value={filtreratÅr}
               onChange={(e) => setFiltreratÅr(e.target.value)}
               style={inputStyle}
             />
@@ -1040,7 +1049,7 @@ function App() {
             onSkickaEmail={skickaVeckorapportEmail}
             onExportCSV={exportVeckorapportCSV}
             filtreradVecka={filtreradVecka}
-            filtreratÅr={filtreratÅrKorr}
+            filtreratÅr={filtreratÅr}
             filterMetod={filterMetod}
           />
         )}
@@ -1085,26 +1094,48 @@ function App() {
           flex: 1,
         }}
       >
-        <header style={{ marginBottom: 8 }}>
-          <h1
+        <header
+          style={{
+            marginBottom: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <h1
+              style={{
+                fontSize: 20,
+                marginBottom: 2,
+                textAlign: "left",
+              }}
+            >
+              Tid & Material – SnöJour
+            </h1>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                margin: 0,
+              }}
+            >
+              Mobilvy – användarvänlig för iPhone
+            </p>
+          </div>
+          <button
+            onClick={delaApp}
             style={{
-              fontSize: 22,
-              marginBottom: 2,
-              textAlign: "center",
-            }}
-          >
-            Tid & Material – SnöJour
-          </h1>
-          <p
-            style={{
+              flexShrink: 0,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
               fontSize: 12,
-              color: "#6b7280",
-              textAlign: "center",
-              margin: 0,
             }}
           >
-            Mobilvy – användarvänlig för iPhone
-          </p>
+            Dela
+          </button>
         </header>
 
         {renderContent()}
