@@ -42,7 +42,7 @@ function formatDatumTid(iso) {
   return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
 
-// ======= Hjälp: sekunder -> hh:mm:ss för timer =======
+// ======= Hjälp: sekunder -> hh:mm:ss =======
 function formatSekTillHhMmSs(sek) {
   const h = Math.floor(sek / 3600);
   const m = Math.floor((sek % 3600) / 60);
@@ -61,7 +61,6 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
-  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set, senasteDatumTid }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -202,7 +201,7 @@ function VeckoOversikt({
                 key={r.namn}
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid "#e5e7eb",
+                  borderBottom: "1px solid #e5e7eb",
                 }}
               >
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
@@ -303,7 +302,7 @@ function App() {
   // Separat popup för raderingsbekräftelse
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // === Dela-funktion (Web Share API + fallback) ===
+  // Dela-funktion
   async function delaApp() {
     const shareUrl = window.location.href;
     const text =
@@ -885,6 +884,65 @@ function App() {
   function avbrytRadering() {
     setDeleteConfirm(null);
   }
+
+  // ====== STILHJÄLPARE ======
+  const sectionStyle = {
+    marginBottom: 28,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: 500,
+  };
+
+  const selectStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+    boxSizing: "border-box",
+  };
+
+  const primaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: 600,
+    marginTop: 8,
+  };
+
+  const secondaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#e5e7eb",
+    color: "#111827",
+    fontWeight: 500,
+    marginTop: 8,
+  };
 
   // ====== INNEHÅLL PER FLIK ======
   function renderContent() {
