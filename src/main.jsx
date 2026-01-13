@@ -141,7 +141,7 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
-  // För kart-/rutt-funktion
+  // För kart-/rutt-funktion (vi använder bara öppna karta, inte rutt)
   const [kartaAdressId, setKartaAdressId] = useState("");
 
   const [status, setStatus] = useState("");
@@ -473,7 +473,9 @@ function App() {
     l.href = url;
     l.setAttribute(
       "download",
-      `rapport-vecka-${filtreradVecka || "x"}-${filtreratÅr || "xxxx"}-${metodDel}.csv`
+      `rapport-vecka-${
+        filtreradVecka || "x"
+      }-${filtreratÅr || "xxxx"}-${metodDel}.csv`
     );
     document.body.appendChild(l);
     l.click();
@@ -497,50 +499,7 @@ function App() {
     }
   }
 
-  // === Öppna Google Maps-rutt från vald kart-adress genom övriga adresser ===
-  function oppnaRuttFranKartAdress() {
-    if (!kartaAdressId) {
-      alert("Välj en startadress i kartsektionen först.");
-      return;
-    }
-    if (!adresser || adresser.length === 0) {
-      alert("Inga adresser laddade.");
-      return;
-    }
-
-    const startAdr = adresser.find(
-      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
-    );
-    if (!startAdr?.gps_url) {
-      alert("Startadressen har ingen GPS‑länk sparad.");
-      return;
-    }
-
-    const andra = adresser.filter(
-      (a) => a.id !== startAdr.id && a.gps_url
-    );
-
-    if (andra.length === 0) {
-      alert("Det finns inga andra adresser med GPS‑länk att ruta genom.");
-      return;
-    }
-
-    const destination = andra[andra.length - 1].gps_url;
-    const mitten = andra.slice(0, -1);
-
-    const waypoints = mitten.slice(0, 9).map((a) => a.gps_url);
-
-    const params = new URLSearchParams();
-    params.set("api", "1");
-    params.set("origin", startAdr.gps_url);
-    params.set("destination", destination);
-    if (waypoints.length > 0) {
-      params.set("waypoints", waypoints.join("|"));
-    }
-
-    const url = "https://www.google.com/maps/dir/?" + params.toString();
-    window.open(url, "_blank");
-  }
+  // === OBS: funktionen för Google Maps-rutt är borttagen ===
 
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
@@ -617,10 +576,10 @@ function App() {
         <button onClick={startaJobb}>Starta jobb (auto-tid)</button>
       )}
 
-      {/* ---- Kart- och ruttfunktioner ---- */}
+      {/* ---- Kartfunktion (endast öppna karta) ---- */}
       <hr style={{ margin: "30px 0" }} />
-      <h2>Karta & rutt</h2>
-      <label>Välj adress (karta/rutt): </label>
+      <h2>Karta</h2>
+      <label>Välj adress (karta): </label>
       <br />
       <select
         value={kartaAdressId}
@@ -642,9 +601,6 @@ function App() {
         style={{ marginRight: 10 }}
       >
         Öppna karta för vald adress
-      </button>
-      <button onClick={oppnaRuttFranKartAdress} disabled={!kartaAdressId}>
-        Öppna rutt från vald adress (Google Maps)
       </button>
 
       {/* ---- Filter & översikt ---- */}
