@@ -44,13 +44,12 @@ function formatDatumTid(iso) {
   return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
 // ======= Hjälp: sekunder -> hh:mm:ss =======
-function formatSekTillHhMmSs(sek) {
+function formatSekTillHhMm(sek) {
   const h = Math.floor(sek / 3600);
   const m = Math.floor((sek % 3600) / 60);
-  const s = sek % 60;
   return `${h.toString().padStart(2, "0")}:${m
     .toString()
-    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    .padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
