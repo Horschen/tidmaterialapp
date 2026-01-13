@@ -38,7 +38,18 @@ function formatDatumTid(iso) {
   const day = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hh}:${mm}`;
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
+}
+
+// ======= Hjälp: sekunder -> hh:mm:ss för timer =======
+function formatSekTillHhMmSs(sek) {
+  const h = Math.floor(sek / 3600);
+  const m = Math.floor((sek % 3600) / 60);
+  const s = sek % 60;
+  return `${h.toString().padStart(2, "0")}:${m
+    .toString()
+    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
@@ -50,7 +61,7 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
-  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string>, senasteDatumTid }
+  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set, senasteDatumTid }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -173,7 +184,7 @@ function VeckoOversikt({
             <tr
               style={{
                 background: "#f3f4f6",
-                borderBottom: "1px solid "#e5e7eb"",
+                borderBottom: "1px solid #e5e7eb",
               }}
             >
               <th style={{ textAlign: "left" }}>Adress</th>
@@ -246,7 +257,7 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
-  // Timer för aktivt jobb
+  // Timer för aktivt jobb (hh:mm:ss)
   const [nuTid, setNuTid] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
@@ -257,14 +268,6 @@ function App() {
     aktivtJobb != null
       ? Math.max(0, Math.floor((nuTid - new Date(aktivtJobb.startTid)) / 1000))
       : 0;
-
-  function formatSekTillMmSs(sek) {
-    const m = Math.floor(sek / 60);
-    const s = sek % 60;
-    return `${m.toString().padStart(2, "0")}:${s
-      .toString()
-      .padStart(2, "0")}`;
-  }
 
   // Syften
   const [syfteOversyn, setSyfteOversyn] = useState(false);
@@ -973,7 +976,7 @@ function App() {
             >
               Pågående jobb ({aktivtJobb.metod === "hand" ? "För hand" : "Maskin"}
               ) –{" "}
-              <strong>{formatSekTillMmSs(pågåendeTidSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendeTidSek)}</strong>
             </div>
           )}
 
