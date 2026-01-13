@@ -28,6 +28,19 @@ function formatTid(minuter) {
     .padStart(2, "0")}`;
 }
 
+// ======= Hjälp: format datum/tid =======
+function formatDatumTid(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "-";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day} ${hh}:${mm}`;
+}
+
 // ======= Veckoöversikt =======
 function VeckoOversikt({
   data,
@@ -37,6 +50,7 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
 }) {
+  // grupperad[adressnamn] = { tid, grus, salt, antal, syften:Set<string>, senasteDatumTid }
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -47,6 +61,7 @@ function VeckoOversikt({
         salt: 0,
         antal: 0,
         syften: new Set(),
+        senasteDatumTid: null,
       };
     }
     grupperad[namn].tid += rad.arbetstid_min || 0;
@@ -61,6 +76,18 @@ function VeckoOversikt({
         .filter(Boolean)
         .forEach((s) => grupperad[namn].syften.add(s));
     }
+
+    if (rad.datum) {
+      const d = new Date(rad.datum);
+      if (!Number.isNaN(d.getTime())) {
+        const prev = grupperad[namn].senasteDatumTid
+          ? new Date(grupperad[namn].senasteDatumTid)
+          : null;
+        if (!prev || d > prev) {
+          grupperad[namn].senasteDatumTid = rad.datum;
+        }
+      }
+    }
   });
 
   const lista = Object.entries(grupperad).map(([namn, v]) => ({
@@ -70,6 +97,7 @@ function VeckoOversikt({
     salt: v.salt,
     antal: v.antal,
     syften: Array.from(v.syften).join(", "),
+    senasteDatumTid: v.senasteDatumTid,
   }));
 
   const metodText =
@@ -136,7 +164,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 420,
+            minWidth: 520,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 13,
           }}
@@ -145,7 +173,7 @@ function VeckoOversikt({
             <tr
               style={{
                 background: "#f3f4f6",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid "#e5e7eb"",
               }}
             >
               <th style={{ textAlign: "left" }}>Adress</th>
@@ -154,6 +182,7 @@ function VeckoOversikt({
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
               <th>Syften</th>
+              <th>Senaste datum/tid</th>
             </tr>
           </thead>
           <tbody>
@@ -171,12 +200,15 @@ function VeckoOversikt({
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
                 <td style={{ textAlign: "left" }}>{r.syften}</td>
+                <td style={{ textAlign: "left" }}>
+                  {formatDatumTid(r.senasteDatumTid)}
+                </td>
               </tr>
             ))}
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -214,6 +246,26 @@ function App() {
   const [salt, setSalt] = useState(0);
   const [aktivtJobb, setAktivtJobb] = useState(null);
 
+  // Timer för aktivt jobb
+  const [nuTid, setNuTid] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNuTid(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const pågåendeTidSek =
+    aktivtJobb != null
+      ? Math.max(0, Math.floor((nuTid - new Date(aktivtJobb.startTid)) / 1000))
+      : 0;
+
+  function formatSekTillMmSs(sek) {
+    const m = Math.floor(sek / 60);
+    const s = sek % 60;
+    return `${m.toString().padStart(2, "0")}:${s
+      .toString()
+      .padStart(2, "0")}`;
+  }
+
   // Syften
   const [syfteOversyn, setSyfteOversyn] = useState(false);
   const [syfteRojning, setSyfteRojning] = useState(false);
@@ -241,6 +293,10 @@ function App() {
     setPopup({ text, type });
     setTimeout(() => setPopup(null), durationMs);
   }
+
+  // Separat popup för raderingsbekräftelse
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  // deleteConfirm = { fromDate, toDate, beskrivning }
 
   // === Dela-funktion (Web Share API + fallback) ===
   async function delaApp() {
@@ -453,6 +509,7 @@ function App() {
           salt: 0,
           antal: 0,
           syften: new Set(),
+          senasteDatumTid: null,
         };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
@@ -467,6 +524,18 @@ function App() {
           .filter(Boolean)
           .forEach((s) => grupperad[namn].syften.add(s));
       }
+
+      if (rad.datum) {
+        const d = new Date(rad.datum);
+        if (!Number.isNaN(d.getTime())) {
+          const prev = grupperad[namn].senasteDatumTid
+            ? new Date(grupperad[namn].senasteDatumTid)
+            : null;
+          if (!prev || d > prev) {
+            grupperad[namn].senasteDatumTid = rad.datum;
+          }
+        }
+      }
     });
 
     const rader = Object.entries(grupperad).map(([namn, v]) => ({
@@ -476,6 +545,7 @@ function App() {
       salt: v.salt,
       antal: v.antal,
       syften: Array.from(v.syften).join(", "),
+      senasteDatumTid: v.senasteDatumTid,
     }));
 
     const veckoText = filtreradVecka || "-";
@@ -487,12 +557,13 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    const colAdress = 30;
+    const colAdress = 26;
     const colAntal = 6;
     const colTid = 10;
     const colGrus = 8;
     const colSalt = 8;
-    const colSyfte = 25;
+    const colSyfte = 18;
+    const colDatumTid = 19;
 
     const SEP = "   ";
 
@@ -508,6 +579,7 @@ function App() {
     const headGrus = padRight("Grus", colGrus);
     const headSalt = padRight("Salt", colSalt);
     const headSyfte = padRight("Syften", colSyfte);
+    const headDatumTid = padRight("Senaste", colDatumTid);
 
     const headerRad =
       headAdress +
@@ -520,7 +592,9 @@ function App() {
       SEP +
       headSalt +
       SEP +
-      headSyfte;
+      headSyfte +
+      SEP +
+      headDatumTid;
 
     const sepLinje = "-".repeat(headerRad.length);
 
@@ -531,6 +605,7 @@ function App() {
       const colD = padRight(r.grus, colGrus);
       const colE = padRight(r.salt, colSalt);
       const colF = padRight(r.syften, colSyfte);
+      const colG = padRight(formatDatumTid(r.senasteDatumTid), colDatumTid);
       return (
         colA +
         SEP +
@@ -542,7 +617,9 @@ function App() {
         SEP +
         colE +
         SEP +
-        colF
+        colF +
+        SEP +
+        colG
       );
     });
 
@@ -557,6 +634,7 @@ function App() {
     const totalGrusCell = padRight(totalGrus, colGrus);
     const totalSaltCell = padRight(totalSalt, colSalt);
     const totalSyfteCell = padRight("-", colSyfte);
+    const totalDatumTidCell = padRight("-", colDatumTid);
 
     const totalRad =
       totalAdress +
@@ -569,7 +647,9 @@ function App() {
       SEP +
       totalSaltCell +
       SEP +
-      totalSyfteCell;
+      totalSyfteCell +
+      SEP +
+      totalDatumTidCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -616,6 +696,7 @@ function App() {
           salt: 0,
           antal: 0,
           syften: new Set(),
+          senasteDatumTid: null,
         };
       }
       grupperad[namn].tid += rad.arbetstid_min || 0;
@@ -630,6 +711,18 @@ function App() {
           .filter(Boolean)
           .forEach((s) => grupperad[namn].syften.add(s));
       }
+
+      if (rad.datum) {
+        const d = new Date(rad.datum);
+        if (!Number.isNaN(d.getTime())) {
+          const prev = grupperad[namn].senasteDatumTid
+            ? new Date(grupperad[namn].senasteDatumTid)
+            : null;
+          if (!prev || d > prev) {
+            grupperad[namn].senasteDatumTid = rad.datum;
+          }
+        }
+      }
     });
 
     const lista = Object.entries(grupperad).map(([namn, v]) => ({
@@ -639,6 +732,7 @@ function App() {
       salt: v.salt,
       antal: v.antal,
       syften: Array.from(v.syften).join(", "),
+      senasteDatumTid: v.senasteDatumTid,
     }));
 
     const header = [
@@ -649,6 +743,7 @@ function App() {
       "Grus (kg)",
       "Salt (kg)",
       "Syften",
+      "Senaste datum/tid",
     ];
 
     const formatTidLokalt = (min) => {
@@ -667,6 +762,7 @@ function App() {
       r.grus,
       r.salt,
       r.syften,
+      formatDatumTid(r.senasteDatumTid),
     ]);
 
     const csvContent = [header, ...rows]
@@ -821,10 +917,17 @@ function App() {
         .padStart(2, "0")}`;
     }
 
-    const confirmText = `Är du säker på att du vill radera ${beskrivning}? Detta går inte att ångra.`;
-    if (!window.confirm(confirmText)) return;
+    // Visa röd säkerhets-popup
+    setDeleteConfirm({ fromDate, toDate, beskrivning });
+  }
 
+  async function bekräftaRadering() {
+    if (!deleteConfirm) return;
+    const { fromDate, toDate, beskrivning } = deleteConfirm;
+
+    setDeleteConfirm(null);
     setRaderaPågår(true);
+
     const { error, count } = await supabase
       .from("rapporter")
       .delete({ count: "exact" })
@@ -847,11 +950,33 @@ function App() {
     }
   }
 
+  function avbrytRadering() {
+    setDeleteConfirm(null);
+  }
+
   // ====== INNEHÅLL PER FLIK ======
   function renderContent() {
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
+          {/* Timer-rad om jobb pågår */}
+          {aktivtJobb && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående jobb ({aktivtJobb.metod === "hand" ? "För hand" : "Maskin"}
+              ) –{" "}
+              <strong>{formatSekTillMmSs(pågåendeTidSek)}</strong>
+            </div>
+          )}
+
           <h2
             style={{
               fontSize: 18,
@@ -1008,7 +1133,7 @@ function App() {
               }}
               onClick={avslutaJobb}
             >
-              Avsluta jobb & spara (auto-tid)
+              Stoppa jobb & spara (auto-tid)
             </button>
           ) : (
             <button
@@ -1355,6 +1480,70 @@ function App() {
             }}
           >
             {popup.text}
+          </div>
+        )}
+
+        {/* Raderings-bekräftelse-popup */}
+        {deleteConfirm && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 110,
+              padding: "24px 32px",
+              borderRadius: 24,
+              border: "2px solid #b91c1c",
+              backgroundColor: "#fee2e2",
+              color: "#7f1d1d",
+              fontSize: 16,
+              fontWeight: 600,
+              textAlign: "center",
+              maxWidth: "80%",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <div style={{ marginBottom: 12 }}>
+              Är du säker på att du vill radera data??
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 12,
+                marginTop: 4,
+              }}
+            >
+              <button
+                onClick={bekräftaRadering}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#b91c1c",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                Ja
+              </button>
+              <button
+                onClick={avbrytRadering}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                Nej
+              </button>
+            </div>
           </div>
         )}
 
