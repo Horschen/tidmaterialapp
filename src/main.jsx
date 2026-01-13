@@ -175,7 +175,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 520,
+            minWidth: 560,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 13,
           }}
@@ -187,13 +187,13 @@ function VeckoOversikt({
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
+              <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
               <th style={{ textAlign: "left" }}>Adress</th>
               <th>Antal jobb</th>
               <th>Totalt (hh:mm)</th>
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
               <th>Syften</th>
-              <th>Senaste datum/tid</th>
             </tr>
           </thead>
           <tbody>
@@ -205,15 +205,13 @@ function VeckoOversikt({
                   borderBottom: "1px solid #e5e7eb",
                 }}
               >
+                <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>{r.namn}</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
                 <td style={{ textAlign: "left" }}>{r.syften}</td>
-                <td style={{ textAlign: "left" }}>
-                  {formatDatumTid(r.senasteDatumTid)}
-                </td>
               </tr>
             ))}
             {lista.length === 0 && (
@@ -299,7 +297,6 @@ function App() {
 
   // Separat popup för raderingsbekräftelse
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  // deleteConfirm = { fromDate, toDate, beskrivning }
 
   // === Dela-funktion (Web Share API + fallback) ===
   async function delaApp() {
@@ -311,9 +308,7 @@ function App() {
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url: shareUrl });
-      } catch (_) {
-        // användaren kan avbryta, inget fel behövs
-      }
+      } catch (_) {}
     } else {
       const mailto = `mailto:?subject=${encodeURIComponent(
         title
@@ -560,13 +555,13 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
+    const colDatumTid = 19;
     const colAdress = 26;
     const colAntal = 6;
     const colTid = 10;
     const colGrus = 8;
     const colSalt = 8;
     const colSyfte = 18;
-    const colDatumTid = 19;
 
     const SEP = "   ";
 
@@ -576,15 +571,17 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
+    const headDatumTid = padRight("Senaste", colDatumTid);
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
     const headTid = padRight("Tid", colTid);
     const headGrus = padRight("Grus", colGrus);
     const headSalt = padRight("Salt", colSalt);
     const headSyfte = padRight("Syften", colSyfte);
-    const headDatumTid = padRight("Senaste", colDatumTid);
 
     const headerRad =
+      headDatumTid +
+      SEP +
       headAdress +
       SEP +
       headAntal +
@@ -595,21 +592,21 @@ function App() {
       SEP +
       headSalt +
       SEP +
-      headSyfte +
-      SEP +
-      headDatumTid;
+      headSyfte;
 
     const sepLinje = "-".repeat(headerRad.length);
 
     const tabellRader = rader.map((r) => {
+      const colG = padRight(formatDatumTid(r.senasteDatumTid), colDatumTid);
       const colA = padRight(r.namn, colAdress);
       const colB = padRight(r.antal, colAntal);
       const colC = padRight(formatTid(r.tid), colTid);
       const colD = padRight(r.grus, colGrus);
       const colE = padRight(r.salt, colSalt);
       const colF = padRight(r.syften, colSyfte);
-      const colG = padRight(formatDatumTid(r.senasteDatumTid), colDatumTid);
       return (
+        colG +
+        SEP +
         colA +
         SEP +
         colB +
@@ -620,9 +617,7 @@ function App() {
         SEP +
         colE +
         SEP +
-        colF +
-        SEP +
-        colG
+        colF
       );
     });
 
@@ -631,15 +626,17 @@ function App() {
     const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
     const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
 
+    const totalDatumTidCell = padRight("-", colDatumTid);
     const totalAdress = padRight("TOTALT", colAdress);
     const totalAntal = padRight(totalJobb, colAntal);
     const totalTid = padRight(formatTid(totalTidMin), colTid);
     const totalGrusCell = padRight(totalGrus, colGrus);
     const totalSaltCell = padRight(totalSalt, colSalt);
     const totalSyfteCell = padRight("-", colSyfte);
-    const totalDatumTidCell = padRight("-", colDatumTid);
 
     const totalRad =
+      totalDatumTidCell +
+      SEP +
       totalAdress +
       SEP +
       totalAntal +
@@ -650,9 +647,7 @@ function App() {
       SEP +
       totalSaltCell +
       SEP +
-      totalSyfteCell +
-      SEP +
-      totalDatumTidCell;
+      totalSyfteCell;
 
     const bodyLines = [
       "Veckorapport SnöJour",
@@ -739,6 +734,7 @@ function App() {
     }));
 
     const header = [
+      "Senaste datum/tid",
       "Adress",
       "Antal jobb",
       "Totalt (minuter)",
@@ -746,7 +742,6 @@ function App() {
       "Grus (kg)",
       "Salt (kg)",
       "Syften",
-      "Senaste datum/tid",
     ];
 
     const formatTidLokalt = (min) => {
@@ -758,6 +753,7 @@ function App() {
     };
 
     const rows = lista.map((r) => [
+      formatDatumTid(r.senasteDatumTid),
       r.namn,
       r.antal,
       r.tid,
@@ -765,7 +761,6 @@ function App() {
       r.grus,
       r.salt,
       r.syften,
-      formatDatumTid(r.senasteDatumTid),
     ]);
 
     const csvContent = [header, ...rows]
@@ -883,7 +878,7 @@ function App() {
 
   // ====== RADERA-FLIK – radera rapporter per år/månad ======
   const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
-  const [raderaMånad, setRaderaMånad] = useState(""); // 1–12 eller tomt för hela året
+  const [raderaMånad, setRaderaMånad] = useState("");
   const [raderaPågår, setRaderaPågår] = useState(false);
 
   async function raderaRapporter() {
@@ -901,7 +896,6 @@ function App() {
     let fromDate, toDate, beskrivning;
 
     if (!raderaMånad) {
-      // hela året
       fromDate = `${årNum}-01-01`;
       toDate = `${årNum}-12-31`;
       beskrivning = `alla rapporter år ${årNum}`;
@@ -912,7 +906,7 @@ function App() {
         return;
       }
       const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0)); // sista dagen i månaden
+      const end = new Date(Date.UTC(årNum, månNum, 0));
       fromDate = start.toISOString().slice(0, 10);
       toDate = end.toISOString().slice(0, 10);
       beskrivning = `alla rapporter ${årNum}-${månNum
@@ -920,7 +914,6 @@ function App() {
         .padStart(2, "0")}`;
     }
 
-    // Visa röd säkerhets-popup
     setDeleteConfirm({ fromDate, toDate, beskrivning });
   }
 
@@ -962,7 +955,6 @@ function App() {
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
-          {/* Timer-rad om jobb pågår */}
           {aktivtJobb && (
             <div
               style={{
@@ -1149,23 +1141,6 @@ function App() {
               Starta jobb (auto-tid)
             </button>
           )}
-
-          {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
-            </p>
-          )}
         </section>
       );
     }
@@ -1257,6 +1232,21 @@ function App() {
               />
             </div>
           </div>
+
+          <button
+            onClick={() => {
+              const { vecka, år } = getCurrentIsoWeekAndYear();
+              setFiltreradVecka(String(vecka));
+              setFiltreratÅr(String(år));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 8,
+            }}
+          >
+            Denna vecka
+          </button>
 
           <label style={labelStyle}>Filtrera på metod</label>
           <select
