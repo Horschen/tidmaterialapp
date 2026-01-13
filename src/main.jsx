@@ -1088,7 +1088,7 @@ async function hamtaRapporter() {
               }}
             >
               Paus pågår –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
             </div>
           )}
 
@@ -1603,7 +1603,7 @@ async function hamtaRapporter() {
               }}
             >
               Paus igång –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
             </div>
           )}
 
