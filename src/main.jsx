@@ -330,65 +330,6 @@ function App() {
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
-    // Gruppera som i tabellen
-    const grupperad = {};
-    filtreradeRapporter.forEach((rad) => {
-      const namn = rad.adresser?.namn || "Okänd adress";
-      if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
-      grupperad[namn].tid += rad.arbetstid_min || 0;
-      grupperad[namn].grus += rad.sand_kg || 0;
-      grupperad[namn].salt += rad.salt_kg || 0;
-      grupperad[namn].antal++;
-    });
-
-    const rader = Object.entries(grupperad).map(([namn, v]) => ({
-      namn,
-      ...v,
-    }));
-
-    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
-
-    const dataRader = rader.map((r) => {
-      return [
-        r.namn,
-        r.antal,
-        formatTid(r.tid),
-        r.grus,
-        r.salt,
-      ].join(";");
-    });
-
-    const veckoText = filtreradVecka || "-";
-    const arText = filtreratÅr || "-";
-    const metodText =
-      filterMetod === "hand"
-        ? "Endast För hand"
-        : filterMetod === "maskin"
-        ? "Endast Maskin"
-        : "Alla jobb";
-
-    const bodyLines = [
-      `Veckorapport SnöJour`,
-      "",
-      `Vecka: ${veckoText}`,
-      `År: ${arText}`,
-      `Filter: ${metodText}`,
-      "",
-      rubrikRad,
-      ...dataRader,
-      "",
-      "Hälsningar,",
-      "SnöJour-systemet",
-    ];
-
-    const subject = encodeURIComponent(`Veckorapport SnöJour v${veckoText} ${arText}`);
-    const body = encodeURIComponent(bodyLines.join("\n"));
-
-    // Här kan du lägga fler mottagare, separerade med komma
-    const to = "hakan.pengel@outlook.com";
-
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
-  }
 
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
