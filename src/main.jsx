@@ -462,10 +462,7 @@ function App() {
 
     const metod = team === "För hand" ? "hand" : "maskin";
     const nuIso = new Date().toISOString();
-    setAktivtPass({
-      startTid: nuIso,
-      metod,
-    });
+    setAktivtPass({ startTid: nuIso, metod });
     setSenasteRapportTid(null);
     setStatus("⏱️ Pass startat.");
   }
@@ -502,9 +499,8 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Veckorapport via mail ===
+  // === Skicka veckorapport via mail ===
   function skickaVeckorapportEmail() {
-    // använder filtreradeRapporter och samma gruppering som exportVeckorapportCSV
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
@@ -889,6 +885,76 @@ function App() {
     marginTop: 8,
   };
 
+  // ====== RADERA-FUNKTIONER ======
+  async function raderaRapporter() {
+    if (!raderaÅr) {
+      showPopup("👎 Ange år att radera.", "error", 3000);
+      return;
+    }
+
+    const årNum = Number(raderaÅr);
+    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
+      showPopup("👎 Ogiltigt årtal.", "error", 3000);
+      return;
+    }
+
+    let fromDate, toDate, beskrivning;
+
+    if (!raderaMånad) {
+      fromDate = `${årNum}-01-01`;
+      toDate = `${årNum}-12-31`;
+      beskrivning = `alla rapporter år ${årNum}`;
+    } else {
+      const månNum = Number(raderaMånad);
+      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
+        showPopup("👎 Ogiltig månad.", "error", 3000);
+        return;
+      }
+      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
+      const end = new Date(Date.UTC(årNum, månNum, 0));
+      fromDate = start.toISOString().slice(0, 10);
+      toDate = end.toISOString().slice(0, 10);
+      beskrivning = `alla rapporter ${årNum}-${månNum
+        .toString()
+        .padStart(2, "0")}`;
+    }
+
+    setDeleteConfirm({ fromDate, toDate, beskrivning });
+  }
+
+  async function bekräftaRadering() {
+    if (!deleteConfirm) return;
+    const { fromDate, toDate, beskrivning } = deleteConfirm;
+
+    setDeleteConfirm(null);
+    setRaderaPågår(true);
+
+    const { error, count } = await supabase
+      .from("rapporter")
+      .delete({ count: "exact" })
+      .gte("datum", fromDate)
+      .lte("datum", toDate);
+
+    setRaderaPågår(false);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Fel vid radering.", "error", 3000);
+      setStatus("❌ Fel vid radering: " + error.message);
+    } else {
+      const antal = count ?? 0;
+      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
+      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
+      if (visaOversikt) {
+        hamtaRapporter();
+      }
+    }
+  }
+
+  function avbrytRadering() {
+    setDeleteConfirm(null);
+  }
+
   // ====== INNEHÅLL PER FLIK ======
   function renderContent() {
     if (activeTab === "registrera") {
@@ -1253,7 +1319,7 @@ function App() {
       );
     }
 
-    // Radera-flik
+    // Radera-fliken
     return (
       <section style={sectionStyle}>
         <h2
@@ -1406,6 +1472,7 @@ function App() {
           </button>
         </header>
 
+        {/* Popup-notis */}
         {popup && (
           <div
             style={{
@@ -1430,6 +1497,7 @@ function App() {
           </div>
         )}
 
+        {/* Raderings-bekräftelse-popup */}
         {deleteConfirm && (
           <div
             style={{
@@ -1496,6 +1564,7 @@ function App() {
         {renderContent()}
       </div>
 
+      {/* Bottenmeny med flikar */}
       <nav
         style={{
           position: "fixed",
