@@ -202,7 +202,7 @@ function VeckoOversikt({
                 key={r.namn}
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid "#e5e7eb",
                 }}
               >
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
@@ -352,7 +352,7 @@ function App() {
     }
   }
 
-  // === Validering för sparning (adress, syfte, material) ===
+  // === Validering fält (adress, syfte, material) ===
   function validateBeforeSaveFields() {
     if (!valda) {
       showPopup("👎 Välj en adress först.", "error", 3000);
@@ -902,8 +902,8 @@ function App() {
                 fontSize: 14,
               }}
             >
-              Pågående pass ({aktivtPass.metod === "hand" ? "För hand" : "Maskin"}
-              ) –{" "}
+              Pågående pass (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
               <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
             </div>
           )}
@@ -1010,7 +1010,9 @@ function App() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Arbetstid (minuter)</label>
+            <label style={labelStyle}>
+              Arbetstid (minuter) – används bara om inget pass är aktivt
+            </label>
             <input
               type="number"
               value={arbetstid}
@@ -1075,6 +1077,23 @@ function App() {
           >
             Stoppa passet
           </button>
+
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
         </section>
       );
     }
