@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
+console.log("SUPABASE_URL i main.jsx:", SUPABASE_URL);
+console.log(
+  "SUPABASE_ANON_KEY i main.jsx (första 10 tecken):",
+  SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.slice(0, 10) : "INGEN KEY"
+);
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+console.log("Supabase client skapad med URL:", SUPABASE_URL);
 
 // ======= Hjälpfunktion: aktuell ISO-vecka + år =======
 function getCurrentIsoWeekAndYear() {
