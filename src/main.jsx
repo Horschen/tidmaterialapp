@@ -129,7 +129,7 @@ function App() {
   const [visaOversikt, setVisaOversikt] = useState(false);
 
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
-  const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
+  const [filtreratÅr, setFiltratetÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
   const [valda, setValda] = useState("");
@@ -274,7 +274,6 @@ function App() {
       return;
     }
 
-    // Gruppera per adress (som i översikten)
     const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
@@ -301,7 +300,6 @@ function App() {
         ? "Endast Maskin"
         : "Alla jobb";
 
-    // Kolumnbredder
     const colAdress = 40;
     const colAntal = 8;
     const colTid = 12;
@@ -469,12 +467,76 @@ function App() {
     l.href = url;
     l.setAttribute(
       "download",
-      `rapport-vecka-${filtreradVecka || "x"}-${filtreratÅr || "xxxx"}-${metodDel}.csv`
+      `rapport-vecka-${filtreradVecka || "x"}-${filtratetÅr || "xxxx"}-${metodDel}.csv`
     );
     document.body.appendChild(l);
     l.click();
     document.body.removeChild(l);
     URL.revokeObjectURL(url);
+  }
+
+  // === Öppna karta för vald adress ===
+  function oppnaKartaForValdAdress() {
+    if (!valda) {
+      alert("Välj en adress först.");
+      return;
+    }
+    const adr = adresser.find(
+      (a) => a.id === Number(valda) || a.id === valda
+    );
+    if (adr?.gps_url) {
+      window.open(adr.gps_url, "_blank");
+    } else {
+      alert("Ingen GPS‑länk sparad för denna adress.");
+    }
+  }
+
+  // === Öppna Google Maps-rutt från vald adress genom övriga adresser ===
+  function oppnaRuttFranValdAdress() {
+    if (!valda) {
+      alert("Välj en adress som startpunkt först.");
+      return;
+    }
+    if (!adresser || adresser.length === 0) {
+      alert("Inga adresser laddade.");
+      return;
+    }
+
+    const startAdr = adresser.find(
+      (a) => a.id === Number(valda) || a.id === valda
+    );
+    if (!startAdr?.gps_url) {
+      alert("Startadressen har ingen GPS‑länk sparad.");
+      return;
+    }
+
+    // Övriga adresser med gps_url
+    const andra = adresser.filter(
+      (a) => a.id !== startAdr.id && a.gps_url
+    );
+
+    if (andra.length === 0) {
+      alert("Det finns inga andra adresser med GPS‑länk att ruta genom.");
+      return;
+    }
+
+    // Google Maps: origin = startAdr, destination = sista, waypoints = några emellan
+    const destination = andra[andra.length - 1].gps_url;
+    const mitten = andra.slice(0, -1);
+
+    // Max ~9 waypoints i URL: vi tar de första 9 i listan
+    const waypoints = mitten.slice(0, 9).map((a) => a.gps_url);
+
+    const params = new URLSearchParams();
+    params.set("api", "1");
+    params.set("origin", startAdr.gps_url);
+    params.set("destination", destination);
+    if (waypoints.length > 0) {
+      params.set("waypoints", waypoints.join("|"));
+    }
+
+    const url = "https://www.google.com/maps/dir/?" + params.toString();
+    window.open(url, "_blank");
   }
 
   return (
@@ -498,6 +560,25 @@ function App() {
           </option>
         ))}
       </select>
+
+      {/* Kartknappar */}
+      <br />
+      {valda && (
+        <>
+          <button
+            style={{ marginTop: 5, marginRight: 10 }}
+            onClick={oppnaKartaForValdAdress}
+          >
+            Öppna karta för vald adress
+          </button>
+          <button
+            style={{ marginTop: 5 }}
+            onClick={oppnaRuttFranValdAdress}
+          >
+            Öppna rutt från vald adress (Google Maps)
+          </button>
+        </>
+      )}
 
       <br />
       <br />
@@ -569,8 +650,8 @@ function App() {
         type="number"
         min="2020"
         max="2100"
-        value={filtreratÅr}
-        onChange={(e) => setFiltreratÅr(e.target.value)}
+        value={filtratetÅr}
+        onChange={(e) => setFiltratetÅr(e.target.value)}
         style={{ width: "90px", marginLeft: "5px" }}
       />
 
@@ -594,7 +675,7 @@ function App() {
           onSkickaEmail={skickaVeckorapportEmail}
           onExportCSV={exportVeckorapportCSV}
           filtreradVecka={filtreradVecka}
-          filtreratÅr={filtreratÅr}
+          filtreratÅr={filtratetÅr}
           filterMetod={filterMetod}
         />
       )}
