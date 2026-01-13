@@ -31,25 +31,23 @@ function formatDatumTid(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "-";
-
-  // Svensk lokal tid med format YYYY-MM-DD HH:MM:SS
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   const ss = String(d.getSeconds()).padStart(2, "0");
-
   return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
+
 // ======= Hjälp: sekunder -> hh:mm:ss =======
-function formatSekTillHhMm(sek) {
+function formatSekTillHhMmSs(sek) {
   const h = Math.floor(sek / 3600);
   const m = Math.floor((sek % 3600) / 60);
+  const s = sek % 60;
   return `${h.toString().padStart(2, "0")}:${m
     .toString()
-    .padStart(2, "0")}`;
+    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
@@ -371,23 +369,22 @@ function App() {
   }, []);
 
   // === Hämta rapporter ===
-async function hamtaRapporter() {
-  const { data, error } = await supabase
-    .from("rapporter")
-    .select(
-      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
-    )
-    .order("datum", { ascending: false });
-  if (error) {
-    setStatus("❌ " + error.message);
-    showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
-  } else {
-    console.log("Rapporter från Supabase:", data); // LÄGG TILL DETTA
-    setRapporter(data || []);
-    setVisaOversikt(true);
-    setStatus("✅ Rapporter uppdaterade.");
+  async function hamtaRapporter() {
+    const { data, error } = await supabase
+      .from("rapporter")
+      .select(
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
+      )
+      .order("datum", { ascending: false });
+    if (error) {
+      setStatus("❌ " + error.message);
+      showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
+    } else {
+      setRapporter(data || []);
+      setVisaOversikt(true);
+      setStatus("✅ Rapporter uppdaterade.");
+    }
   }
-}
 
   // === Validera fält (adress, syfte, material) ===
   function validateBeforeSaveFields() {
@@ -1088,7 +1085,7 @@ async function hamtaRapporter() {
               }}
             >
               Paus pågår –{" "}
-              <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
             </div>
           )}
 
@@ -1603,7 +1600,7 @@ async function hamtaRapporter() {
               }}
             >
               Paus igång –{" "}
-              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
             </div>
           )}
 
