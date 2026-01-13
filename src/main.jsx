@@ -274,13 +274,22 @@ function App() {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+  const passTotalSek =
+  aktivtPass != null
+    ? Math.max(
+        0,
+        Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
+      )
+    : 0;
   const pågåendePassSek =
-    aktivtPass != null
-      ? Math.max(
-          0,
-          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
+  aktivtPass != null
+    ? Math.max(
+        0,
+        Math.floor(
+          (nuTid - new Date(senasteRapportTid || aktivtPass.startTid)) / 1000
         )
-      : 0;
+      )
+    : 0;
 
   const pågåendePausSek =
     paus != null
@@ -486,27 +495,23 @@ function App() {
   }
 
   // === Starta pass ===
-  function startaPass() {
-    if (aktivtPass) {
-      showPopup("👎 Ett pass är redan igång.", "error", 3000);
-      setStatus("Ett pass är redan igång. Stoppa passet först.");
-      return;
-    }
-
-    if (!valda) {
-      showPopup("👎 Välj en adress innan du startar passet.", "error", 3000);
-      setStatus("Välj en adress innan du startar passet.");
-      return;
-    }
-
-    const metod = team === "För hand" ? "hand" : "maskin";
-    const nuIso = new Date().toISOString();
-    setAktivtPass({ startTid: nuIso, metod });
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setTotalPausSek(0);
-    setStatus("⏱️ Pass startat.");
+function startaPass() {
+  if (aktivtPass) {
+    showPopup("👎 Ett pass är redan igång.", "error", 3000);
+    setStatus("Ett pass är redan igång. Stoppa passet först.");
+    return;
   }
+
+  // ingen adress behövs för att starta passet
+
+  const metod = team === "För hand" ? "hand" : "maskin";
+  const nuIso = new Date().toISOString();
+  setAktivtPass({ startTid: nuIso, metod });
+  setSenasteRapportTid(null);
+  setPaus(null);
+  setTotalPausSek(0);
+  setStatus("⏱️ Pass startat.");
+}
 
   // === Stoppa pass ===
   function stoppaPass() {
@@ -1050,22 +1055,28 @@ function App() {
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
-          {aktivtPass && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#eef2ff",
-                color: "#1d4ed8",
-                fontSize: 14,
-              }}
-            >
-              Pågående pass (
-              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-            </div>
-          )}
+  {aktivtPass ? (
+  <div
+    style={{
+      marginBottom: 12,
+      padding: "8px 12px",
+      borderRadius: 12,
+      backgroundColor: "#eef2ff",
+      color: "#1d4ed8",
+      fontSize: 14,
+    }}
+  >
+    Pågående pass (
+    {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+    <strong>{formatSekTillHhMmSs(passTotalSek)}</strong>
+    <div style={{ fontSize: 12, color: "#4b5563", marginTop: 4 }}>
+      Senaste adressintervall:{" "}
+      <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+    </div>
+  </div>
+) : (
+  ...
+)}
 
           {paus && (
             <div
