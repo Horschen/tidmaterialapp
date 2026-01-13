@@ -95,16 +95,20 @@ function App() {
   const [filterMetod, setFilterMetod] = useState("alla");
 
   // === Hämta adresser vid start ===
-  useEffect(() => {
-    async function laddaAdresser() {
-      const { data, error } = await supabase
-        .from("adresser")
-        .select("id, namn, gps_url, maskin_mojlig");
-      if (error) setStatus(error.message);
-      else setAdresser(data || []);
-    }
-    laddaAdresser();
-  }, []);
+ useEffect(() => {
+  async function laddaAdresser() {
+    const { data, error } = await supabase
+      .from("adresser")
+      .select("id, namn, gps_url, maskin_mojlig");
+
+    console.log("Supabase adresser data:", data);
+    console.log("Supabase adresser error:", error);
+
+    if (error) setStatus("Fel vid laddning av adresser: " + error.message);
+    else setAdresser(data || []);
+  }
+  laddaAdresser();
+}, []);
 
   // === Hämta rapporter ===
   async function hamtaRapporter() {
