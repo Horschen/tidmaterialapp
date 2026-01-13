@@ -744,7 +744,7 @@ function App() {
     padding: "10px 12px",
     fontSize: 16,
     borderRadius: 10,
-    border: "1px solid "#d1d5db"",
+    border: "1px solid #d1d5db",
     backgroundColor: "#f9fafb",
   };
 
@@ -841,7 +841,6 @@ function App() {
       const antal = count ?? 0;
       showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
       setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-      // uppdatera lokala listan om vi står i rapport-fliken
       if (visaOversikt) {
         hamtaRapporter();
       }
