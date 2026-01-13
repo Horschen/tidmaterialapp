@@ -236,7 +236,7 @@ function VeckoOversikt({
 
 // ======= Huvudappen =======
 function App() {
-  const [activeTab, setActiveTab] = useState("registrera"); // registrera | karta | rapport | radera
+  const [activeTab, setActiveTab] = useState("registrera");
 
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
@@ -246,7 +246,7 @@ function App() {
 
   const [adresser, setAdresser] = useState([]);
 
-  // För rapportinmatning
+  // Rapportinmatning
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
@@ -286,21 +286,26 @@ function App() {
     return delar.join(", ");
   }
 
-  // För kartfunktion (endast öppna karta)
+  // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
 
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
-  // Popup-notifiering: { text, type: 'success' | 'error' }
+  // Popup-notis
   const [popup, setPopup] = useState(null);
   function showPopup(text, type = "success", durationMs = 4000) {
     setPopup({ text, type });
     setTimeout(() => setPopup(null), durationMs);
   }
 
-  // Separat popup för raderingsbekräftelse
+  // Delete-confirm popup
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Radera-flik state
+  const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
+  const [raderaMånad, setRaderaMånad] = useState("");
+  const [raderaPågår, setRaderaPågår] = useState(false);
 
   // Dela-funktion
   async function delaApp() {
@@ -321,7 +326,7 @@ function App() {
     }
   }
 
-  // === Hämta adresser vid start ===
+  // === Hämta adresser ===
   useEffect(() => {
     async function laddaAdresser() {
       const { data, error } = await supabase
@@ -333,7 +338,7 @@ function App() {
     laddaAdresser();
   }, []);
 
-  // === Hämta rapporter (till översikt) ===
+  // === Hämta rapporter ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
@@ -351,7 +356,7 @@ function App() {
     }
   }
 
-  // === Validering fält (adress, syfte, material) ===
+  // === Validera fält (adress, syfte, material) ===
   function validateBeforeSaveFields() {
     if (!valda) {
       showPopup("👎 Välj en adress först.", "error", 3000);
@@ -394,7 +399,6 @@ function App() {
     let arbetstidMin = 0;
 
     if (aktivtPass) {
-      // auto-pass: tid sedan senaste rapport eller pass-start
       const nu = new Date();
       const startTid =
         senasteRapportTid != null
@@ -411,7 +415,6 @@ function App() {
       arbetstidMin = diffMin;
       setSenasteRapportTid(nu.toISOString());
     } else {
-      // manuell tid
       const manuell = parseInt(arbetstid, 10);
       if (!manuell || manuell <= 0) {
         showPopup(
@@ -449,7 +452,7 @@ function App() {
     }
   }
 
-  // === Starta pass (auto-tid) ===
+  // === Starta pass ===
   function startaPass() {
     if (aktivtPass) {
       showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -458,17 +461,16 @@ function App() {
     }
 
     const metod = team === "För hand" ? "hand" : "maskin";
-
     const nuIso = new Date().toISOString();
     setAktivtPass({
       startTid: nuIso,
       metod,
     });
-    setSenasteRapportTid(null); // första rapport använder pass-start
+    setSenasteRapportTid(null);
     setStatus("⏱️ Pass startat.");
   }
 
-  // === Stoppa pass (utan extra rad) ===
+  // === Stoppa pass ===
   function stoppaPass() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass.", "error", 3000);
@@ -480,7 +482,7 @@ function App() {
     setStatus("Pass stoppat.");
   }
 
-  // === Filtrering av rapporter på vecka + år + metod ===
+  // === Filtrera rapporter på vecka/år/metod ===
   const filtreradeRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -500,8 +502,9 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mailto (text-mejl) ===
+  // === Veckorapport via mail ===
   function skickaVeckorapportEmail() {
+    // använder filtreradeRapporter och samma gruppering som exportVeckorapportCSV
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
@@ -681,13 +684,13 @@ function App() {
       "Veckorapport SnöJour v" + veckoText + " " + arText
     );
     const body = encodeURIComponent(bodyLines.join("\n"));
-
     const to = "hakan.pengel@outlook.com";
+
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
-  // === Exportera veckorapport till CSV-fil (öppnas i Excel) ===
+  // === Exportera veckorapport till CSV ===
   function exportVeckorapportCSV() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
@@ -811,81 +814,23 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  // ====== RADERA-FLIK – radera rapporter per år/månad ======
-  const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
-  const [raderaMånad, setRaderaMånad] = useState("");
-  const [raderaPågår, setRaderaPågår] = useState(false);
-
-  async function raderaRapporter() {
-    if (!raderaÅr) {
-      showPopup("👎 Ange år att radera.", "error", 3000);
+  // === Öppna karta för vald adress ===
+  function oppnaKartaForKartAdress() {
+    if (!kartaAdressId) {
+      alert("Välj en adress i kartsektionen först.");
       return;
     }
-
-    const årNum = Number(raderaÅr);
-    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-      showPopup("👎 Ogiltigt årtal.", "error", 3000);
-      return;
-    }
-
-    let fromDate, toDate, beskrivning;
-
-    if (!raderaMånad) {
-      fromDate = `${årNum}-01-01`;
-      toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum}`;
+    const adr = adresser.find(
+      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
+    );
+    if (adr?.gps_url) {
+      window.open(adr.gps_url, "_blank");
     } else {
-      const månNum = Number(raderaMånad);
-      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-        showPopup("👎 Ogiltig månad.", "error", 3000);
-        return;
-      }
-      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0));
-      fromDate = start.toISOString().slice(0, 10);
-      toDate = end.toISOString().slice(0, 10);
-      beskrivning = `alla rapporter ${årNum}-${månNum
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    setDeleteConfirm({ fromDate, toDate, beskrivning });
-  }
-
-  async function bekräftaRadering() {
-    if (!deleteConfirm) return;
-    const { fromDate, toDate, beskrivning } = deleteConfirm;
-
-    setDeleteConfirm(null);
-    setRaderaPågår(true);
-
-    const { error, count } = await supabase
-      .from("rapporter")
-      .delete({ count: "exact" })
-      .gte("datum", fromDate)
-      .lte("datum", toDate);
-
-    setRaderaPågår(false);
-
-    if (error) {
-      console.error(error);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-      setStatus("❌ Fel vid radering: " + error.message);
-    } else {
-      const antal = count ?? 0;
-      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
+      alert("Ingen GPS‑länk sparad för denna adress.");
     }
   }
 
-  function avbrytRadering() {
-    setDeleteConfirm(null);
-  }
-
-  // ====== STILHJÄLPARE ======
+  // ====== STIL ======
   const sectionStyle = {
     marginBottom: 28,
     padding: 16,
@@ -1308,7 +1253,7 @@ function App() {
       );
     }
 
-    // activeTab === "radera"
+    // Radera-flik
     return (
       <section style={sectionStyle}>
         <h2
@@ -1383,7 +1328,6 @@ function App() {
     );
   }
 
-  // Popup-stil (grön / röd, större, centrerad)
   const popupStyle =
     popup && popup.type === "error"
       ? {
@@ -1462,7 +1406,6 @@ function App() {
           </button>
         </header>
 
-        {/* Popup-notis – centrerad, större */}
         {popup && (
           <div
             style={{
@@ -1487,7 +1430,6 @@ function App() {
           </div>
         )}
 
-        {/* Raderings-bekräftelse-popup */}
         {deleteConfirm && (
           <div
             style={{
@@ -1554,7 +1496,6 @@ function App() {
         {renderContent()}
       </div>
 
-      {/* Bottenmeny med flikar */}
       <nav
         style={{
           position: "fixed",
