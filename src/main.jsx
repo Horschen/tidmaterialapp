@@ -235,12 +235,94 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mail (på begäran) ===
+    // === Skicka veckorapport via mail (på begäran) ===
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
       return;
     }
+
+    // Gruppera som i tabellen
+    const grupperad = {};
+    filtreradeRapporter.forEach((rad) => {
+      const namn = rad.adresser?.namn || "Okänd adress";
+      if (!grupperad[namn]) {
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      }
+      grupperad[namn].tid += rad.arbetstid_min || 0;
+      grupperad[namn].grus += rad.sand_kg || 0;
+      grupperad[namn].salt += rad.salt_kg || 0;
+      grupperad[namn].antal++;
+    });
+
+    const rader = Object.entries(grupperad).map(([namn, v]) => ({
+      namn,
+      ...v,
+    }));
+
+    const veckoText = filtreradVecka || "-";
+    const arText = filtreratÅr || "-";
+    const metodText =
+      filterMetod === "hand"
+        ? "Endast För hand"
+        : filterMetod === "maskin"
+        ? "Endast Maskin"
+        : "Alla jobb";
+
+    // Bygg rubrikrad och datarader (semicolon-separerat = lätt att läsa och kopiera till Excel)
+    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+
+    const dataRader = rader.map((r) =>
+      [
+        r.namn,
+        r.antal,
+        formatTid(r.tid),
+        r.grus,
+        r.salt,
+      ].join(";")
+    );
+
+    // Totalsummering för hela veckan
+    const totalTidMin = rader.reduce((sum, r) => sum + r.tid, 0);
+    const totalGrus = rader.reduce((sum, r) => sum + r.grus, 0);
+    const totalSalt = rader.reduce((sum, r) => sum + r.salt, 0);
+    const totalJobb = rader.reduce((sum, r) => sum + r.antal, 0);
+
+    const totalRad =
+      "TOTALT;" +
+      totalJobb +
+      ";" +
+      formatTid(totalTidMin) +
+      ";" +
+      totalGrus +
+      ";" +
+      totalSalt;
+
+    const bodyLines = [
+      "Veckorapport SnöJour",
+      "",
+      "Vecka: " + veckoText,
+      "År: " + arText,
+      "Filter: " + metodText,
+      "",
+      rubrikRad,
+      ...dataRader,
+      totalRad,
+      "",
+      "Hälsningar,",
+      "SnöJour-systemet",
+    ];
+
+    const subject = encodeURIComponent(
+      "Veckorapport SnöJour v" + veckoText + " " + arText
+    );
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    const to = "hakan.pengel@outlook.com";
+    window.location.href =
+      "mailto:" + to + "?subject=" + subject + "&body=" + body;
+  }
+  
 
     // Gruppera som i tabellen
     const grupperad = {};
