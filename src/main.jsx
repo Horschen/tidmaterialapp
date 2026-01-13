@@ -168,15 +168,22 @@ function VeckoOversikt({
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
-      <div style={{ overflowX: "auto", marginTop: 10 }}>
+      <div
+        style={{
+          overflowX: "auto",
+          overflowY: "auto",
+          marginTop: 10,
+          maxHeight: "70vh", // mer höjd för datorvy
+        }}
+      >
         <table
-          cellPadding="6"
+          cellPadding="12"
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 560,
+            minWidth: 900, // bredare tabell
             fontFamily: "system-ui, -apple-system, sans-serif",
-            fontSize: 13,
+            fontSize: 14,
           }}
         >
           <thead>
@@ -202,6 +209,7 @@ function VeckoOversikt({
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                   borderBottom: "1px solid #e5e7eb",
+                  height: 40, // lite högre rader
                 }}
               >
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
@@ -460,6 +468,12 @@ function App() {
       return;
     }
 
+    if (!valda) {
+      showPopup("👎 Välj en adress innan du startar passet.", "error", 3000);
+      setStatus("Välj en adress innan du startar passet.");
+      return;
+    }
+
     const metod = team === "För hand" ? "hand" : "maskin";
     const nuIso = new Date().toISOString();
     setAktivtPass({ startTid: nuIso, metod });
@@ -474,6 +488,19 @@ function App() {
       setStatus("Inget aktivt pass att stoppa.");
       return;
     }
+
+    const sek = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
+    );
+
+    if (sek < 30) {
+      const ok = window.confirm(
+        "Passet är kortare än 30 sekunder. Är du säker på att du vill stoppa?"
+      );
+      if (!ok) return;
+    }
+
     setAktivtPass(null);
     setSenasteRapportTid(null);
     setStatus("Pass stoppat.");
@@ -1127,26 +1154,6 @@ function App() {
             </select>
           </div>
 
-          {/* Pass-knappar */}
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#16a34a",
-            }}
-            onClick={startaPass}
-          >
-            Starta passet
-          </button>
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#dc2626",
-            }}
-            onClick={stoppaPass}
-          >
-            Stoppa passet
-          </button>
-
           {status && (
             <p
               style={{
@@ -1319,79 +1326,149 @@ function App() {
       );
     }
 
-    // Radera-fliken
-    return (
-      <section style={sectionStyle}>
-        <h2
-          style={{
-            fontSize: 18,
-            marginTop: 0,
-            marginBottom: 8,
-            color: "#b91c1c",
-          }}
-        >
-          Radera rapporter
-        </h2>
-        <p
-          style={{
-            fontSize: 13,
-            color: "#7f1d1d",
-            marginTop: 0,
-            marginBottom: 12,
-          }}
-        >
-          Varning: Detta tar bort rapporter permanent. Ingen ångra‑funktion.
-        </p>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>År</label>
-          <input
-            type="number"
-            min="2000"
-            max="2100"
-            value={raderaÅr}
-            onChange={(e) => setRaderaÅr(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={labelStyle}>Månad (valfritt)</label>
-          <select
-            value={raderaMånad}
-            onChange={(e) => setRaderaMånad(e.target.value)}
-            style={selectStyle}
+    if (activeTab === "radera") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 8,
+              color: "#b91c1c",
+            }}
           >
-            <option value="">Hela året</option>
-            <option value="1">Januari</option>
-            <option value="2">Februari</option>
-            <option value="3">Mars</option>
-            <option value="4">April</option>
-            <option value="5">Maj</option>
-            <option value="6">Juni</option>
-            <option value="7">Juli</option>
-            <option value="8">Augusti</option>
-            <option value="9">September</option>
-            <option value="10">Oktober</option>
-            <option value="11">November</option>
-            <option value="12">December</option>
-          </select>
-        </div>
+            Radera rapporter
+          </h2>
+          <p
+            style={{
+              fontSize: 13,
+              color: "#7f1d1d",
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Varning: Detta tar bort rapporter permanent. Ingen ångra‑funktion.
+          </p>
 
-        <button
-          onClick={raderaRapporter}
-          disabled={raderaPågår}
-          style={{
-            ...primaryButton,
-            backgroundColor: "#dc2626",
-            opacity: raderaPågår ? 0.6 : 1,
-            marginTop: 8,
-          }}
-        >
-          {raderaPågår ? "Raderar..." : "Radera rapporter"}
-        </button>
-      </section>
-    );
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>År</label>
+            <input
+              type="number"
+              min="2000"
+              max="2100"
+              value={raderaÅr}
+              onChange={(e) => setRaderaÅr(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>Månad (valfritt)</label>
+            <select
+              value={raderaMånad}
+              onChange={(e) => setRaderaMånad(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Hela året</option>
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Mars</option>
+              <option value="4">April</option>
+              <option value="5">Maj</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Augusti</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+
+          <button
+            onClick={raderaRapporter}
+            disabled={raderaPågår}
+            style={{
+              ...primaryButton,
+              backgroundColor: "#dc2626",
+              opacity: raderaPågår ? 0.6 : 1,
+              marginTop: 8,
+            }}
+          >
+            {raderaPågår ? "Raderar..." : "Radera rapporter"}
+          </button>
+        </section>
+      );
+    }
+
+    // Ny flik: Start/Stop
+    if (activeTab === "startstop") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Start / Stop pass
+          </h2>
+
+          {aktivtPass ? (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående pass (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+              <div style={{ marginTop: 4, fontSize: 12, color: "#4b5563" }}>
+                Välj metod och adress på fliken "Registrera" innan du startar
+                passet.
+              </div>
+            </div>
+          ) : (
+            <p
+              style={{
+                fontSize: 14,
+                marginBottom: 12,
+                color: "#4b5563",
+              }}
+            >
+              Inget pass är aktivt just nu.
+            </p>
+          )}
+
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#16a34a",
+            }}
+            onClick={startaPass}
+          >
+            Starta passet
+          </button>
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#dc2626",
+            }}
+            onClick={stoppaPass}
+          >
+            Stoppa passet
+          </button>
+        </section>
+      );
+    }
+
+    return null;
   }
 
   const popupStyle =
@@ -1580,6 +1657,23 @@ function App() {
           margin: "0 auto",
         }}
       >
+        <button
+          onClick={() => setActiveTab("startstop")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "startstop" ? "#2563eb" : "transparent",
+            color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Start/Stop
+        </button>
         <button
           onClick={() => setActiveTab("registrera")}
           style={{
