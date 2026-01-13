@@ -132,13 +132,19 @@ function App() {
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
+
+  // För rapportinmatning
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
-  const [status, setStatus] = useState("");
   const [aktivtJobb, setAktivtJobb] = useState(null);
+
+  // För kart-/rutt-funktion
+  const [kartaAdressId, setKartaAdressId] = useState("");
+
+  const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
   // === Hämta adresser vid start ===
@@ -475,14 +481,14 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  // === Öppna karta för vald adress ===
-  function oppnaKartaForValdAdress() {
-    if (!valda) {
-      alert("Välj en adress först.");
+  // === Öppna karta för vald adress i kartsektionen ===
+  function oppnaKartaForKartAdress() {
+    if (!kartaAdressId) {
+      alert("Välj en adress i kartsektionen först.");
       return;
     }
     const adr = adresser.find(
-      (a) => a.id === Number(valda) || a.id === valda
+      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
     );
     if (adr?.gps_url) {
       window.open(adr.gps_url, "_blank");
@@ -491,10 +497,10 @@ function App() {
     }
   }
 
-  // === Öppna Google Maps-rutt från vald adress genom övriga adresser ===
-  function oppnaRuttFranValdAdress() {
-    if (!valda) {
-      alert("Välj en adress som startpunkt först.");
+  // === Öppna Google Maps-rutt från vald kart-adress genom övriga adresser ===
+  function oppnaRuttFranKartAdress() {
+    if (!kartaAdressId) {
+      alert("Välj en startadress i kartsektionen först.");
       return;
     }
     if (!adresser || adresser.length === 0) {
@@ -503,7 +509,7 @@ function App() {
     }
 
     const startAdr = adresser.find(
-      (a) => a.id === Number(valda) || a.id === valda
+      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
     );
     if (!startAdr?.gps_url) {
       alert("Startadressen har ingen GPS‑länk sparad.");
@@ -541,7 +547,8 @@ function App() {
       <h1>Tid & Material – SnöJour</h1>
 
       {/* ---- Rapportinmatning ---- */}
-      <label>Adress: </label>
+      <h2>Registrera jobb</h2>
+      <label>Adress (för rapport): </label>
       <br />
       <select value={valda} onChange={(e) => setValda(e.target.value)}>
         <option value="">-- Välj adress --</option>
@@ -557,25 +564,6 @@ function App() {
           </option>
         ))}
       </select>
-
-      {/* Kartknappar */}
-      <br />
-      {valda && (
-        <>
-          <button
-            style={{ marginTop: 5, marginRight: 10 }}
-            onClick={oppnaKartaForValdAdress}
-          >
-            Öppna karta för vald adress
-          </button>
-          <button
-            style={{ marginTop: 5 }}
-            onClick={oppnaRuttFranValdAdress}
-          >
-            Öppna rutt från vald adress (Google Maps)
-          </button>
-        </>
-      )}
 
       <br />
       <br />
@@ -629,9 +617,39 @@ function App() {
         <button onClick={startaJobb}>Starta jobb (auto-tid)</button>
       )}
 
+      {/* ---- Kart- och ruttfunktioner ---- */}
+      <hr style={{ margin: "30px 0" }} />
+      <h2>Karta & rutt</h2>
+      <label>Välj adress (karta/rutt): </label>
+      <br />
+      <select
+        value={kartaAdressId}
+        onChange={(e) => setKartaAdressId(e.target.value)}
+      >
+        <option value="">-- Välj adress --</option>
+        {adresser.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.namn}
+          </option>
+        ))}
+      </select>
+
+      <br />
+      <br />
+      <button
+        onClick={oppnaKartaForKartAdress}
+        disabled={!kartaAdressId}
+        style={{ marginRight: 10 }}
+      >
+        Öppna karta för vald adress
+      </button>
+      <button onClick={oppnaRuttFranKartAdress} disabled={!kartaAdressId}>
+        Öppna rutt från vald adress (Google Maps)
+      </button>
+
       {/* ---- Filter & översikt ---- */}
-      <br />
-      <br />
+      <hr style={{ margin: "30px 0" }} />
+      <h2>Veckorapport</h2>
       <label>Visa vecka: </label>
       <input
         type="number"
