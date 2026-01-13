@@ -246,6 +246,94 @@ function App() {
     const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
+      if (!grupperad[namn]) {
+        grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      }
+      grupperad[namn].tid += rad.arbetstid_min || 0;
+      grupperad[namn].grus += rad.sand_kg || 0;
+      grupperad[namn].salt += rad.salt_kg || 0;
+      grupperad[namn].antal++;
+    });
+
+    const rader = Object.entries(grupperad).map(([namn, v]) => ({
+      namn,
+      ...v,
+    }));
+
+    const veckoText = filtreradVecka || "-";
+    const arText = filtreratÅr || "-";
+    const metodText =
+      filterMetod === "hand"
+        ? "Endast För hand"
+        : filterMetod === "maskin"
+        ? "Endast Maskin"
+        : "Alla jobb";
+
+    // Bygg HTML-raderna
+    const htmlRows = rader
+      .map((r) => {
+        return (
+          '<tr>' +
+          '<td style="padding:6px 8px;border:1px solid #ddd;">' +
+          r.namn +
+          "</td>" +
+          '<td style="padding:6px 8px;border:1px solid #ddd;text-align:center;">' +
+          r.antal +
+          "</td>" +
+          '<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' +
+          formatTid(r.tid) +
+          "</td>" +
+          '<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' +
+          r.grus +
+          "</td>" +
+          '<td style="padding:6px 8px;border:1px solid #ddd;text-align:right;">' +
+          r.salt +
+          "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+
+    // Bygg hela HTML-mejlet
+    let htmlBody = "";
+    htmlBody += '<div style="font-family:Arial, sans-serif; font-size:14px; color:#333;">';
+    htmlBody += '<h2 style="margin-bottom:4px;">Veckorapport SnöJour</h2>';
+    htmlBody += '<div style="margin-bottom:12px; color:#555;">';
+    htmlBody += "<div><strong>Vecka:</strong> " + veckoText + "</div>";
+    htmlBody += "<div><strong>År:</strong> " + arText + "</div>";
+    htmlBody += "<div><strong>Filter:</strong> " + metodText + "</div>";
+    htmlBody += "</div>";
+
+    htmlBody += '<table style="border-collapse:collapse; width:100%; max-width:800px;">';
+    htmlBody += '<thead><tr style="background:#f2f2f2;">';
+    htmlBody += '<th style="padding:6px 8px;border:1px solid #ddd;text-align:left;">Adress</th>';
+    htmlBody += '<th style="padding:6px 8px;border:1px solid #ddd;text-align:center;">Antal jobb</th>';
+    htmlBody += '<th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Tid (hh:mm)</th>';
+    htmlBody += '<th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Grus (kg)</th>';
+    htmlBody += '<th style="padding:6px 8px;border:1px solid #ddd;text-align:right;">Salt (kg)</th>';
+    htmlBody += "</tr></thead>";
+    htmlBody += "<tbody>" + htmlRows + "</tbody>";
+    htmlBody += "</table>";
+
+    htmlBody += '<div style="margin-top:16px;">';
+    htmlBody += "Vänliga hälsningar,<br />";
+    htmlBody += "<strong>SnöJour-systemet</strong>";
+    htmlBody += "</div>";
+    htmlBody += "</div>";
+
+    const subject = encodeURIComponent(
+      "Veckorapport SnöJour v" + veckoText + " " + arText
+    );
+    const body = encodeURIComponent(htmlBody);
+    const to = "hakan.pengel@outlook.com";
+
+    window.location.href =
+      "mailto:" + to + "?subject=" + subject + "&body=" + body;
+  }
+    // Gruppera som i tabellen
+    const grupperad = {};
+    filtreradeRapporter.forEach((rad) => {
+      const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
       grupperad[namn].tid += rad.arbetstid_min || 0;
       grupperad[namn].grus += rad.sand_kg || 0;
