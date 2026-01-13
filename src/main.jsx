@@ -3,15 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
-console.log("SUPABASE_URL i main.jsx:", SUPABASE_URL);
-console.log(
-  "SUPABASE_ANON_KEY i main.jsx (första 10 tecken):",
-  SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.slice(0, 10) : "INGEN KEY"
-);
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-console.log("Supabase client skapad med URL:", SUPABASE_URL);
 
 // ======= Hjälpfunktion: aktuell ISO-vecka + år =======
 function getCurrentIsoWeekAndYear() {
@@ -27,8 +19,15 @@ function getCurrentIsoWeekAndYear() {
 
 const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 
+// ======= Hjälp: minuter -> hh:mm =======
+function formatTid(minuter) {
+  const h = Math.floor(minuter / 60);
+  const m = minuter % 60;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+}
+
 // ======= Veckoöversikt =======
-function VeckoOversikt({ data }) {
+function VeckoOversikt({ data, onSkickaEmail, filtreradVecka, filtreratÅr }) {
   const grupperad = {};
   data.forEach((rad) => {
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -41,15 +40,16 @@ function VeckoOversikt({ data }) {
 
   const lista = Object.entries(grupperad).map(([namn, v]) => ({ namn, ...v }));
 
-  function formatTid(minuter) {
-    const h = Math.floor(minuter / 60);
-    const m = minuter % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-  }
-
   return (
     <div style={{ marginTop: 40 }}>
-      <h2>Veckoöversikt</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <h2 style={{ margin: 0 }}>Veckoöversikt</h2>
+        <button onClick={onSkickaEmail}>📧 Skicka veckorapport via e‑post</button>
+      </div>
+      <div style={{ marginTop: 5, fontSize: 12, color: "#555" }}>
+        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"}
+      </div>
+
       <table
         border="1"
         cellPadding="5"
@@ -57,12 +57,13 @@ function VeckoOversikt({ data }) {
           borderCollapse: "collapse",
           width: "100%",
           fontFamily: "sans-serif",
+          marginTop: 10,
         }}
       >
         <thead>
           <tr>
             <th>Adress</th>
-            <th>Antal</th>
+            <th>Antal jobb</th>
             <th>Totalt (hh:mm)</th>
             <th>Grus (kg)</th>
             <th>Salt (kg)</th>
@@ -78,6 +79,13 @@ function VeckoOversikt({ data }) {
               <td style={{ textAlign: "right" }}>{r.salt}</td>
             </tr>
           ))}
+          {lista.length === 0 && (
+            <tr>
+              <td colSpan={5} style={{ textAlign: "center", fontStyle: "italic" }}>
+                Inga jobb hittades för vald vecka/år och filter.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -103,23 +111,18 @@ function App() {
   const [filterMetod, setFilterMetod] = useState("alla");
 
   // === Hämta adresser vid start ===
-useEffect(() => {
-  async function laddaAdresser() {
-    const { data, error } = await supabase
-      .from("adresser")
-      .select("id, namn, gps_url, maskin_mojlig");
+  useEffect(() => {
+    async function laddaAdresser() {
+      const { data, error } = await supabase
+        .from("adresser")
+        .select("id, namn, gps_url, maskin_mojlig");
+      if (error) setStatus("Fel vid laddning av adresser: " + error.message);
+      else setAdresser(data || []);
+    }
+    laddaAdresser();
+  }, []);
 
-    console.log("Supabase adresser data:", data);
-    console.log("Supabase adresser error:", error);
-    if (error) console.log("Supabase adresser error detaljer:", error.message, error.code);
-
-    if (error) setStatus("Fel vid laddning av adresser: " + error.message);
-    else setAdresser(data || []);
-  }
-  laddaAdresser();
-}, []);
-  
-  // === Hämta rapporter ===
+  // === Hämta rapporter (till översikt) ===
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
@@ -232,6 +235,73 @@ useEffect(() => {
     return veckaOK && årOK && metodOK;
   });
 
+  // === Skicka veckorapport via mail (på begäran) ===
+  function skickaVeckorapportEmail() {
+    if (filtreradeRapporter.length === 0) {
+      alert("Det finns inga rapporter för vald vecka/år och filter.");
+      return;
+    }
+
+    // Gruppera som i tabellen
+    const grupperad = {};
+    filtreradeRapporter.forEach((rad) => {
+      const namn = rad.adresser?.namn || "Okänd adress";
+      if (!grupperad[namn]) grupperad[namn] = { tid: 0, grus: 0, salt: 0, antal: 0 };
+      grupperad[namn].tid += rad.arbetstid_min || 0;
+      grupperad[namn].grus += rad.sand_kg || 0;
+      grupperad[namn].salt += rad.salt_kg || 0;
+      grupperad[namn].antal++;
+    });
+
+    const rader = Object.entries(grupperad).map(([namn, v]) => ({
+      namn,
+      ...v,
+    }));
+
+    const rubrikRad = "Adress;Antal jobb;Tid (hh:mm);Grus (kg);Salt (kg)";
+
+    const dataRader = rader.map((r) => {
+      return [
+        r.namn,
+        r.antal,
+        formatTid(r.tid),
+        r.grus,
+        r.salt,
+      ].join(";");
+    });
+
+    const veckoText = filtreradVecka || "-";
+    const arText = filtreratÅr || "-";
+    const metodText =
+      filterMetod === "hand"
+        ? "Endast För hand"
+        : filterMetod === "maskin"
+        ? "Endast Maskin"
+        : "Alla jobb";
+
+    const bodyLines = [
+      `Veckorapport SnöJour`,
+      "",
+      `Vecka: ${veckoText}`,
+      `År: ${arText}`,
+      `Filter: ${metodText}`,
+      "",
+      rubrikRad,
+      ...dataRader,
+      "",
+      "Hälsningar,",
+      "SnöJour-systemet",
+    ];
+
+    const subject = encodeURIComponent(`Veckorapport SnöJour v${veckoText} ${arText}`);
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    // Här kan du lägga fler mottagare, separerade med komma
+    const to = "hakan.pengel@outlook.com";
+
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+  }
+
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
       <h1>Tid & Material – SnöJour</h1>
@@ -343,7 +413,14 @@ useEffect(() => {
         <option value="maskin">Endast Maskin</option>
       </select>
 
-      {visaOversikt && <VeckoOversikt data={filtreradeRapporter} />}
+      {visaOversikt && (
+        <VeckoOversikt
+          data={filtreradeRapporter}
+          onSkickaEmail={skickaVeckorapportEmail}
+          filtreradVecka={filtreradVecka}
+          filtreratÅr={filtreratÅr}
+        />
+      )}
 
       <p style={{ marginTop: 20 }}>{status}</p>
     </div>
