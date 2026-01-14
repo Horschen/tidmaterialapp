@@ -82,6 +82,7 @@ function VeckoOversikt({
         grus: 0,
         salt: 0,
         antal: 0,
+        anstallda: 0,
         syften: new Set(),
         senasteDatumTid: null,
       };
@@ -90,6 +91,7 @@ function VeckoOversikt({
     grupperad[namn].grus += rad.sand_kg || 0;
     grupperad[namn].salt += rad.salt_kg || 0;
     grupperad[namn].antal++;
+    grupperad[namn].anstallda += rad.antal_anstallda || 0;
 
     if (rad.syfte) {
       rad.syfte
@@ -118,6 +120,7 @@ function VeckoOversikt({
     grus: v.grus,
     salt: v.salt,
     antal: v.antal,
+    anstallda: v.anstallda,
     syften: Array.from(v.syften).join(", "),
     senasteDatumTid: v.senasteDatumTid,
   }));
@@ -206,6 +209,7 @@ function VeckoOversikt({
               <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
               <th style={{ textAlign: "left" }}>Adress</th>
               <th>Antal jobb</th>
+              <th>Antal anställda</th>
               <th>Totalt (hh:mm)</th>
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
@@ -225,6 +229,7 @@ function VeckoOversikt({
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>{r.namn}</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
+                <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
@@ -234,7 +239,7 @@ function VeckoOversikt({
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -319,7 +324,7 @@ function App() {
       ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
       : 0;
 
-  // Syften
+  // Syften (auto/registrera)
   const [syfteOversyn, setSyfteOversyn] = useState(false);
   const [syfteRojning, setSyfteRojning] = useState(false);
   const [syfteSaltning, setSyfteSaltning] = useState(false);
@@ -331,6 +336,30 @@ function App() {
     if (syfteRojning) delar.push("Röjning");
     if (syfteSaltning) delar.push("Saltning");
     if (syfteGrusning) delar.push("Grusning");
+    return delar.join(", ");
+  }
+
+  // Manuell registrering (i Veckorapport-fliken)
+  const [manuellAdressId, setManuellAdressId] = useState("");
+  const [manuellTeam, setManuellTeam] = useState("För hand");
+  const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
+  const [manuellDatum, setManuellDatum] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [manuellTidMin, setManuellTidMin] = useState("");
+  const [manuellSand, setManuellSand] = useState(0);
+  const [manuellSalt, setManuellSalt] = useState(0);
+  const [manSyfteOversyn, setManSyfteOversyn] = useState(false);
+  const [manSyfteRojning, setManSyfteRojning] = useState(false);
+  const [manSyfteSaltning, setManSyfteSaltning] = useState(false);
+  const [manSyfteGrusning, setManSyfteGrusning] = useState(false);
+
+  function buildManuellSyfteString() {
+    const delar = [];
+    if (manSyfteOversyn) delar.push("Översyn");
+    if (manSyfteRojning) delar.push("Röjning");
+    if (manSyfteSaltning) delar.push("Saltning");
+    if (manSyfteGrusning) delar.push("Grusning");
     return delar.join(", ");
   }
 
@@ -368,6 +397,7 @@ function App() {
       setStatus("❌ Fel lösenord.");
     }
   }
+
   // ======= Dela-funktion =======
   async function delaApp() {
     const shareUrl = window.location.href;
@@ -388,7 +418,7 @@ function App() {
       window.location.href = mailto;
     }
   }
-  
+
   // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
     if (raderaUnlocked) {
@@ -533,6 +563,53 @@ function App() {
     return true;
   }
 
+  // ======= Validera fält för manuell registrering =======
+  function validateManuellFields() {
+    if (!manuellAdressId) {
+      showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
+      setStatus("Välj en adress för manuell registrering.");
+      return false;
+    }
+
+    const syfteText = buildManuellSyfteString();
+    if (!syfteText) {
+      showPopup("👎 Välj minst ett syfte (manuell).", "error", 3000);
+      setStatus("Välj minst ett syfte (manuell registrering).");
+      return false;
+    }
+
+    const sandInt = parseInt(manuellSand, 10) || 0;
+    const saltInt = parseInt(manuellSalt, 10) || 0;
+
+    if (manSyfteSaltning && saltInt === 0) {
+      showPopup(
+        "👎 Ange Salt (kg) när du väljer Saltning (manuell).",
+        "error",
+        3000
+      );
+      setStatus("Ange Salt (kg) om du väljer syfte Saltning (manuell).");
+      return false;
+    }
+
+    if (manSyfteGrusning && sandInt === 0) {
+      showPopup(
+        "👎 Ange Grus (kg) när du väljer Grusning (manuell).",
+        "error",
+        3000
+      );
+      setStatus("Ange Grus (kg) om du väljer syfte Grusning (manuell).");
+      return false;
+    }
+
+    if (!manuellDatum) {
+      showPopup("👎 Ange datum för manuell registrering.", "error", 3000);
+      setStatus("Ange datum för manuell registrering.");
+      return false;
+    }
+
+    return true;
+  }
+
   // ======= Spara rapport (auto-pass eller manuell) =======
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
@@ -628,6 +705,73 @@ function App() {
     }
   }
 
+  // ======= Spara manuell rapport =======
+  async function sparaManuellRapport() {
+    if (!validateManuellFields()) return;
+
+    const metod = manuellTeam === "För hand" ? "hand" : "maskin";
+    const syfteText = buildManuellSyfteString();
+
+    const tidMin = parseInt(manuellTidMin, 10);
+    if (!tidMin || tidMin <= 0) {
+      showPopup(
+        "👎 Ange arbetstid (minuter) för manuell registrering.",
+        "error",
+        3000
+      );
+      setStatus("Ange arbetstid (minuter) för manuell registrering.");
+      return;
+    }
+
+    const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
+
+    let datumIso;
+    try {
+      datumIso = new Date(manuellDatum + "T12:00:00").toISOString();
+    } catch (_) {
+      showPopup("👎 Ogiltigt datum för manuell registrering.", "error", 3000);
+      setStatus("Ogiltigt datum för manuell registrering.");
+      return;
+    }
+
+    setStatus("Sparar manuell rapport…");
+
+    const { error } = await supabase.from("rapporter").insert([
+      {
+        datum: datumIso,
+        adress_id: manuellAdressId,
+        arbetstid_min: arbetstidMin,
+        team_namn: manuellTeam,
+        arbetssatt: metod,
+        sand_kg: parseInt(manuellSand, 10) || 0,
+        salt_kg: parseInt(manuellSalt, 10) || 0,
+        syfte: syfteText,
+        antal_anstallda: manuellAntalAnstallda,
+      },
+    ]);
+
+    if (error) {
+      setStatus("❌ " + error.message);
+      showPopup("👎 Fel vid manuell sparning", "error", 3000);
+    } else {
+      setStatus("Manuell rapport sparad");
+      showPopup("👍 Manuell rapport sparad", "success", 4000);
+      // Rensa vissa fält (behåll datum, team, antal)
+      setManuellTidMin("");
+      setManuellSand(0);
+      setManuellSalt(0);
+      setManSyfteOversyn(false);
+      setManSyfteRojning(false);
+      setManSyfteSaltning(false);
+      setManSyfteGrusning(false);
+
+      // Hämta om översikt redan visas
+      if (visaOversikt) {
+        hamtaRapporter();
+      }
+    }
+  }
+
   // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
@@ -704,8 +848,9 @@ function App() {
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
 
-  // ======= Filtrera rapporter på vecka/år/metod =======
-  const filtreradeRapporter = rapporter.filter((r) => {
+  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
+  // Först: alla rapporter för vald vecka/år (oavsett metod)
+  const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const dayNum = tmp.getUTCDay() || 7;
@@ -718,11 +863,24 @@ function App() {
       !filtreradVecka || Number(filtreradVecka) === Number(vecka);
     const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
 
+    return veckaOK && årOK;
+  });
+
+  // Sedan: applicera metod-filtret på veckans rapporter
+  const filtreradeRapporter = veckansRapporter.filter((r) => {
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
-
-    return veckaOK && årOK && metodOK;
+    return metodOK;
   });
+
+  // Total maskin- respektive hand-tid (person-minuter) för vald vecka/år
+  const totalMaskinMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "maskin")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  const totalHandMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "hand")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
   // ======= Skicka veckorapport via mail =======
   function skickaVeckorapportEmail() {
@@ -1477,6 +1635,47 @@ function App() {
             Veckorapport
           </h2>
 
+          {/* Gula ovala rutor för total tider */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Maskin Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalMaskinMin)}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Man Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalHandMin)}
+              </span>
+            </div>
+          </div>
+
           <div
             style={{
               display: "grid",
@@ -1512,6 +1711,32 @@ function App() {
 
           <button
             onClick={() => {
+              const nu = getCurrentIsoWeekAndYear();
+              const aktuellVecka = Number(filtreradVecka) || nu.vecka;
+              const aktuelltÅr = Number(filtreratÅr) || nu.år;
+
+              let prevVecka = aktuellVecka - 1;
+              let prevÅr = aktuelltÅr;
+
+              if (prevVecka < 1) {
+                prevVecka = 52; // enkel wrap till föregående år
+                prevÅr = aktuelltÅr - 1;
+              }
+
+              setFiltreradVecka(String(prevVecka));
+              setFiltreratÅr(String(prevÅr));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 4,
+            }}
+          >
+            Föregående vecka
+          </button>
+
+          <button
+            onClick={() => {
               const { vecka, år } = getCurrentIsoWeekAndYear();
               setFiltreradVecka(String(vecka));
               setFiltreratÅr(String(år));
@@ -1542,6 +1767,195 @@ function App() {
           >
             Uppdatera översikt
           </button>
+
+          {/* Manuell registrering */}
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 12,
+              borderTop: "1px solid #e5e7eb",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 16,
+                marginTop: 0,
+                marginBottom: 8,
+              }}
+            >
+              Manuell registrering
+            </h3>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 12,
+              }}
+            >
+              Används för att lägga till jobb i efterhand på vald adress och
+              datum. Dessa räknas in i veckoöversikten precis som vanliga
+              rapporter.
+            </p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Adress</label>
+              <select
+                value={manuellAdressId}
+                onChange={(e) => setManuellAdressId(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="">-- Välj adress --</option>
+                {adresser.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+              <select
+                value={manuellTeam}
+                onChange={(e) => setManuellTeam(e.target.value)}
+                style={selectStyle}
+              >
+                <option>För hand</option>
+                <option>Maskin</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Antal anställda</label>
+              <select
+                value={manuellAntalAnstallda}
+                onChange={(e) =>
+                  setManuellAntalAnstallda(Number(e.target.value))
+                }
+                style={selectStyle}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Datum</label>
+              <input
+                type="date"
+                value={manuellDatum}
+                onChange={(e) => setManuellDatum(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Arbetstid (minuter)</label>
+              <input
+                type="number"
+                value={manuellTidMin}
+                onChange={(e) => setManuellTidMin(e.target.value)}
+                style={inputStyle}
+                inputMode="numeric"
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Syfte med arbetsuppgift</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  fontSize: 15,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteOversyn}
+                    onChange={(e) => setManSyfteOversyn(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Översyn
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteRojning}
+                    onChange={(e) => setManSyfteRojning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Röjning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteSaltning}
+                    onChange={(e) => setManSyfteSaltning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Saltning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteGrusning}
+                    onChange={(e) => setManSyfteGrusning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Grusning
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Grus (kg)</label>
+              <select
+                value={manuellSand}
+                onChange={(e) => setManuellSand(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {[...Array(51)].map((_, i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <label style={labelStyle}>Salt (kg)</label>
+              <select
+                value={manuellSalt}
+                onChange={(e) => setManuellSalt(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              style={{
+                ...primaryButton,
+                width: "100%",
+                marginTop: 4,
+              }}
+              onClick={sparaManuellRapport}
+            >
+              Spara manuell rapport
+            </button>
+          </div>
 
           {visaOversikt && (
             <VeckoOversikt
