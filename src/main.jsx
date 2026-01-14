@@ -261,7 +261,7 @@ function App() {
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
   // Paus
-  const [paus, setPaus] = useState(null); // { startTid } när paus pågår
+  const [paus, setPaus] = useState(null); // { startTid } när paus påg
   const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
@@ -1472,7 +1472,7 @@ function App() {
               color: "#b91c1c",
             }}
           >
-          Radera rapporter
+            Radera rapporter
           </h2>
           <p
             style={{
@@ -1761,7 +1761,7 @@ function App() {
               zIndex: 110,
               padding: "24px 32px",
               borderRadius: 24,
-              border: "2px solid "#b91c1c",
+              border: "2px solid #b91c1c",
               backgroundColor: "#fee2e2",
               color: "#7f1d1d",
               fontSize: 16,
