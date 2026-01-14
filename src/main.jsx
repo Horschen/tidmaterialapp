@@ -19,6 +19,12 @@ function getCurrentIsoWeekAndYear() {
 
 const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 
+// ======= Hjälpfunktion: lösenord per år =======
+function getCurrentYearPassword() {
+  const year = new Date().getFullYear();
+  return `Jour${year}`;
+}
+
 // ======= Hjälp: minuter -> hh:mm =======
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
@@ -250,6 +256,10 @@ function VeckoOversikt({
 function App() {
   const [activeTab, setActiveTab] = useState("registrera");
 
+  // App-lösenord
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
+
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
 
@@ -345,6 +355,7 @@ function App() {
   const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
   const [raderaMånad, setRaderaMånad] = useState("");
   const [raderaPågår, setRaderaPågår] = useState(false);
+  const [raderaUnlocked, setRaderaUnlocked] = useState(false);
 
   // Dela-funktion
   async function delaApp() {
@@ -362,6 +373,42 @@ function App() {
         title
       )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
       window.location.href = mailto;
+    }
+  }
+
+  // === App-lösenord ===
+  function checkAppPassword(e) {
+    e.preventDefault();
+    const correct = getCurrentYearPassword();
+    if (loginPassword === correct) {
+      setIsAuthenticated(true);
+      setLoginPassword("");
+      setStatus("");
+    } else {
+      setStatus("❌ Fel lösenord.");
+    }
+  }
+
+  // === Lösenord för Radera-fliken ===
+  function openRaderaTab() {
+    if (raderaUnlocked) {
+      setActiveTab("radera");
+      return;
+    }
+
+    const input = window.prompt("Ange lösenord för att öppna Radera-fliken:");
+    if (input == null) {
+      return; // avbröt
+    }
+
+    const correct = getCurrentYearPassword();
+    if (input === correct) {
+      setRaderaUnlocked(true);
+      setActiveTab("radera");
+      setStatus("✅ Radera-fliken upplåst.");
+    } else {
+      showPopup("👎 Fel lösenord för Radera-fliken.", "error", 3000);
+      setStatus("❌ Fel lösenord för Radera-fliken.");
     }
   }
 
@@ -1671,6 +1718,125 @@ function App() {
           borderColor: "#15803d",
         };
 
+  // ======= Login-skärm (före appen) =======
+  if (!isAuthenticated) {
+    return (
+      <div
+        style={{
+          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          backgroundColor: "#f3f4f6",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 420,
+            margin: "0 auto",
+            padding: "40px 16px",
+            width: "100%",
+            boxSizing: "border-box",
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <form
+            onSubmit={checkAppPassword}
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 24,
+              borderRadius: 16,
+              backgroundColor: "#ffffff",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 20,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Tid & Material – SnöJour
+            </h1>
+            <p
+              style={{
+                fontSize: 13,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              Ange lösenord för att öppna appen.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                marginBottom: 4,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              Lösenord
+            </label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: 16,
+                borderRadius: 10,
+                border: "1px solid #d1d5db",
+                backgroundColor: "#f9fafb",
+                boxSizing: "border-box",
+                marginBottom: 12,
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                fontSize: 16,
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 600,
+              }}
+            >
+              Logga in
+            </button>
+
+            {status && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 13,
+                  color: status.startsWith("❌") ? "#dc2626" : "#4b5563",
+                  textAlign: "center",
+                }}
+              >
+                {status}
+              </p>
+            )}
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ======= Vanliga app-vyn (efter inloggning) =======
   return (
     <div
       style={{
@@ -1913,7 +2079,7 @@ function App() {
           Veckorapport
         </button>
         <button
-          onClick={() => setActiveTab("radera")}
+          onClick={openRaderaTab}
           style={{
             flex: 1,
             margin: "0 4px",
