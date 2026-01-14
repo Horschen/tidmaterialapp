@@ -41,7 +41,17 @@ function formatDatumTid(iso) {
   return `${year}-${month}-${day} ${hh}:${mm}`;
 }
 
-// ======= Hjälp: sekunder -> hh:mm (utan sekunder) =======
+// ======= Hjälp: sekunder -> hh:mm:ss (för timers) =======
+function formatSekTillHhMmSs(sek) {
+  const h = Math.floor(sek / 3600);
+  const m = Math.floor((sek % 3600) / 60);
+  const s = sek % 60;
+  return `${h.toString().padStart(2, "0")}:${m
+    .toString()
+    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+// ======= Hjälp: sekunder -> hh:mm (för total pass-tid) =======
 function formatSekTillHhMm(sek) {
   const h = Math.floor(sek / 3600);
   const m = Math.floor((sek % 3600) / 60);
@@ -261,8 +271,9 @@ function App() {
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
   // Paus
-  const [paus, setPaus] = useState(null); // { startTid } när paus påg
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
+  const [paus, setPaus] = useState(null); // { startTid } när paus pågår
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] =
+    useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
@@ -1084,7 +1095,7 @@ function App() {
               }}
             >
               Paus pågår –{" "}
-              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
             </div>
           )}
 
@@ -1101,7 +1112,7 @@ function App() {
               }}
             >
               Registrerad paus för denna adress/resa:{" "}
-              <strong>{formatSekTillHhMm(pausSekUnderIntervall)}</strong>{" "}
+              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
               (dras av när du sparar rapport)
             </div>
           )}
@@ -1120,7 +1131,7 @@ function App() {
             >
               Pågående adress/resa (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
             </div>
           )}
 
@@ -1572,7 +1583,7 @@ function App() {
                 }}
               >
                 Senaste adressintervall:{" "}
-                <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
+                <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
               </div>
             </div>
           ) : (
@@ -1599,7 +1610,7 @@ function App() {
               }}
             >
               Paus igång –{" "}
-              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
             </div>
           )}
 
