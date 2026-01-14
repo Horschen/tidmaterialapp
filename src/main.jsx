@@ -282,8 +282,7 @@ function App() {
 
   // Paus
   const [paus, setPaus] = useState(null); // { startTid } när paus pågår
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] =
-    useState(0); // total paus (sek) för aktuell adress/resa
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
@@ -409,7 +408,6 @@ function App() {
   }, [aktivtPass]);
 
   // ======= Spara/Läs pass-state i localStorage (återuppta pass) =======
-  // Spara när state ändras
   useEffect(() => {
     const payload = {
       aktivtPass,
@@ -433,7 +431,6 @@ function App() {
     antalAnstallda,
   ]);
 
-  // Läs in vid start
   useEffect(() => {
     try {
       const raw = localStorage.getItem("snöjour_pass_state");
@@ -1170,7 +1167,6 @@ function App() {
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
-          {/* Orange paus-ruta överst om paus är igång */}
           {paus && (
             <div
               style={{
@@ -1187,7 +1183,6 @@ function App() {
             </div>
           )}
 
-          {/* Om paus finns registrerad men inte aktiv just nu */}
           {!paus && pausSekUnderIntervall > 0 && (
             <div
               style={{
@@ -1205,7 +1200,6 @@ function App() {
             </div>
           )}
 
-          {/* Blå ruta: adress/resa-tid */}
           {aktivtPass && (
             <div
               style={{
@@ -1635,7 +1629,6 @@ function App() {
       );
     }
 
-    // Ny flik: Start/Stop
     if (activeTab === "startstop") {
       return (
         <section style={sectionStyle}>
@@ -1943,7 +1936,6 @@ function App() {
           </button>
         </header>
 
-        {/* Popup-notis */}
         {popup && (
           <div
             style={{
@@ -1968,7 +1960,6 @@ function App() {
           </div>
         )}
 
-        {/* Raderings-bekräftelse-popup */}
         {deleteConfirm && (
           <div
             style={{
@@ -2035,7 +2026,6 @@ function App() {
         {renderContent()}
       </div>
 
-      {/* Bottenmeny med flikar */}
       <nav
         style={{
           position: "fixed",
