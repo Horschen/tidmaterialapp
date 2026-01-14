@@ -357,26 +357,7 @@ function App() {
   const [raderaPågår, setRaderaPågår] = useState(false);
   const [raderaUnlocked, setRaderaUnlocked] = useState(false);
 
-  // Dela-funktion
-  async function delaApp() {
-    const shareUrl = window.location.href;
-    const text =
-      "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
-    const title = "SnöJour – Tid & Material";
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text, url: shareUrl });
-      } catch (_) {}
-    } else {
-      const mailto = `mailto:?subject=${encodeURIComponent(
-        title
-      )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
-      window.location.href = mailto;
-    }
-  }
-
-  // === App-lösenord ===
+  // ======= App-lösenord =======
   function checkAppPassword(e) {
     e.preventDefault();
     const correct = getCurrentYearPassword();
@@ -389,7 +370,7 @@ function App() {
     }
   }
 
-  // === Lösenord för Radera-fliken ===
+  // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
     if (raderaUnlocked) {
       setActiveTab("radera");
@@ -412,7 +393,67 @@ function App() {
     }
   }
 
-  // === Hämta adresser ===
+  // ======= Varning vid stängning/uppdatering om pass är aktivt =======
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (aktivtPass) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+      return undefined;
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [aktivtPass]);
+
+  // ======= Spara/Läs pass-state i localStorage (återuppta pass) =======
+  // Spara när state ändras
+  useEffect(() => {
+    const payload = {
+      aktivtPass,
+      senasteRapportTid,
+      paus,
+      pausSekUnderIntervall,
+      team,
+      antalAnstallda,
+    };
+    try {
+      localStorage.setItem("snöjour_pass_state", JSON.stringify(payload));
+    } catch (_) {
+      // ignore
+    }
+  }, [
+    aktivtPass,
+    senasteRapportTid,
+    paus,
+    pausSekUnderIntervall,
+    team,
+    antalAnstallda,
+  ]);
+
+  // Läs in vid start
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("snöjour_pass_state");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && data.aktivtPass && data.aktivtPass.startTid) {
+        setAktivtPass(data.aktivtPass);
+        setSenasteRapportTid(data.senasteRapportTid || null);
+        setPaus(data.paus || null);
+        setPausSekUnderIntervall(data.pausSekUnderIntervall || 0);
+        if (data.team) setTeam(data.team);
+        if (data.antalAnstallda) setAntalAnstallda(data.antalAnstallda);
+        setStatus("⏱️ Återupptog pågående pass från tidigare session.");
+      }
+    } catch (_) {
+      // ignore
+    }
+  }, []);
+
+  // ======= Hämta adresser =======
   useEffect(() => {
     async function laddaAdresser() {
       const { data, error } = await supabase
@@ -424,7 +465,7 @@ function App() {
     laddaAdresser();
   }, []);
 
-  // === Hämta rapporter ===
+  // ======= Hämta rapporter =======
   async function hamtaRapporter() {
     const { data, error } = await supabase
       .from("rapporter")
@@ -442,7 +483,7 @@ function App() {
     }
   }
 
-  // === Validera fält (adress, syfte, material) ===
+  // ======= Validera fält (adress, syfte, material) =======
   function validateBeforeSaveFields() {
     if (!valda) {
       showPopup("👎 Välj en adress först.", "error", 3000);
@@ -475,7 +516,7 @@ function App() {
     return true;
   }
 
-  // === Spara rapport (auto-pass eller manuell) ===
+  // ======= Spara rapport (auto-pass eller manuell) =======
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
 
@@ -570,7 +611,7 @@ function App() {
     }
   }
 
-  // === Starta pass ===
+  // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
       showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -587,7 +628,7 @@ function App() {
     setStatus("⏱️ Pass startat.");
   }
 
-  // === Stoppa pass ===
+  // ======= Stoppa pass =======
   function stoppaPass() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass.", "error", 3000);
@@ -614,7 +655,7 @@ function App() {
     setStatus("Pass stoppat.");
   }
 
-  // === Start Paus ===
+  // ======= Start Paus =======
   function startPaus() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
@@ -631,7 +672,7 @@ function App() {
     setStatus("⏸️ Paus startad.");
   }
 
-  // === Stop Paus ===
+  // ======= Stop Paus =======
   function stopPaus() {
     if (!paus) {
       showPopup("👎 Ingen paus är igång.", "error", 3000);
@@ -646,7 +687,7 @@ function App() {
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
 
-  // === Filtrera rapporter på vecka/år/metod ===
+  // ======= Filtrera rapporter på vecka/år/metod =======
   const filtreradeRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -666,7 +707,7 @@ function App() {
     return veckaOK && årOK && metodOK;
   });
 
-  // === Skicka veckorapport via mail ===
+  // ======= Skicka veckorapport via mail =======
   function skickaVeckorapportEmail() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
@@ -853,7 +894,7 @@ function App() {
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
-  // === Exportera veckorapport till CSV ===
+  // ======= Exportera veckorapport till CSV =======
   function exportVeckorapportCSV() {
     if (filtreradeRapporter.length === 0) {
       alert("Det finns inga rapporter för vald vecka/år och filter.");
@@ -977,7 +1018,7 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  // === Öppna karta för vald adress ===
+  // ======= Öppna karta för vald adress =======
   function oppnaKartaForKartAdress() {
     if (!kartaAdressId) {
       alert("Välj en adress i kartsektionen först.");
@@ -1052,7 +1093,7 @@ function App() {
     marginTop: 8,
   };
 
-  // ====== RADERA-FUNKTIONER ======
+  // ====== RADERA-FUNKTIONER =======
   async function raderaRapporter() {
     if (!raderaÅr) {
       showPopup("👎 Ange år att radera.", "error", 3000);
@@ -1124,7 +1165,7 @@ function App() {
     setDeleteConfirm(null);
   }
 
-  // ====== INNEHÅLL PER FLIK ======
+  // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
     if (activeTab === "registrera") {
       return (
