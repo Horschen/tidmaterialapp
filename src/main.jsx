@@ -377,7 +377,17 @@ function App() {
 
     if (navigator.share) {
       try {
-
+        await navigator.share({ title, text, url: shareUrl });
+      } catch (_) {
+        // användaren kan ha avbrutit delningen, ignorera
+      }
+    } else {
+      const mailto = `mailto:?subject=${encodeURIComponent(
+        title
+      )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
+      window.location.href = mailto;
+    }
+  }
   
   // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
