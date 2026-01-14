@@ -26,28 +26,26 @@ function formatTid(minuter) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ======= Hjälp: format datum/tid =======
+// ======= Hjälp: format datum/tid (YYYY-MM-DD HH:MM) =======
 function formatDatumTid(iso) {
   if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "-";
+
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
+
+  return `${year}-${month}-${day} ${hh}:${mm}`;
 }
 
-// ======= Hjälp: sekunder -> hh:mm:ss =======
-function formatSekTillHhMmSs(sek) {
+// ======= Hjälp: sekunder -> hh:mm (utan sekunder) =======
+function formatSekTillHhMm(sek) {
   const h = Math.floor(sek / 3600);
   const m = Math.floor((sek % 3600) / 60);
-  const s = sek % 60;
-  return `${h.toString().padStart(2, "0")}:${m
-    .toString()
-    .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 // ======= Veckoöversikt =======
@@ -442,7 +440,8 @@ function App() {
       const personSek = råSek * (antalAnstallda || 1);
 
       // Paus i person-sekunder (paus * antal anställda)
-      const pausPersonSek = (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
+      const pausPersonSek =
+        (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
 
       // Tid som ska faktureras i person-sekunder
       const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
@@ -479,7 +478,7 @@ function App() {
         setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
         return;
       }
-      // manuell = kalenderminuter; om du vill kan denna också multipliceras med antal anställda
+      // manuell = kalenderminuter; multiplicera med antal anställda
       arbetstidMin = manuell * (antalAnstallda || 1);
     }
 
@@ -690,7 +689,7 @@ function App() {
       return t + " ".repeat(width - t.length);
     }
 
-    const headDatumTid = padRight("Senaste", colDatumTid);
+    const headDatumTid = padRight("Senaste datum/tid", colDatumTid);
     const headAdress = padRight("Adress", colAdress);
     const headAntal = padRight("Antal", colAntal);
     const headTid = padRight("Tid", colTid);
@@ -1085,7 +1084,7 @@ function App() {
               }}
             >
               Paus pågår –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
             </div>
           )}
 
@@ -1102,7 +1101,7 @@ function App() {
               }}
             >
               Registrerad paus för denna adress/resa:{" "}
-              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
+              <strong>{formatSekTillHhMm(pausSekUnderIntervall)}</strong>{" "}
               (dras av när du sparar rapport)
             </div>
           )}
@@ -1121,7 +1120,7 @@ function App() {
             >
               Pågående adress/resa (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+              <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
             </div>
           )}
 
@@ -1473,7 +1472,7 @@ function App() {
               color: "#b91c1c",
             }}
           >
-            Radera rapporter
+          Radera rapporter
           </h2>
           <p
             style={{
@@ -1564,7 +1563,7 @@ function App() {
             >
               Pågående pass (
               {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMmSs(passTotalSek)}</strong>
+              <strong>{formatSekTillHhMm(passTotalSek)}</strong>
               <div
                 style={{
                   fontSize: 12,
@@ -1573,7 +1572,7 @@ function App() {
                 }}
               >
                 Senaste adressintervall:{" "}
-                <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+                <strong>{formatSekTillHhMm(pågåendePassSek)}</strong>
               </div>
             </div>
           ) : (
@@ -1600,7 +1599,7 @@ function App() {
               }}
             >
               Paus igång –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+              <strong>{formatSekTillHhMm(pågåendePausSek)}</strong>
             </div>
           )}
 
@@ -1762,7 +1761,7 @@ function App() {
               zIndex: 110,
               padding: "24px 32px",
               borderRadius: 24,
-              border: "2px solid #b91c1c",
+              border: "2px solid "#b91c1c",
               backgroundColor: "#fee2e2",
               color: "#7f1d1d",
               fontSize: 16,
