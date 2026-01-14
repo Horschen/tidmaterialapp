@@ -368,7 +368,17 @@ function App() {
       setStatus("❌ Fel lösenord.");
     }
   }
+  // ======= Dela-funktion =======
+  async function delaApp() {
+    const shareUrl = window.location.href;
+    const text =
+      "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
+    const title = "SnöJour – Tid & Material";
 
+    if (navigator.share) {
+      try {
+
+  
   // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
     if (raderaUnlocked) {
