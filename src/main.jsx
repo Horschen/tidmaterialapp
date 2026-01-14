@@ -72,6 +72,8 @@ function VeckoOversikt({
   filtreradVecka,
   filtreratÅr,
   filterMetod,
+  protectedAddresses,
+  onToggleProtected,
 }) {
   const grupperad = {};
   data.forEach((rad) => {
@@ -203,6 +205,7 @@ function VeckoOversikt({
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
+              <th style={{ textAlign: "center" }}>Spara</th>
               <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
               <th style={{ textAlign: "left" }}>Adress</th>
               <th>Antal jobb</th>
@@ -222,6 +225,14 @@ function VeckoOversikt({
                   height: 44,
                 }}
               >
+                <td style={{ textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={protectedAddresses.includes(r.namn)}
+                    onChange={() => onToggleProtected(r.namn)}
+                    title="Bocka i för att skydda denna adress mot radering"
+                  />
+                </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>{r.namn}</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
@@ -234,7 +245,7 @@ function VeckoOversikt({
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -247,6 +258,17 @@ function VeckoOversikt({
             )}
           </tbody>
         </table>
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 12,
+          color: "#6b7280",
+        }}
+      >
+        Adresser som är ikryssade i kolumnen “Spara” ska inte raderas i framtida
+        raderingsfunktioner.
       </div>
     </div>
   );
@@ -356,6 +378,9 @@ function App() {
   const [raderaPågår, setRaderaPågår] = useState(false);
   const [raderaUnlocked, setRaderaUnlocked] = useState(false);
 
+  // Skyddade adresser (sparas i localStorage)
+  const [protectedAddresses, setProtectedAddresses] = useState([]);
+
   // ======= App-lösenord =======
   function checkAppPassword(e) {
     e.preventDefault();
@@ -368,27 +393,7 @@ function App() {
       setStatus("❌ Fel lösenord.");
     }
   }
-  // ======= Dela-funktion =======
-  async function delaApp() {
-    const shareUrl = window.location.href;
-    const text =
-      "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
-    const title = "SnöJour – Tid & Material";
 
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text, url: shareUrl });
-      } catch (_) {
-        // användaren kan ha avbrutit delningen, ignorera
-      }
-    } else {
-      const mailto = `mailto:?subject=${encodeURIComponent(
-        title
-      )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
-      window.location.href = mailto;
-    }
-  }
-  
   // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
     if (raderaUnlocked) {
@@ -470,6 +475,40 @@ function App() {
     }
   }, []);
 
+  // ======= Läsa/spara skyddade adresser =======
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("snöjour_protected_addresses");
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          setProtectedAddresses(arr);
+        }
+      }
+    } catch (_) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "snöjour_protected_addresses",
+        JSON.stringify(protectedAddresses)
+      );
+    } catch (_) {
+      // ignore
+    }
+  }, [protectedAddresses]);
+
+  function toggleProtectedAdress(namn) {
+    setProtectedAddresses((prev) =>
+      prev.includes(namn)
+        ? prev.filter((x) => x !== namn)
+        : [...prev, namn]
+    );
+  }
+
   // ======= Hämta adresser =======
   useEffect(() => {
     async function laddaAdresser() {
@@ -549,22 +588,12 @@ function App() {
           ? new Date(senasteRapportTid)
           : new Date(aktivtPass.startTid);
 
-      // Kalendertid i sekunder mellan två adresser
       const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
-
-      // Person-sekunder kalendertid
       const personSek = råSek * (antalAnstallda || 1);
-
-      // Paus i person-sekunder (paus * antal anställda)
       const pausPersonSek =
         (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
-
-      // Tid som ska faktureras i person-sekunder
       const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
 
-      // Avrunda person-sekunder till person-minuter enligt regel:
-      // - restSek > 25 => avrunda uppåt
-      // - annars nedåt
       const minHeltal = Math.floor(sekEfterPausPerson / 60);
       const restSek = sekEfterPausPerson % 60;
       let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
@@ -581,7 +610,6 @@ function App() {
         return;
       }
 
-      // diffMin = person-minuter efter paus
       arbetstidMin = diffMin;
     } else {
       const manuell = parseInt(arbetstid, 10);
@@ -594,7 +622,6 @@ function App() {
         setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
         return;
       }
-      // manuell = kalenderminuter; multiplicera med antal anställda
       arbetstidMin = manuell * (antalAnstallda || 1);
     }
 
@@ -604,7 +631,7 @@ function App() {
       {
         datum: new Date().toISOString(),
         adress_id: valda,
-        arbetstid_min: arbetstidMin, // person-minuter
+        arbetstid_min: arbetstidMin,
         team_namn: team,
         arbetssatt: metod,
         sand_kg: parseInt(sand, 10) || 0,
@@ -620,7 +647,6 @@ function App() {
       setStatus("Rapport sparad");
       showPopup("👍 Rapport sparad", "success", 4000);
       setArbetstid("");
-      // nollställ paus & startpunkt för nästa intervall
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
       setPaus(null);
@@ -1110,76 +1136,25 @@ function App() {
     marginTop: 8,
   };
 
-  // ====== RADERA-FUNKTIONER =======
-  async function raderaRapporter() {
-    if (!raderaÅr) {
-      showPopup("👎 Ange år att radera.", "error", 3000);
-      return;
-    }
+  // ====== Dela-funktion ======
+  async function delaApp() {
+    const shareUrl = window.location.href;
+    const text =
+      "Tid & Material – SnöJour. Klicka länken för att öppna appen:";
+    const title = "SnöJour – Tid & Material";
 
-    const årNum = Number(raderaÅr);
-    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-      showPopup("👎 Ogiltigt årtal.", "error", 3000);
-      return;
-    }
-
-    let fromDate;
-    let toDate;
-    let beskrivning;
-
-    if (!raderaMånad) {
-      fromDate = `${årNum}-01-01`;
-      toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum}`;
-    } else {
-      const månNum = Number(raderaMånad);
-      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-        showPopup("👎 Ogiltig månad.", "error", 3000);
-        return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url: shareUrl });
+      } catch (_) {
+        // ignore
       }
-      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0));
-      fromDate = start.toISOString().slice(0, 10);
-      toDate = end.toISOString().slice(0, 10);
-      beskrivning = `alla rapporter ${årNum}-${månNum
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    setDeleteConfirm({ fromDate, toDate, beskrivning });
-  }
-
-  async function bekräftaRadering() {
-    if (!deleteConfirm) return;
-    const { fromDate, toDate, beskrivning } = deleteConfirm;
-
-    setDeleteConfirm(null);
-    setRaderaPågår(true);
-
-    const { error, count } = await supabase
-      .from("rapporter")
-      .delete({ count: "exact" })
-      .gte("datum", fromDate)
-      .lte("datum", toDate);
-
-    setRaderaPågår(false);
-
-    if (error) {
-      console.error(error);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-      setStatus("❌ Fel vid radering: " + error.message);
     } else {
-      const antal = count ?? 0;
-      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
+      const mailto = `mailto:?subject=${encodeURIComponent(
+        title
+      )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
+      window.location.href = mailto;
     }
-  }
-
-  function avbrytRadering() {
-    setDeleteConfirm(null);
   }
 
   // ====== INNEHÅLL PER FLIK =======
@@ -1551,6 +1526,8 @@ function App() {
               filtreradVecka={filtreradVecka}
               filtreratÅr={filtreratÅr}
               filterMetod={filterMetod}
+              protectedAddresses={protectedAddresses}
+              onToggleProtected={toggleProtectedAdress}
             />
           )}
 
@@ -1596,6 +1573,7 @@ function App() {
             }}
           >
             Varning: Detta tar bort rapporter permanent. Ingen ångra‑funktion.
+            (Skyddade adresser ska senare undantas.)
           </p>
 
           <div style={{ marginBottom: 12 }}>
