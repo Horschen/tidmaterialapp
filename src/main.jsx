@@ -267,8 +267,8 @@ function VeckoOversikt({
           color: "#6b7280",
         }}
       >
-        Adresser som är ikryssade i kolumnen “Spara” kommer att undantas från
-        radering i fliken “Radera”.
+        Adresser som är ikryssade i kolumnen “Spara” ska inte raderas i framtida
+        raderingsfunktioner.
       </div>
     </div>
   );
@@ -1107,7 +1107,7 @@ function App() {
     padding: "10px 12px",
     fontSize: 16,
     borderRadius: 10,
-    border: "1px solid "#d1d5db",
+    border: "1px solid #d1d5db",
     backgroundColor: "#f9fafb",
     boxSizing: "border-box",
   };
@@ -1155,120 +1155,6 @@ function App() {
       )}&body=${encodeURIComponent(text + "\n\n" + shareUrl)}`;
       window.location.href = mailto;
     }
-  }
-
-  // ====== RADERA-FUNKTIONER =======
-  async function raderaRapporter() {
-    if (!raderaÅr) {
-      showPopup("👎 Ange år att radera.", "error", 3000);
-      return;
-    }
-
-    const årNum = Number(raderaÅr);
-    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-      showPopup("👎 Ogiltigt årtal.", "error", 3000);
-      return;
-    }
-
-    let fromDate;
-    let toDate;
-    let beskrivning;
-
-    if (!raderaMånad) {
-      fromDate = `${årNum}-01-01`;
-      toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum}`;
-    } else {
-      const månNum = Number(raderaMånad);
-      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-        showPopup("👎 Ogiltig månad.", "error", 3000);
-        return;
-      }
-      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0));
-      fromDate = start.toISOString().slice(0, 10);
-      toDate = end.toISOString().slice(0, 10);
-      beskrivning = `alla rapporter ${årNum}-${månNum
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    // Bekräfta och informera om skyddade adresser
-    const skyddLista =
-      protectedAddresses.length > 0
-        ? `\n\nFöljande adresser är skyddade och kommer INTE raderas:\n- ${protectedAddresses.join(
-            "\n- "
-          )}`
-        : "\n\nInga adresser är markerade som skyddade.";
-
-    const ok = window.confirm(
-      `Detta raderar rapporter från ${fromDate} till ${toDate}.\n${skyddLista}\n\nVill du fortsätta?`
-    );
-    if (!ok) return;
-
-    setDeleteConfirm(null);
-    setRaderaPågår(true);
-
-    // Hämta alla rapporter i intervallet, med adressnamn
-    const { data: alla, error: fetchError } = await supabase
-      .from("rapporter")
-      .select("id, datum, adresser(namn)")
-      .gte("datum", fromDate)
-      .lte("datum", toDate);
-
-    if (fetchError) {
-      setRaderaPågår(false);
-      showPopup("👎 Fel vid radering (hämtning).", "error", 3000);
-      setStatus("❌ Fel vid hämtning inför radering: " + fetchError.message);
-      return;
-    }
-
-    // Filtrera bort rapporter som tillhör skyddade adresser
-    const rapporterAttRadera = (alla || []).filter((r) => {
-      const namn = r.adresser?.namn || "Okänd adress";
-      return !protectedAddresses.includes(namn);
-    });
-
-    if (rapporterAttRadera.length === 0) {
-      setRaderaPågår(false);
-      showPopup(
-        "ℹ️ Inga rapporter att radera (alla inom intervallet är skyddade).",
-        "success",
-        4000
-      );
-      setStatus(
-        `Inga rapporter raderades (${beskrivning}) – alla var skyddade eller inga fanns.`
-      );
-      return;
-    }
-
-    const ids = rapporterAttRadera.map((r) => r.id);
-
-    const { error: deleteError, count } = await supabase
-      .from("rapporter")
-      .delete({ count: "exact" })
-      .in("id", ids);
-
-    setRaderaPågår(false);
-
-    if (deleteError) {
-      console.error(deleteError);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-      setStatus("❌ Fel vid radering: " + deleteError.message);
-    } else {
-      const antal = count ?? 0;
-      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-      setStatus(
-        `Raderade ${antal} rapporter (${beskrivning}). Skyddade adresser påverkades inte.`
-      );
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
-    }
-  }
-
-  function avbrytRadering() {
-    setDeleteConfirm(null);
   }
 
   // ====== INNEHÅLL PER FLIK =======
@@ -1687,7 +1573,7 @@ function App() {
             }}
           >
             Varning: Detta tar bort rapporter permanent. Ingen ångra‑funktion.
-            Adresser markerade som “Spara” i Veckorapport kommer inte raderas.
+            (Skyddade adresser ska senare undantas.)
           </p>
 
           <div style={{ marginBottom: 12 }}>
