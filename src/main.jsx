@@ -2661,7 +2661,6 @@ if (activeTab === "info") {
     boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
   }}
 >
-  {/* Rad 1: Info + Start/Stop + Registrera */}
   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
     <button
       onClick={() => setActiveTab("info")}
@@ -2679,7 +2678,6 @@ if (activeTab === "info") {
     >
       Info
     </button>
-
     <button
       onClick={() => setActiveTab("startstop")}
       style={{
@@ -2696,7 +2694,6 @@ if (activeTab === "info") {
     >
       Start/Stop
     </button>
-
     <button
       onClick={() => setActiveTab("registrera")}
       style={{
@@ -2714,8 +2711,6 @@ if (activeTab === "info") {
       Registrera
     </button>
   </div>
-
-  {/* Rad 2: Karta + Veckorapport + Radera */}
   <div style={{ display: "flex", justifyContent: "space-between" }}>
     <button
       onClick={() => setActiveTab("karta")}
@@ -2733,7 +2728,6 @@ if (activeTab === "info") {
     >
       Karta
     </button>
-
     <button
       onClick={() => setActiveTab("rapport")}
       style={{
@@ -2750,7 +2744,6 @@ if (activeTab === "info") {
     >
       Veckorapport
     </button>
-
     <button
       onClick={openRaderaTab}
       style={{
