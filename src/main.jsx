@@ -72,6 +72,7 @@ function VeckoOversikt({
   filtreradVecka,
   filtreratÅr,
   filterMetod,
+  onOpenManuell,
 }) {
   const grupperad = {};
   data.forEach((rad) => {
@@ -145,6 +146,19 @@ function VeckoOversikt({
         <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
           Veckoöversikt
         </h2>
+        <button
+          onClick={onOpenManuell}
+          style={{
+            padding: "8px 12px",
+            fontSize: 14,
+            borderRadius: 8,
+            border: "none",
+            background: "#facc15",
+            color: "#854d0e",
+          }}
+        >
+          Manuell registrering
+        </button>
         <button
           onClick={onSkickaEmail}
           style={{
@@ -273,7 +287,7 @@ function App() {
 
   const [adresser, setAdresser] = useState([]);
 
-  // Rapportinmatning
+  // Rapportinmatning (Registrera-fliken)
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
   const [team, setTeam] = useState("För hand");
@@ -339,7 +353,7 @@ function App() {
     return delar.join(", ");
   }
 
-  // Manuell registrering (i Veckorapport-fliken)
+  // Manuell registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
   const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
@@ -353,6 +367,7 @@ function App() {
   const [manSyfteRojning, setManSyfteRojning] = useState(false);
   const [manSyfteSaltning, setManSyfteSaltning] = useState(false);
   const [manSyfteGrusning, setManSyfteGrusning] = useState(false);
+  const [visaManuellPopup, setVisaManuellPopup] = useState(false);
 
   function buildManuellSyfteString() {
     const delar = [];
@@ -361,6 +376,30 @@ function App() {
     if (manSyfteSaltning) delar.push("Saltning");
     if (manSyfteGrusning) delar.push("Grusning");
     return delar.join(", ");
+  }
+
+  function resetManuellForm() {
+    setManuellAdressId("");
+    setManuellTeam("För hand");
+    setManuellAntalAnstallda(1);
+    setManuellDatum(new Date().toISOString().slice(0, 10));
+    setManuellTidMin("");
+    setManuellSand(0);
+    setManuellSalt(0);
+    setManSyfteOversyn(false);
+    setManSyfteRojning(false);
+    setManSyfteSaltning(false);
+    setManSyfteGrusning(false);
+  }
+
+  function openManuellPopup() {
+    resetManuellForm();
+    setVisaManuellPopup(true);
+  }
+
+  function closeManuellPopup() {
+    setVisaManuellPopup(false);
+    resetManuellForm();
   }
 
   // Kartflik
@@ -610,7 +649,7 @@ function App() {
     return true;
   }
 
-  // ======= Spara rapport (auto-pass eller manuell) =======
+  // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
 
@@ -696,7 +735,14 @@ function App() {
     } else {
       setStatus("Rapport sparad");
       showPopup("👍 Rapport sparad", "success", 4000);
+
+      // Nollställ fält i Registrera-fliken
       setArbetstid("");
+      setValda("");
+      setSand(0);
+      setSalt(0);
+      setAntalAnstallda(1);
+
       // nollställ paus & startpunkt för nästa intervall
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
@@ -705,7 +751,7 @@ function App() {
     }
   }
 
-  // ======= Spara manuell rapport =======
+  // ======= Spara manuell rapport (popup) =======
   async function sparaManuellRapport() {
     if (!validateManuellFields()) return;
 
@@ -756,14 +802,10 @@ function App() {
     } else {
       setStatus("Manuell rapport sparad");
       showPopup("👍 Manuell rapport sparad", "success", 4000);
-      // Rensa vissa fält (behåll datum, team, antal)
-      setManuellTidMin("");
-      setManuellSand(0);
-      setManuellSalt(0);
-      setManSyfteOversyn(false);
-      setManSyfteRojning(false);
-      setManSyfteSaltning(false);
-      setManSyfteGrusning(false);
+
+      // Nollställ formuläret och stäng popup
+      resetManuellForm();
+      setVisaManuellPopup(false);
 
       // Hämta om översikt redan visas
       if (visaOversikt) {
@@ -1239,7 +1281,7 @@ function App() {
     padding: "10px 12px",
     fontSize: 16,
     borderRadius: 10,
-    border: "1px solid #d1d5db",
+    border: "1px solid "#d1d5db",
     backgroundColor: "#f9fafb",
     boxSizing: "border-box",
   };
@@ -1768,195 +1810,6 @@ function App() {
             Uppdatera översikt
           </button>
 
-          {/* Manuell registrering */}
-          <div
-            style={{
-              marginTop: 20,
-              paddingTop: 12,
-              borderTop: "1px solid #e5e7eb",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: 16,
-                marginTop: 0,
-                marginBottom: 8,
-              }}
-            >
-              Manuell registrering
-            </h3>
-            <p
-              style={{
-                fontSize: 12,
-                color: "#6b7280",
-                marginTop: 0,
-                marginBottom: 12,
-              }}
-            >
-              Används för att lägga till jobb i efterhand på vald adress och
-              datum. Dessa räknas in i veckoöversikten precis som vanliga
-              rapporter.
-            </p>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Adress</label>
-              <select
-                value={manuellAdressId}
-                onChange={(e) => setManuellAdressId(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="">-- Välj adress --</option>
-                {adresser.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Arbetstyp (Team / metod)</label>
-              <select
-                value={manuellTeam}
-                onChange={(e) => setManuellTeam(e.target.value)}
-                style={selectStyle}
-              >
-                <option>För hand</option>
-                <option>Maskin</option>
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Antal anställda</label>
-              <select
-                value={manuellAntalAnstallda}
-                onChange={(e) =>
-                  setManuellAntalAnstallda(Number(e.target.value))
-                }
-                style={selectStyle}
-              >
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Datum</label>
-              <input
-                type="date"
-                value={manuellDatum}
-                onChange={(e) => setManuellDatum(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Arbetstid (minuter)</label>
-              <input
-                type="number"
-                value={manuellTidMin}
-                onChange={(e) => setManuellTidMin(e.target.value)}
-                style={inputStyle}
-                inputMode="numeric"
-              />
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Syfte med arbetsuppgift</label>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 6,
-                  fontSize: 15,
-                }}
-              >
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={manSyfteOversyn}
-                    onChange={(e) => setManSyfteOversyn(e.target.checked)}
-                    style={{ marginRight: 6 }}
-                  />
-                  Översyn
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={manSyfteRojning}
-                    onChange={(e) => setManSyfteRojning(e.target.checked)}
-                    style={{ marginRight: 6 }}
-                  />
-                  Röjning
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={manSyfteSaltning}
-                    onChange={(e) => setManSyfteSaltning(e.target.checked)}
-                    style={{ marginRight: 6 }}
-                  />
-                  Saltning
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={manSyfteGrusning}
-                    onChange={(e) => setManSyfteGrusning(e.target.checked)}
-                    style={{ marginRight: 6 }}
-                  />
-                  Grusning
-                </label>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Grus (kg)</label>
-              <select
-                value={manuellSand}
-                onChange={(e) => setManuellSand(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="0">0</option>
-                {[...Array(51)].map((_, i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 12 }}>
-              <label style={labelStyle}>Salt (kg)</label>
-              <select
-                value={manuellSalt}
-                onChange={(e) => setManuellSalt(e.target.value)}
-                style={selectStyle}
-              >
-                <option value="0">0</option>
-                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              style={{
-                ...primaryButton,
-                width: "100%",
-                marginTop: 4,
-              }}
-              onClick={sparaManuellRapport}
-            >
-              Spara manuell rapport
-            </button>
-          </div>
-
           {visaOversikt && (
             <VeckoOversikt
               data={filtreradeRapporter}
@@ -1965,6 +1818,7 @@ function App() {
               filtreradVecka={filtreradVecka}
               filtreratÅr={filtreratÅr}
               filterMetod={filterMetod}
+              onOpenManuell={openManuellPopup}
             />
           )}
 
@@ -2452,6 +2306,237 @@ function App() {
                 }}
               >
                 Nej
+              </button>
+            </div>
+          </div>
+        )}
+
+        {visaManuellPopup && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 120,
+              padding: "20px 16px",
+              borderRadius: 16,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              fontSize: 14,
+              maxWidth: "90%",
+              width: 420,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 16,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Manuell registrering
+            </h3>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Lägg till jobb i efterhand på vald adress och datum. Dessa räknas
+              in i veckoöversikten precis som vanliga rapporter.
+            </p>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Adress</label>
+              <select
+                value={manuellAdressId}
+                onChange={(e) => setManuellAdressId(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="">-- Välj adress --</option>
+                {adresser.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+              <select
+                value={manuellTeam}
+                onChange={(e) => setManuellTeam(e.target.value)}
+                style={selectStyle}
+              >
+                <option>För hand</option>
+                <option>Maskin</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Antal anställda</label>
+              <select
+                value={manuellAntalAnstallda}
+                onChange={(e) =>
+                  setManuellAntalAnstallda(Number(e.target.value))
+                }
+                style={selectStyle}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Datum</label>
+              <input
+                type="date"
+                value={manuellDatum}
+                onChange={(e) => setManuellDatum(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstid (minuter)</label>
+              <input
+                type="number"
+                value={manuellTidMin}
+                onChange={(e) => setManuellTidMin(e.target.value)}
+                style={inputStyle}
+                inputMode="numeric"
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Syfte med arbetsuppgift</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  fontSize: 14,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteOversyn}
+                    onChange={(e) => setManSyfteOversyn(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Översyn
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteRojning}
+                    onChange={(e) => setManSyfteRojning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Röjning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteSaltning}
+                    onChange={(e) => setManSyfteSaltning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Saltning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteGrusning}
+                    onChange={(e) => setManSyfteGrusning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Grusning
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Grus (kg)</label>
+              <select
+                value={manuellSand}
+                onChange={(e) => setManuellSand(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {[...Array(51)].map((_, i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Salt (kg)</label>
+              <select
+                value={manuellSalt}
+                onChange={(e) => setManuellSalt(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 12,
+                justifyContent: "space-between",
+              }}
+            >
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+                onClick={closeManuellPopup}
+              >
+                Avbryt
+              </button>
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+                onClick={sparaManuellRapport}
+              >
+                Spara manuell rapport
               </button>
             </div>
           </div>
