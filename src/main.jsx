@@ -877,31 +877,25 @@ function App() {
   }
 
   // ======= Stoppa pass =======
-  function stoppaPass() {
-    if (!aktivtPass) {
-      showPopup("👎 Inget aktivt pass.", "error", 3000);
-      setStatus("Inget aktivt pass att stoppa.");
-      return;
-    }
-
-    const sek = Math.max(
-      0,
-      Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
-    );
-
-    if (sek < 30) {
-      const ok = window.confirm(
-        "Passet är kortare än 30 sekunder. Är du säker på att du vill stoppa?"
-      );
-      if (!ok) return;
-    }
-
-    setAktivtPass(null);
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
-    setStatus("Pass stoppat.");
+function stoppaPass() {
+  if (!aktivtPass) {
+    showPopup("👎 Inget aktivt pass.", "error", 3000);
+    setStatus("Inget aktivt pass att stoppa.");
+    return;
   }
+
+  // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
+  const sek = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
+  );
+
+  setAktivtPass(null);
+  setSenasteRapportTid(null);
+  setPaus(null);
+  setPausSekUnderIntervall(0);
+  setStatus(`Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
+}
 
   // ======= Start Paus =======
   function startPaus() {
