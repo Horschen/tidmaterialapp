@@ -1608,7 +1608,179 @@ function App() {
 
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
-    if (activeTab === "registrera") {
+      function renderContent() {
+    if (activeTab === "info") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            INFO – Så här använder du appen
+          </h2>
+
+          {/* Start/Stop */}
+          <h3 style={{ fontSize: 16, marginTop: 8, marginBottom: 6 }}>
+            Start / Stop
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
+            Här styr du ditt pass – den tid då du är ute och jobbar.
+          </p>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Starta passet</strong> – tryck på <em>Starta passet</em>
+              innan du börjar jobba på första adressen. Appen börjar då räkna
+              total pass‑tid i bakgrunden.
+            </li>
+            <li>
+              <strong>Under passet</strong> – varje gång du är klar på en
+              adress, går du till fliken <em>Registrera</em> och sparar en
+              rapport för den adressen. Tiden mellan förra rapporten och nu
+              räknas automatiskt ut och delas på antal anställda.
+            </li>
+            <li>
+              <strong>Stoppa passet</strong> – när du är helt klar för dagen
+              (eller vill avsluta passet), tryck på <em>Stoppa passet</em>. Då
+              avslutas tidräkningen och appen slutar varna vid stängning.
+            </li>
+            <li>
+              <strong>Start Paus</strong> – tryck när ni tar rast. Appen räknar
+              då paus‑tid, som automatiskt dras av vid nästa sparad rapport.
+            </li>
+            <li>
+              <strong>Stop Paus</strong> – tryck när pausen är slut. Den
+              sparade paus‑tiden visas sedan i <em>Registrera</em> och dras av
+              från intervallet när du sparar nästa rapport.
+            </li>
+          </ul>
+
+          {/* Registrera */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Registrera
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
+            Här sparar du jobb på en viss adress under pågående pass, eller
+            manuellt utan pass.
+          </p>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Adress</strong> – välj vilken adress jobbet gäller.
+            </li>
+            <li>
+              <strong>Arbetstyp / Antal anställda</strong> – välj om det är{" "}
+              <em>För hand</em> eller <em>Maskin</em>, och hur många som jobbar.
+            </li>
+            <li>
+              <strong>Syfte</strong> – bocka i vad ni gjort (Översyn, Röjning,
+              Saltning, Grusning). Appen kräver t.ex. Salt (kg) om du väljer
+              Saltning.
+            </li>
+            <li>
+              <strong>Arbetstid (minuter)</strong> – används <em>endast</em> om
+              inget pass är aktivt. Då anger du tiden manuellt (antal minuter
+              × antal anställda).
+            </li>
+            <li>
+              <strong>När pass är aktivt</strong> – lämna fältet
+              "Arbetstid (minuter)" tomt. Appen räknar istället tiden från
+              förra rapporten till nu, justerar för paus, och multiplicerar
+              med antal anställda.
+            </li>
+            <li>
+              <strong>Timern överst</strong> – visar hur länge nuvarande
+              adressintervall pågått (sedan senaste sparade rapport). Den
+              uppdateras automatiskt.
+            </li>
+            <li>
+              <strong>Manuell rapport via Veckorapport</strong> – om du
+              missat att registrera tidigare, kan du under fliken{" "}
+              <em>Veckorapport</em> använda <em>Manuell registrering</em> för
+              att lägga till jobb i efterhand.
+            </li>
+          </ul>
+
+          {/* Karta */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Karta
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0 }}>
+            Här kan du välja en adress och öppna dess GPS‑länk i en ny flik
+            (t.ex. Google Maps). Välj adress i dropdownen och tryck på{" "}
+            <em>Öppna karta för vald adress</em>.
+          </p>
+
+          {/* Veckorapport */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Veckorapport
+          </h3>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Steg 1 – välj Vecka och År</strong> och tryck{" "}
+              <em>Uppdatera översikt</em> för att hämta rapporterna.
+            </li>
+            <li>
+              <strong>Föregående vecka</strong> – hoppar en vecka bakåt (byter
+              även år när du passerar vecka 1).
+            </li>
+            <li>
+              <strong>Denna vecka</strong> – ställer in fälten till aktuell
+              vecka och år.
+            </li>
+            <li>
+              <strong>Total Maskin Tid / Total Man Tid</strong> – visar summan
+              av alla rapporterade person‑minuter för maskin respektive hand
+              under vald vecka (oberoende av metod‑filtret).
+            </li>
+            <li>
+              <strong>Editera‑knappen</strong> – öppnar en ruta där du kan
+              välja en av de 3 senaste rapporterna för adressen (inom aktuell
+              vy), ändra datum, tid, arbetstyp, antal anställda, syfte, grus
+              och salt, och spara. Den befintliga raden uppdateras – inga nya
+              rader skapas.
+            </li>
+            <li>
+              <strong>Kryssrutan längst till vänster</strong> – markerar alla
+              rader för en adress i aktuell vecka som <em>skyddade</em> mot
+              radering. Rader med skydd raderas inte av funktionen i fliken{" "}
+              <em>Radera</em>.
+            </li>
+            <li>
+              <strong>Manuell registrering</strong> – öppnar ett formulär där
+              du kan lägga till en ny rapport i efterhand för vald adress och
+              datum. Tiden du anger multipliceras med antal anställda, och
+              raden räknas in i veckoöversikten precis som andra rapporter.
+            </li>
+          </ul>
+
+          {/* Radera */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Radera
+          </h3>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Radera per år / månad</strong> – välj år, eventuellt
+              månad, och tryck på <em>Radera ej skyddade rapporter</em>. Endast
+              rader som <em>inte</em> är markerade som skyddade i
+              veckoöversikten tas bort.
+            </li>
+            <li>
+              <strong>Radera per kalendervecka</strong> – du kan även välja
+              ett år och en vecka för att radera oskyddade rapporter just den
+              veckan (se knappen under Månad i fliken Radera).
+            </li>
+            <li>
+              Ingen ångrafunktion – kontrollera alltid att du har markerat
+              skydd på de adresser du vill spara innan du raderar.
+            </li>
+          </ul>
+        </section>
+      );
+    }
+
+        if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
           {paus && (
