@@ -1551,7 +1551,9 @@ function App() {
     let toDate;
     let beskrivning;
 
-    if (!raderaMånad) {
+    // raderaMånad: "" = ingen månad vald => hela året
+    // "hela" = uttryckligt val "Hela året"
+    if (!raderaMånad || raderaMånad === "hela") {
       fromDate = `${årNum}-01-01`;
       toDate = `${årNum}-12-31`;
       beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
@@ -1572,63 +1574,6 @@ function App() {
 
     setDeleteConfirm({ fromDate, toDate, beskrivning });
   }
-
-  async function bekräftaRadering() {
-    if (!deleteConfirm) return;
-    const { fromDate, toDate, beskrivning } = deleteConfirm;
-
-    setDeleteConfirm(null);
-    setRaderaPågår(true);
-
-    const { error, count } = await supabase
-      .from("rapporter")
-      .delete({ count: "exact" })
-      .gte("datum", fromDate)
-      .lte("datum", toDate)
-      .neq("skyddad", true);
-
-    setRaderaPågår(false);
-
-    if (error) {
-      console.error(error);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-      setStatus("❌ Fel vid radering: " + error.message);
-    } else {
-      const antal = count ?? 0;
-      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
-    }
-  }
-
-  function avbrytRadering() {
-    setDeleteConfirm(null);
-  }
-
-// Radera per kalendervecka (år + vecka)
-  async function raderaRapporterVecka() {
-    if (!raderaÅr || !raderaVecka) {
-      showPopup("👎 Ange både år och vecka.", "error", 3000);
-      return;
-    }
-
-    const årNum = Number(raderaÅr);
-    const veckaNum = Number(raderaVecka);
-
-    if (
-      Number.isNaN(årNum) ||
-      årNum < 2000 ||
-      årNum > 2100 ||
-      Number.isNaN(veckaNum) ||
-      veckaNum < 1 ||
-      veckaNum > 53
-    ) {
-      showPopup("👎 Ogiltigt år eller vecka.", "error", 3000);
-      return;
-    }
-
     // Beräkna fromDate/toDate för ISO-vecka
     const simple = new Date(Date.UTC(årNum, 0, 4)); // vecka 1 runt 4 jan
     const dayOfWeek = simple.getUTCDay() || 7;
@@ -2296,38 +2241,6 @@ function App() {
             }}
           >
             Radera rapporter
-
-                      <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>
-              Kalendervecka (valfritt – radera specifik vecka)
-            </label>
-            <select
-              value={raderaVecka}
-              onChange={(e) => setRaderaVecka(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">Ingen vecka vald</option>
-              {Array.from({ length: 53 }, (_, i) => i + 1).map((v) => (
-                <option key={v} value={v}>
-                  Vecka {v}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={raderaRapporterVecka}
-            disabled={raderaPågår}
-            style={{
-              ...primaryButton,
-              backgroundColor: "#f97316",
-              opacity: raderaPågår ? 0.6 : 1,
-              marginTop: 0,
-            }}
-          >
-            Radera ej skyddade rapporter (vald vecka)
-          </button>
-            
           </h2>
           <p
             style={{
@@ -2354,6 +2267,25 @@ function App() {
             />
           </div>
 
+          {/* NY placering: Vecka direkt efter År */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Kalendervecka (valfritt – radera specifik vecka)
+            </label>
+            <select
+              value={raderaVecka}
+              onChange={(e) => setRaderaVecka(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Ingen vecka vald</option>
+              {Array.from({ length: 53 }, (_, i) => i + 1).map((v) => (
+                <option key={v} value={v}>
+                  Vecka {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Månad (valfritt)</label>
             <select
@@ -2361,7 +2293,9 @@ function App() {
               onChange={(e) => setRaderaMånad(e.target.value)}
               style={selectStyle}
             >
-              <option value="">Hela året</option>
+              {/* Förvald = blank (ingen månad). Hela året ligger kvar som alternativ. */}
+              <option value="">(ingen månad vald)</option>
+              <option value="hela">Hela året</option>
               <option value="1">Januari</option>
               <option value="2">Februari</option>
               <option value="3">Mars</option>
@@ -2376,6 +2310,20 @@ function App() {
               <option value="12">December</option>
             </select>
           </div>
+
+          {/* Knapp för vecka – nu ovanför år/månad-knappen */}
+          <button
+            onClick={raderaRapporterVecka}
+            disabled={raderaPågår}
+            style={{
+              ...primaryButton,
+              backgroundColor: "#f97316", // orange
+              opacity: raderaPågår ? 0.6 : 1,
+              marginTop: 0,
+            }}
+          >
+            Radera ej skyddade rapporter (vald vecka)
+          </button>
 
           <button
             onClick={raderaRapporter}
