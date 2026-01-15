@@ -2552,28 +2552,29 @@ return (
       </header>
 
       {popup && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 100,
-            padding: "24px 32px",
-            borderRadius: 24,
-            border: `2px solid ${popupStyle.borderColor}`,
-            backgroundColor: popupStyle.backgroundColor,
-            color: popupStyle.color,
-            fontSize: 20,
-            fontWeight: 600,
-            textAlign: "center",
-            maxWidth: "80%",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          {popup.text}
-        </div>
-      )}
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      // 🔼 Lägg den ovanför allt annat:
+      zIndex: 9999,
+      padding: "24px 32px",
+      borderRadius: 24,
+      border: `2px solid ${popupStyle.borderColor}`,
+      backgroundColor: popupStyle.backgroundColor,
+      color: popupStyle.color,
+      fontSize: 20,
+      fontWeight: 600,
+      textAlign: "center",
+      maxWidth: "80%",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    }}
+  >
+    {popup.text}
+  </div>
+)}
 
       {deleteConfirm && (
         <div
