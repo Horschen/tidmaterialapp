@@ -2268,7 +2268,7 @@ function App() {
           borderColor: "#15803d",
         };
 
-  // ======= Login-skärm (före appen) =======
+    // ======= Login-skärm (före appen) =======
   if (!isAuthenticated) {
     return (
       <div
@@ -2301,7 +2301,7 @@ function App() {
               padding: 24,
               borderRadius: 16,
               backgroundColor: "#ffffff",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
             }}
           >
             <h1
@@ -2401,7 +2401,7 @@ function App() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "12px 12px 100px", // extra bottenpadding för två rader nav
+          padding: "12px 12px 110px", // mer plats för två rader flikar
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
@@ -2550,7 +2550,7 @@ function App() {
         {renderContent()}
       </div>
 
-      {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+            {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
       <nav
         style={{
           position: "fixed",
@@ -2584,8 +2584,8 @@ function App() {
               fontSize: 14,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "startstop" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
+                activeTab === "startstop" ? "#facc15" : "#fefce8", // ljus gul aktiv / ännu ljusare bakgrund
+              color: "#854d0e",
             }}
           >
             Start/Stop
@@ -2601,8 +2601,8 @@ function App() {
               fontSize: 14,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "registrera" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
+                activeTab === "registrera" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Registrera
@@ -2627,8 +2627,8 @@ function App() {
               fontSize: 13,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "karta" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "karta" ? "#ffffff" : "#4b5563",
+                activeTab === "karta" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Karta
@@ -2644,8 +2644,8 @@ function App() {
               fontSize: 13,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "rapport" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
+                activeTab === "rapport" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Veckorapport
@@ -2660,17 +2660,15 @@ function App() {
               border: "none",
               fontSize: 13,
               fontWeight: 600,
+              // mörkare röd för aktiv, ljus röd för inaktiv
               backgroundColor:
-                activeTab === "radera" ? "#b91c1c" : "#fef2f2",
-              color: activeTab === "radera" ? "#ffffff" : "#b91c1c",
+                activeTab === "radera" ? "#b91c1c" : "#fee2e2",
+              color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
             }}
           >
             Radera
           </button>
         </div>
       </nav>
-    </div>
-  );
-}
 
 createRoot(document.getElementById("app")).render(<App />);
