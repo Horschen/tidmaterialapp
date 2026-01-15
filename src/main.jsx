@@ -2840,7 +2840,7 @@ return (
     fontWeight: 500,
   }}
 >
-  Stäng
+  Avbryt
 </button>
     </div>
   </div>
