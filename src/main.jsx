@@ -2285,24 +2285,21 @@ if (activeTab === "info") {
             Timern överst visar hur länge du arbetat sedan förra rapporten,
             inklusive aktuell pausstatus. Paustiden lagras separat och dras av vid nästa sparning.
             <br />
-            Behöver du lägga till en rapport i efterhand väljer du knappen
-            <strong> Manuell registrering</strong> i "Veckorapport"‑fliken – den fungerar
-            precis som registreringsvyn men utan aktiv timer.
-            <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-           💡 <strong>Flera team samtidigt:</strong><br />
-           Ibland arbetar två team parallellt på olika arbetsplatser under samma period –
-           ett med <strong>För hand</strong> och ett med <strong>Maskin</strong>.
-           Appen skiljer automatiskt dessa åt genom fältet <em>Arbetstyp</em>.
-           När du väljer <strong>För hand</strong> eller <strong>Maskin</strong> sparas
-           rapporten med den uppgiften, och i Veckorapporten summeras tider, material
-           och syften separat för respektive arbetssätt. <br />
-          <br />
-          Det betyder att två team kan registrera sina insatser samtidigt utan att
-          de blandas ihop – den totala veckan visar då både
-          <strong> Total Man Tid</strong> (för hand) och
-         <strong> Total Maskin Tid</strong> var för sig, så att sammanställningen
-         alltid blir korrekt.
-         </p>
+           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+  💡 <strong>Flera team samtidigt:</strong><br />
+  Ibland arbetar två team parallellt på olika arbetsplatser under samma period — 
+  ett med <strong>För hand</strong> och ett med <strong>Maskin</strong>.
+  Appen skiljer automatiskt dessa rapporter åt genom fältet <em>Arbetstyp</em>.
+  När du väljer <strong>För hand</strong> eller <strong>Maskin</strong> sparas
+  rapporten separat, och i Veckorapporten summeras tider, material och syften
+  var för sig beroende på arbetssättet.
+  <br /><br />
+  Det innebär att två team kan registrera sina jobb samtidigt utan att datan
+  blandas ihop — totalen för veckan visar både
+  <strong> Total Man Tid</strong> (för hand) och
+  <strong> Total Maskin Tid</strong> (maskin), vilket ger en korrekt och tydlig
+  sammanställning.
+</p>
 
           <h3 style={{ marginTop: 16 }}>🗺️ Karta</h3>
           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
