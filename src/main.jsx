@@ -1276,15 +1276,15 @@ function App() {
     backgroundColor: "#f9fafb",
   };
 
-  const inputStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: "1px solid "#d1d5db",
-    backgroundColor: "#f9fafb",
-    boxSizing: "border-box",
-  };
+ const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  fontSize: 16,
+  borderRadius: 10,
+  border: "1px solid #d1d5db",
+  backgroundColor: "#f9fafb",
+  boxSizing: "border-box",
+};
 
   const primaryButton = {
     width: "100%",
