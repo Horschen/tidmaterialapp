@@ -2920,4 +2920,35 @@ return (
             borderRadius: 999,
             border: "1px solid #facc15",
             fontSize: 13,
-            fontWeight: 
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "rapport" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Veckorapport
+        </button>
+        <button
+          onClick={openRaderaTab}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #ef4444",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "radera" ? "#ef4444" : "#fecaca",
+            color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+          }}
+        >
+          Radera
+        </button>
+      </div>
+    </nav>
+  </div>
+);
+}
+
+createRoot(document.getElementById("app")).render(<App />);
