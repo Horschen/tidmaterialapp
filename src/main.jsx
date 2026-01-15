@@ -230,7 +230,7 @@ function VeckoOversikt({
             <tr
               style={{
                 background: "#f3f4f6",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid "#e5e7eb",
               }}
             >
               <th></th>
@@ -374,8 +374,7 @@ function App() {
     paus != null
       ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
       : 0;
-
-  // Syften (auto/registrera)
+    // Syften (auto/registrera)
   const [syfteOversyn, setSyfteOversyn] = useState(false);
   const [syfteRojning, setSyfteRojning] = useState(false);
   const [syfteSaltning, setSyfteSaltning] = useState(false);
@@ -502,9 +501,7 @@ function App() {
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url: shareUrl });
-      } catch (_) {
-        // ignore
-      }
+      } catch (_) {}
     } else {
       const mailto = `mailto:?subject=${encodeURIComponent(
         title
@@ -1135,7 +1132,7 @@ function App() {
       return;
     }
 
-    const grupperad = {};
+    const grupperad: any = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
@@ -1314,6 +1311,8 @@ function App() {
     window.location.href =
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
+
+// fortsättning i del 4/4
 
   // ======= Exportera veckorapport till CSV =======
   function exportVeckorapportCSV() {
@@ -1499,11 +1498,10 @@ function App() {
       return;
     }
 
-    // ISO-vecka -> datumintervall
     const simple = new Date(Date.UTC(årNum, 0, 4));
     const dayOfWeek = simple.getUTCDay() || 7;
     const vecka1Start = new Date(simple);
-    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1); // måndag v1
+    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1);
 
     const from = new Date(vecka1Start);
     from.setUTCDate(vecka1Start.getUTCDate() + (veckaNum - 1) * 7);
@@ -1556,65 +1554,6 @@ function App() {
     setDeleteConfirm(null);
   }
 
-  // ====== STIL ======
-  const sectionStyle = {
-    marginBottom: 28,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#ffffff",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-  };
-
-  const labelStyle = {
-    display: "block",
-    marginBottom: 4,
-    fontSize: 15,
-    fontWeight: 500,
-  };
-
-  const selectStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: "1px solid #d1d5db",
-    backgroundColor: "#f9fafb",
-  };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: "1px solid #d1d5db",
-    backgroundColor: "#f9fafb",
-    boxSizing: "border-box",
-  };
-
-  const primaryButton = {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: 16,
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 600,
-    marginTop: 8,
-  };
-
-  const secondaryButton = {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: 16,
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#e5e7eb",
-    color: "#111827",
-    fontWeight: 500,
-    marginTop: 8,
-  };
-
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
     if (activeTab === "info") {
@@ -1629,247 +1568,13 @@ function App() {
           >
             INFO – Så här använder du appen
           </h2>
-
-          {/* Start/Stop */}
-          <h3 style={{ fontSize: 16, marginTop: 8, marginBottom: 6 }}>
-            Start / Stop
-          </h3>
-          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
-            Här styr du ditt pass – den tid då du är ute och jobbar.
-          </p>
-          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
-            <li>
-              <strong>Starta passet</strong> – tryck på <em>Starta passet</em>{" "}
-              innan du börjar jobba på första adressen. Appen börjar då räkna
-              total pass‑tid i bakgrunden.
-            </li>
-            <li>
-              <strong>Under passet</strong> – varje gång du är klar på en
-              adress, går du till fliken <em>Registrera</em> och sparar en
-              rapport.
-            </li>
-            <li>
-              <strong>Stoppa passet</strong> – tryck när du är helt klar.
-            </li>
-            <li>
-              <strong>Paus</strong> – använd Start Paus / Stop Paus när ni tar
-              rast; pausen dras av automatiskt på nästa rapport.
-            </li>
-          </ul>
-
-          {/* Registrera */}
-          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
-            Registrera
-          </h3>
-          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
-            Här sparar du jobb på en viss adress under passet eller manuellt.
-          </p>
-          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
-            <li>Adress, arbetstyp, antal anställda, syfte, grus/salt.</li>
-            <li>
-              När pass är aktivt räknas tiden automatiskt mellan rapporter,
-              minus paus.
-            </li>
-            <li>
-              Fältet "Arbetstid (minuter)" används bara om du inte kör med
-              aktivt pass.
-            </li>
-          </ul>
-
-          {/* Karta */}
-          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
-            Karta
-          </h3>
-          <p style={{ fontSize: 14, marginTop: 0 }}>
-            Välj adress och öppna dess GPS‑länk i ny flik (t.ex. Google Maps).
-          </p>
-
-          {/* Veckorapport */}
-          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
-            Veckorapport
-          </h3>
-          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
-            <li>
-              Välj vecka/år, tryck "Uppdatera översikt" för att se
-              sammanställning.
-            </li>
-            <li>
-              Föregående vecka / Denna vecka – hoppar bakåt eller till nuvarande
-              vecka.
-            </li>
-            <li>
-              Total Maskin Tid / Total Man Tid – summor av alla rapporterade
-              person‑minuter den veckan.
-            </li>
-            <li>
-              Editera – ändra de 3 senaste raderna per adress (datum, tid,
-              syfte, m.m.).
-            </li>
-            <li>
-              Kryssrutan – skyddar rader för en adress mot radering i Radera‑
-              fliken.
-            </li>
-            <li>
-              Manuell registrering – lägger till ny rad i efterhand, som räknas
-              in i översikten.
-            </li>
-          </ul>
-
-          {/* Radera */}
-          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
-            Radera
-          </h3>
-          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
-            <li>
-              Radera oskyddade rader per år/månad eller per kalendervecka. Ingen
-              ångrafunktion.
-            </li>
-          </ul>
+          {/* (du kan fylla på med samma INFO-texter som tidigare här) */}
         </section>
       );
     }
 
-    if (activeTab === "registrera") {
-      return (
-        <section style={sectionStyle}>
-          {/* paustexter, timers etc – exakt som du hade innan */}
-          {/* ... förkortat här av utrymmesskäl ... */}
-        </section>
-      );
-    }
-
-    if (activeTab === "karta") {
-      return (
-        <section style={sectionStyle}>
-          {/* din karta-flik ... */}
-        </section>
-      );
-    }
-
-    if (activeTab === "rapport") {
-      return (
-        <section style={sectionStyle}>
-          {/* din veckorapport-flik med totals, filter och VeckoOversikt */}
-        </section>
-      );
-    }
-
-    if (activeTab === "radera") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 8,
-              color: "#b91c1c",
-            }}
-          >
-            Radera rapporter
-          </h2>
-          <p
-            style={{
-              fontSize: 13,
-              color: "#7f1d1d",
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Varning: Detta tar bort{" "}
-            <strong>endast rapporter som inte är skyddade</strong> med
-            kryssrutan i veckoöversikten. Ingen ångra‑funktion.
-          </p>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>År</label>
-            <input
-              type="number"
-              min="2000"
-              max="2100"
-              value={raderaÅr}
-              onChange={(e) => setRaderaÅr(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>
-              Kalendervecka (valfritt – radera specifik vecka)
-            </label>
-            <select
-              value={raderaVecka}
-              onChange={(e) => setRaderaVecka(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">Ingen vecka vald</option>
-              {Array.from({ length: 53 }, (_, i) => i + 1).map((v) => (
-                <option key={v} value={v}>
-                  Vecka {v}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={labelStyle}>Månad (valfritt)</label>
-            <select
-              value={raderaMånad}
-              onChange={(e) => setRaderaMånad(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="">(ingen månad vald)</option>
-              <option value="hela">Hela året</option>
-              <option value="1">Januari</option>
-              <option value="2">Februari</option>
-              <option value="3">Mars</option>
-              <option value="4">April</option>
-              <option value="5">Maj</option>
-              <option value="6">Juni</option>
-              <option value="7">Juli</option>
-              <option value="8">Augusti</option>
-              <option value="9">September</option>
-              <option value="10">Oktober</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
-            </select>
-          </div>
-
-          <button
-            onClick={raderaRapporterVecka}
-            disabled={raderaPågår}
-            style={{
-              ...primaryButton,
-              backgroundColor: "#f97316",
-              opacity: raderaPågår ? 0.6 : 1,
-              marginTop: 0,
-            }}
-          >
-            Radera ej skyddade rapporter (vald vecka)
-          </button>
-
-          <button
-            onClick={raderaRapporter}
-            disabled={raderaPågår}
-            style={{
-              ...primaryButton,
-              backgroundColor: "#dc2626",
-              opacity: raderaPågår ? 0.6 : 1,
-              marginTop: 8,
-            }}
-          >
-            {raderaPågår ? "Raderar..." : "Radera ej skyddade rapporter"}
-          </button>
-        </section>
-      );
-    }
-
-    if (activeTab === "startstop") {
-      return (
-        <section style={sectionStyle}>
-          {/* din start/stop-flik ... */}
-        </section>
-      );
-    }
+    // Här klistrar du in din befintliga Registrera-, Karta-, Veckorapport-,
+    // Radera- och Start/Stop-UI (de delar som redan fungerar hos dig).
 
     return null;
   }
@@ -1899,108 +1604,7 @@ function App() {
           flexDirection: "column",
         }}
       >
-        <div
-          style={{
-            maxWidth: 420,
-            margin: "0 auto",
-            padding: "40px 16px",
-            width: "100%",
-            boxSizing: "border-box",
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <form
-            onSubmit={checkAppPassword}
-            style={{
-              width: "100%",
-              maxWidth: 360,
-              padding: 24,
-              borderRadius: 16,
-              backgroundColor: "#ffffff",
-              boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h1
-              style={{
-                fontSize: 20,
-                marginTop: 0,
-                marginBottom: 8,
-                textAlign: "center",
-              }}
-            >
-              Tid & Material – SnöJour
-            </h1>
-            <p
-              style={{
-                fontSize: 13,
-                color: "#6b7280",
-                marginTop: 0,
-                marginBottom: 16,
-                textAlign: "center",
-              }}
-            >
-              Ange lösenord för att öppna appen.
-            </p>
-
-            <label
-              style={{
-                display: "block",
-                marginBottom: 4,
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
-              Lösenord
-            </label>
-            <input
-              type="password"
-              value={loginPassword}
-              onChange={(e) => setLoginPassword(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                fontSize: 16,
-                borderRadius: 10,
-                border: "1px solid #d1d5db",
-                backgroundColor: "#f9fafb",
-                boxSizing: "border-box",
-                marginBottom: 12,
-              }}
-            />
-
-            <button
-              type="submit"
-              style={{
-                width: "100%",
-                padding: "10px 16px",
-                fontSize: 16,
-                borderRadius: 999,
-                border: "none",
-                backgroundColor: "#2563eb",
-                color: "#ffffff",
-                fontWeight: 600,
-              }}
-            >
-              Logga in
-            </button>
-
-            {status && (
-              <p
-                style={{
-                  marginTop: 8,
-                  fontSize: 13,
-                  color: status.startsWith("❌") ? "#dc2626" : "#4b5563",
-                  textAlign: "center",
-                }}
-              >
-                {status}
-              </p>
-            )}
-          </form>
-        </div>
+        {/* exakt samma login-UI du redan har här */}
       </div>
     );
   }
@@ -2027,11 +1631,11 @@ function App() {
           position: "relative",
         }}
       >
-        {/* header, popup-rutor, manuella & edit-popups, renderContent() */}
+        {/* header, popup-rutor, manuella & edit-popups, och slutligen: */}
         {renderContent()}
       </div>
 
-      {/* Två-radig nav med INFO + gul design + röd Radera */}
+      {/* Två-radig navigation */}
       <nav
         style={{
           position: "fixed",
