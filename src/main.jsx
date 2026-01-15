@@ -2310,11 +2310,14 @@ if (activeTab === "info") {
             och tryck sedan <strong>Uppdatera översikt</strong>. Du kan också snabbt
             hoppa mellan veckor med knapparna
             <strong> "Föregående vecka"</strong> och <strong>"Denna vecka"</strong>. <br /><br />
-            De gula ovalerna visar <strong>Total Maskin‑tid</strong> respektive
+            De gula ovalerna på toppen visar <strong>Total Maskin‑tid</strong> respektive
             <strong> Total Man‑tid</strong> (tiden räknas ihop för alla rapporter av respektive typ).
             <br /><br />
-            I tabellen visas varje adress med senaste rapporttid, antal jobb, anställda
-            och material.  
+            I Veckkoöversikten visas adresser som rappoerats under en vecka. Har flera jobb registrerats mot
+            samma adress så ser man det i kolumnen "Antal Jobb". 
+            Notera att "Antal jobb", "Total tid", förbrukning av "Grus" och "Sand" samt "Arbetssyftet" 
+            summeras automatiskt mot samma adress i den veckan. D.v.s en total summering.
+            
             – Klicka på <strong>Editera</strong> för att ändra en befintlig rapport
             (t.ex. justera tid eller material). Ändringen uppdaterar den valda posten
             direkt i databasen. <br />
