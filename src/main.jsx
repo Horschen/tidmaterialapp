@@ -2551,124 +2551,124 @@ function App() {
       </div>
 
       {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
-      <nav
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#ffffff",
-          borderTop: "1px solid #e5e7eb",
-          padding: "8px 12px",
-          maxWidth: 520,
-          margin: "0 auto",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Rad 1: Start/Stop + Registrera */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 6,
-          }}
-        >
-          <button
-            onClick={() => setActiveTab("startstop")}
-            style={{
-              flex: 1,
-              marginRight: 4,
-              padding: "10px 6px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 14,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "startstop" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
-            }}
-          >
-            Start/Stop
-          </button>
-          <button
-            onClick={() => setActiveTab("registrera")}
-            style={{
-              flex: 1,
-              marginLeft: 4,
-              padding: "10px 6px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 14,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "registrera" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
-            }}
-          >
-            Registrera
-          </button>
-        </div>
+<nav
+  style={{
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#ffffff",
+    borderTop: "1px solid #e5e7eb",
+    padding: "8px 12px",
+    maxWidth: 520,
+    margin: "0 auto",
+    boxSizing: "border-box",
+  }}
+>
+  {/* Rad 1: Start/Stop + Registrera */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      marginBottom: 6,
+    }}
+  >
+    <button
+      onClick={() => setActiveTab("startstop")}
+      style={{
+        flex: 1,
+        marginRight: 4,
+        padding: "10px 6px",
+        borderRadius: 999,
+        border: "none",
+        fontSize: 14,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "startstop" ? "#fde047" : "#fef9c3", // mörkare aktiv
+        color: "#78350f",
+      }}
+    >
+      Start/Stop
+    </button>
+    <button
+      onClick={() => setActiveTab("registrera")}
+      style={{
+        flex: 1,
+        marginLeft: 4,
+        padding: "10px 6px",
+        borderRadius: 999,
+        border: "none",
+        fontSize: 14,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "registrera" ? "#fde047" : "#fef9c3",
+        color: "#78350f",
+      }}
+    >
+      Registrera
+    </button>
+  </div>
 
-        {/* Rad 2: Karta + Veckorapport + Radera */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <button
-            onClick={() => setActiveTab("karta")}
-            style={{
-              flex: 1,
-              marginRight: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "karta" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "karta" ? "#ffffff" : "#4b5563",
-            }}
-          >
-            Karta
-          </button>
-          <button
-            onClick={() => setActiveTab("rapport")}
-            style={{
-              flex: 1,
-              margin: "0 4px",
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "rapport" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
-            }}
-          >
-            Veckorapport
-          </button>
-          <button
-            onClick={openRaderaTab}
-            style={{
-              flex: 1,
-              marginLeft: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "radera" ? "#b91c1c" : "#fef2f2",
-              color: activeTab === "radera" ? "#ffffff" : "#b91c1c",
-            }}
-          >
-            Radera
-          </button>
-        </div>
-      </nav>
+  {/* Rad 2: Karta + Veckorapport + Radera */}
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+    }}
+  >
+    <button
+      onClick={() => setActiveTab("karta")}
+      style={{
+        flex: 1,
+        marginRight: 4,
+        padding: "10px 4px",
+        borderRadius: 999,
+        border: "none",
+        fontSize: 13,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "karta" ? "#fde047" : "#fef9c3",
+        color: "#78350f",
+      }}
+    >
+      Karta
+    </button>
+    <button
+      onClick={() => setActiveTab("rapport")}
+      style={{
+        flex: 1,
+        margin: "0 4px",
+        padding: "10px 4px",
+        borderRadius: 999,
+        border: "none",
+        fontSize: 13,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "rapport" ? "#fde047" : "#fef9c3",
+        color: "#78350f",
+      }}
+    >
+      Veckorapport
+    </button>
+    <button
+      onClick={openRaderaTab}
+      style={{
+        flex: 1,
+        marginLeft: 4,
+        padding: "10px 4px",
+        borderRadius: 999,
+        border: "none",
+        fontSize: 13,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "radera" ? "#dc2626" : "#fecaca",
+        color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+      }}
+    >
+      Radera
+    </button>
+  </div>
+</nav>
     </div>
   );
 }
