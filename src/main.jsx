@@ -482,6 +482,7 @@ function App() {
   const [raderaMånad, setRaderaMånad] = useState("");
   const [raderaPågår, setRaderaPågår] = useState(false);
   const [raderaUnlocked, setRaderaUnlocked] = useState(false);
+  const [raderaVecka, setRaderaVecka] = useState(""); // ny: radera per vecka
 
   // ======= App-lösenord =======
   function checkAppPassword(e) {
@@ -1606,8 +1607,224 @@ function App() {
     setDeleteConfirm(null);
   }
 
+// Radera per kalendervecka (år + vecka)
+  async function raderaRapporterVecka() {
+    if (!raderaÅr || !raderaVecka) {
+      showPopup("👎 Ange både år och vecka.", "error", 3000);
+      return;
+    }
+
+    const årNum = Number(raderaÅr);
+    const veckaNum = Number(raderaVecka);
+
+    if (
+      Number.isNaN(årNum) ||
+      årNum < 2000 ||
+      årNum > 2100 ||
+      Number.isNaN(veckaNum) ||
+      veckaNum < 1 ||
+      veckaNum > 53
+    ) {
+      showPopup("👎 Ogiltigt år eller vecka.", "error", 3000);
+      return;
+    }
+
+    // Beräkna fromDate/toDate för ISO-vecka
+    const simple = new Date(Date.UTC(årNum, 0, 4)); // vecka 1 runt 4 jan
+    const dayOfWeek = simple.getUTCDay() || 7;
+    const vecka1Start = new Date(simple);
+    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1); // måndag v1
+
+    const from = new Date(vecka1Start);
+    from.setUTCDate(vecka1Start.getUTCDate() + (veckaNum - 1) * 7);
+
+    const to = new Date(from);
+    to.setUTCDate(from.getUTCDate() + 6);
+
+    const fromDate = from.toISOString().slice(0, 10);
+    const toDate = to.toISOString().slice(0, 10);
+    const beskrivning = `alla rapporter v${veckaNum} ${årNum} (ej skyddade)`;
+
+    setDeleteConfirm({
+      fromDate,
+      toDate,
+      beskrivning,
+    });
+  }
+  
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
+     function renderContent() {
+    if (activeTab === "info") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            INFO – Så här använder du appen
+          </h2>
+
+          {/* Start/Stop */}
+          <h3 style={{ fontSize: 16, marginTop: 8, marginBottom: 6 }}>
+            Start / Stop
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
+            Här styr du ditt pass – den tid då du är ute och jobbar.
+          </p>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Starta passet</strong> – tryck på <em>Starta passet</em>{" "}
+              innan du börjar jobba på första adressen. Appen börjar då räkna
+              total pass‑tid i bakgrunden.
+            </li>
+            <li>
+              <strong>Under passet</strong> – varje gång du är klar på en
+              adress, går du till fliken <em>Registrera</em> och sparar en
+              rapport för den adressen. Tiden mellan förra rapporten och nu
+              räknas automatiskt ut och multipliceras med antal anställda.
+            </li>
+            <li>
+              <strong>Stoppa passet</strong> – när du är helt klar för dagen
+              (eller vill avsluta passet), tryck på <em>Stoppa passet</em>. Då
+              avslutas tidräkningen och appen slutar varna vid stängning.
+            </li>
+            <li>
+              <strong>Start Paus</strong> – tryck när ni tar rast. Appen räknar
+              då paus‑tid, som automatiskt dras av vid nästa sparade rapport.
+            </li>
+            <li>
+              <strong>Stop Paus</strong> – tryck när pausen är slut. Den
+              sparade paus‑tiden visas sedan i <em>Registrera</em> och dras av
+              från intervallet när du sparar nästa rapport.
+            </li>
+          </ul>
+
+          {/* Registrera */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Registrera
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
+            Här sparar du jobb på en viss adress under pågående pass, eller
+            manuellt utan pass.
+          </p>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Adress</strong> – välj vilken adress jobbet gäller.
+            </li>
+            <li>
+              <strong>Arbetstyp / Antal anställda</strong> – välj om det är{" "}
+              <em>För hand</em> eller <em>Maskin</em>, och hur många som jobbar.
+            </li>
+            <li>
+              <strong>Syfte</strong> – bocka i vad ni gjort (Översyn, Röjning,
+              Saltning, Grusning). Appen kräver t.ex. Salt (kg) om du väljer
+              Saltning, och Grus (kg) om du väljer Grusning.
+            </li>
+            <li>
+              <strong>Arbetstid (minuter)</strong> – används <em>endast</em> om
+              inget pass är aktivt. Då anger du tiden manuellt (antal minuter ×
+              antal anställda).
+            </li>
+            <li>
+              <strong>När pass är aktivt</strong> – lämna fältet
+              "Arbetstid (minuter)" tomt. Appen räknar istället tiden från
+              förra rapporten till nu, drar av registrerad paus, och
+              multiplicerar med antal anställda.
+            </li>
+            <li>
+              <strong>Timern överst</strong> – visar hur länge nuvarande
+              adressintervall pågått (sedan senaste sparade rapport).
+            </li>
+            <li>
+              <strong>Manuell rapport via Veckorapport</strong> – om du
+              missat att registrera tidigare, kan du under fliken{" "}
+              <em>Veckorapport</em> använda <em>Manuell registrering</em> för
+              att lägga till jobb i efterhand.
+            </li>
+          </ul>
+
+          {/* Karta */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Karta
+          </h3>
+          <p style={{ fontSize: 14, marginTop: 0 }}>
+            Här kan du välja en adress och öppna dess GPS‑länk i en ny flik
+            (t.ex. Google Maps). Välj adress i dropdownen och tryck{" "}
+            <em>Öppna karta för vald adress</em>.
+          </p>
+
+          {/* Veckorapport */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Veckorapport
+          </h3>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Steg 1 – välj Vecka och År</strong> och tryck{" "}
+              <em>Uppdatera översikt</em> för att hämta rapporterna.
+            </li>
+            <li>
+              <strong>Föregående vecka</strong> – hoppar en vecka bakåt (byter
+              även år när du passerar vecka 1).
+            </li>
+            <li>
+              <strong>Denna vecka</strong> – ställer in fälten till aktuell
+              vecka och år.
+            </li>
+            <li>
+              <strong>Total Maskin Tid / Total Man Tid</strong> – summerar alla
+              rapporterade person‑minuter för maskin respektive hand under vald
+              vecka.
+            </li>
+            <li>
+              <strong>Editera‑knappen</strong> – öppnar en ruta där du kan
+              välja en av de 3 senaste rapporterna för adressen (inom aktuell
+              vy), ändra datum, tid, arbetstyp, antal anställda, syfte, grus
+              och salt, och spara. Den <em>befintliga</em> raden uppdateras –
+              inga nya rader skapas.
+            </li>
+            <li>
+              <strong>Kryssrutan till vänster</strong> – markerar alla rader
+              för adressen i den visade veckan som <em>skyddade</em> mot
+              radering. Skyddade rader tas inte bort av funktionen i{" "}
+              <em>Radera</em>-fliken.
+            </li>
+            <li>
+              <strong>Manuell registrering</strong> – öppnar ett formulär där
+              du kan lägga till en ny rapport i efterhand för vald adress och
+              datum. Den nya raden räknas in i veckoöversikten precis som andra
+              rapporter.
+            </li>
+          </ul>
+
+          {/* Radera */}
+          <h3 style={{ fontSize: 16, marginTop: 12, marginBottom: 6 }}>
+            Radera
+          </h3>
+          <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>
+              <strong>Radera per år/månad</strong> – välj år, eventuellt månad,
+              och tryck <em>Radera ej skyddade rapporter</em>. Endast rader
+              som <em>inte</em> är markerade som skyddade i veckoöversikten
+              tas bort.
+            </li>
+            <li>
+              <strong>Radera per kalendervecka</strong> – välj år och vecka och
+              använd knappen <em>Radera ej skyddade rapporter (vald vecka)</em>
+              för att ta bort oskyddade rapporter just den veckan.
+            </li>
+            <li>
+              Ingen ångrafunktion – kontrollera alltid skydd (kryssrutan i
+              veckoöversikten) innan du raderar.
+            </li>
+          </ul>
+        </section>
+      );
+    }
+       
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
@@ -2080,6 +2297,38 @@ function App() {
             }}
           >
             Radera rapporter
+
+                      <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>
+              Kalendervecka (valfritt – radera specifik vecka)
+            </label>
+            <select
+              value={raderaVecka}
+              onChange={(e) => setRaderaVecka(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Ingen vecka vald</option>
+              {Array.from({ length: 53 }, (_, i) => i + 1).map((v) => (
+                <option key={v} value={v}>
+                  Vecka {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={raderaRapporterVecka}
+            disabled={raderaPågår}
+            style={{
+              ...primaryButton,
+              backgroundColor: "#f97316",
+              opacity: raderaPågår ? 0.6 : 1,
+              marginTop: 0,
+            }}
+          >
+            Radera ej skyddade rapporter (vald vecka)
+          </button>
+            
           </h2>
           <p
             style={{
@@ -2401,7 +2650,7 @@ function App() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "12px 12px 110px", // mer plats för två rader flikar
+          padding: "12px 12px 120px", // tidigare t.ex. 100px/110px
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
@@ -2550,7 +2799,7 @@ function App() {
         {renderContent()}
       </div>
 
-         {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+              {/* TVÅ-RADIG NAVIGATION LÄNGST NER + INFO */}
       <nav
         style={{
           position: "fixed",
@@ -2565,7 +2814,7 @@ function App() {
           boxSizing: "border-box",
         }}
       >
-        {/* Rad 1: Start/Stop + Registrera */}
+        {/* Rad 1: INFO + Start/Stop + Registrera */}
         <div
           style={{
             display: "flex",
@@ -2574,31 +2823,50 @@ function App() {
           }}
         >
           <button
+            onClick={() => setActiveTab("info")}
+            style={{
+              flex: 1,
+              marginRight: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "info" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            INFO
+          </button>
+
+          <button
             onClick={() => setActiveTab("startstop")}
             style={{
               flex: 1,
               marginRight: 4,
-              padding: "10px 6px",
+              padding: "10px 4px",
               borderRadius: 999,
               border: "none",
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "startstop" ? "#facc15" : "#fefce8", // ljus gul aktiv / ännu ljusare bakgrund
+                activeTab === "startstop" ? "#facc15" : "#fefce8",
               color: "#854d0e",
             }}
           >
             Start/Stop
           </button>
+
           <button
             onClick={() => setActiveTab("registrera")}
             style={{
               flex: 1,
               marginLeft: 4,
-              padding: "10px 6px",
+              padding: "10px 4px",
               borderRadius: 999,
               border: "none",
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: 600,
               backgroundColor:
                 activeTab === "registrera" ? "#facc15" : "#fefce8",
@@ -2660,7 +2928,6 @@ function App() {
               border: "none",
               fontSize: 13,
               fontWeight: 600,
-              // mörkare röd för aktiv, ljus röd för inaktiv
               backgroundColor:
                 activeTab === "radera" ? "#b91c1c" : "#fee2e2",
               color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
@@ -2670,6 +2937,7 @@ function App() {
           </button>
         </div>
       </nav>
+      
     </div>
   );
 }
