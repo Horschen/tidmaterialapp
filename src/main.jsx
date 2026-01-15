@@ -2397,11 +2397,11 @@ function App() {
         flexDirection: "column",
       }}
     >
-      <div
+         <div
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "12px 12px 100px", // extra bottenpadding för två rader nav
+          padding: "12px 12px 110px", // mer plats för två rader flikar
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
