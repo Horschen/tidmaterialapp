@@ -230,7 +230,7 @@ function VeckoOversikt({
             <tr
               style={{
                 background: "#f3f4f6",
-                borderBottom: "1px solid "#e5e7eb",
+                borderBottom: "1px solid #e5e7eb",
               }}
             >
               <th></th>
