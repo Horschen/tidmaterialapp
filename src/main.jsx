@@ -2662,13 +2662,7 @@ if (activeTab === "info") {
   }}
 >
   {/* Rad 1: Info + Start/Stop + Registrera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: 6,
-    }}
-  >
+  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
     <button
       onClick={() => setActiveTab("info")}
       style={{
@@ -2722,12 +2716,7 @@ if (activeTab === "info") {
   </div>
 
   {/* Rad 2: Karta + Veckorapport + Radera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-    }}
-  >
+  <div style={{ display: "flex", justifyContent: "space-between" }}>
     <button
       onClick={() => setActiveTab("karta")}
       style={{
@@ -2780,9 +2769,9 @@ if (activeTab === "info") {
     </button>
   </div>
 </nav>
-</div>  {/* stänger inner‑div */}
-</div>  {/* stänger ytter‑div */}
+</div>
+</div>
 );
-}   // avslutar App‑funktionen
+}
 
 createRoot(document.getElementById("app")).render(<App />);
