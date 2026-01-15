@@ -74,6 +74,7 @@ function VeckoOversikt({
   filterMetod,
   onOpenManuell,
   onToggleSkyddad,
+  onOpenEdit,
 }) {
   const grupperad = {};
 
@@ -220,7 +221,7 @@ function VeckoOversikt({
           style={{
             borderCollapse: "collapse",
             width: "100%",
-            minWidth: 1000,
+            minWidth: 1100,
             fontFamily: "system-ui, -apple-system, sans-serif",
             fontSize: 15,
           }}
@@ -241,6 +242,7 @@ function VeckoOversikt({
               <th>Grus (kg)</th>
               <th>Salt (kg)</th>
               <th>Syften</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -271,12 +273,27 @@ function VeckoOversikt({
                 <td style={{ textAlign: "right" }}>{r.grus}</td>
                 <td style={{ textAlign: "right" }}>{r.salt}</td>
                 <td style={{ textAlign: "left" }}>{r.syften}</td>
+                <td style={{ textAlign: "center" }}>
+                  <button
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      border: "1px solid #d1d5db",
+                      background: "#ffffff",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
+                  >
+                    Editera
+                  </button>
+                </td>
               </tr>
             ))}
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -424,6 +441,22 @@ function App() {
     setVisaManuellPopup(false);
     resetManuellForm();
   }
+
+  // Editera-rapport popup
+  const [visaEditPopup, setVisaEditPopup] = useState(false);
+  const [editAdressId, setEditAdressId] = useState(null);
+  const [editRapporter, setEditRapporter] = useState([]);
+  const [valdaEditId, setValdaEditId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    datum: "",
+    arbetstid_min: "",
+    sand_kg: "",
+    salt_kg: "",
+    syfteOversyn: false,
+    syfteRojning: false,
+    syfteSaltning: false,
+    syfteGrusning: false,
+  });
 
   // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
@@ -688,22 +721,12 @@ function App() {
           ? new Date(senasteRapportTid)
           : new Date(aktivtPass.startTid);
 
-      // Kalendertid i sekunder mellan två adresser
       const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
-
-      // Person-sekunder kalendertid
       const personSek = råSek * (antalAnstallda || 1);
-
-      // Paus i person-sekunder (paus * antal anställda)
       const pausPersonSek =
         (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
-
-      // Tid som ska faktureras i person-sekunder
       const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
 
-      // Avrunda person-sekunder till person-minuter enligt regel:
-      // - restSek > 25 => avrunda uppåt
-      // - annars nedåt
       const minHeltal = Math.floor(sekEfterPausPerson / 60);
       const restSek = sekEfterPausPerson % 60;
       let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
@@ -720,7 +743,6 @@ function App() {
         return;
       }
 
-      // diffMin = person-minuter efter paus
       arbetstidMin = diffMin;
     } else {
       const manuell = parseInt(arbetstid, 10);
@@ -733,7 +755,6 @@ function App() {
         setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
         return;
       }
-      // manuell = kalenderminuter; multiplicera med antal anställda
       arbetstidMin = manuell * (antalAnstallda || 1);
     }
 
@@ -743,7 +764,7 @@ function App() {
       {
         datum: new Date().toISOString(),
         adress_id: valda,
-        arbetstid_min: arbetstidMin, // person-minuter
+        arbetstid_min: arbetstidMin,
         team_namn: team,
         arbetssatt: metod,
         sand_kg: parseInt(sand, 10) || 0,
@@ -760,14 +781,12 @@ function App() {
       setStatus("Rapport sparad");
       showPopup("👍 Rapport sparad", "success", 4000);
 
-      // Nollställ fält i Registrera-fliken
       setArbetstid("");
       setValda("");
       setSand(0);
       setSalt(0);
       setAntalAnstallda(1);
 
-      // nollställ paus & startpunkt för nästa intervall
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
       setPaus(null);
@@ -828,11 +847,9 @@ function App() {
       setStatus("Manuell rapport sparad");
       showPopup("👍 Manuell rapport sparad", "success", 4000);
 
-      // Nollställ formuläret och stäng popup
       resetManuellForm();
       setVisaManuellPopup(false);
 
-      // Hämta om översikt redan visas
       if (visaOversikt) {
         hamtaRapporter();
       }
@@ -916,7 +933,6 @@ function App() {
   }
 
   // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
-  // Först: alla rapporter för vald vecka/år (oavsett metod)
   const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -933,14 +949,12 @@ function App() {
     return veckaOK && årOK;
   });
 
-  // Sedan: applicera metod-filtret på veckans rapporter
   const filtreradeRapporter = veckansRapporter.filter((r) => {
     const metodOK =
       filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
     return metodOK;
   });
 
-  // Total maskin- respektive hand-tid (person-minuter) för vald vecka/år
   const totalMaskinMin = veckansRapporter
     .filter((r) => r.arbetssatt === "maskin")
     .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
@@ -951,7 +965,6 @@ function App() {
 
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
-    // Hitta vilka rapport-id som syns i nuvarande veckoöversikt för denna adress
     const rapportIds = filtreradeRapporter
       .filter((r) => r.adress_id === adressId)
       .map((r) => r.id);
@@ -980,8 +993,143 @@ function App() {
           ? "Markerade rader som skyddade mot radering."
           : "Tog bort skydd – dessa rader kan raderas."
       );
-      // Ladda om rapporter så att veckoöversikten uppdateras
       hamtaRapporter();
+    }
+  }
+
+  // ======= Öppna edit-popup för en adress (3 senaste rader) =======
+  function openEditPopupForAdress(adressId) {
+    const raderFörAdress = filtreradeRapporter
+      .filter((r) => r.adress_id === adressId)
+      .sort((a, b) => new Date(b.datum) - new Date(a.datum))
+      .slice(0, 3);
+
+    if (raderFörAdress.length === 0) {
+      showPopup("👎 Inga rapporter att editera för denna adress.", "error", 3000);
+      return;
+    }
+
+    setEditAdressId(adressId);
+    setEditRapporter(raderFörAdress);
+
+    const första = raderFörAdress[0];
+    const syfteSet = new Set(
+      (första.syfte || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+
+    setValdaEditId(första.id);
+    setEditForm({
+      datum: första.datum ? första.datum.slice(0, 10) : "",
+      arbetstid_min: första.arbetstid_min || "",
+      sand_kg: första.sand_kg ?? 0,
+      salt_kg: första.salt_kg ?? 0,
+      syfteOversyn: syfteSet.has("Översyn"),
+      syfteRojning: syfteSet.has("Röjning"),
+      syfteSaltning: syfteSet.has("Saltning"),
+      syfteGrusning: syfteSet.has("Grusning"),
+    });
+
+    setVisaEditPopup(true);
+  }
+
+  function onChangeValdEditId(nyttId) {
+    const rad = editRapporter.find(
+      (r) => r.id === Number(nyttId) || r.id === nyttId
+    );
+    if (!rad) return;
+
+    const syfteSet = new Set(
+      (rad.syfte || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+
+    setValdaEditId(rad.id);
+    setEditForm({
+      datum: rad.datum ? rad.datum.slice(0, 10) : "",
+      arbetstid_min: rad.arbetstid_min || "",
+      sand_kg: rad.sand_kg ?? 0,
+      salt_kg: rad.salt_kg ?? 0,
+      syfteOversyn: syfteSet.has("Översyn"),
+      syfteRojning: syfteSet.has("Röjning"),
+      syfteSaltning: syfteSet.has("Saltning"),
+      syfteGrusning: syfteSet.has("Grusning"),
+    });
+  }
+
+  async function sparaEditRapport() {
+    if (!valdaEditId) return;
+
+    const syften = [];
+    if (editForm.syfteOversyn) syften.push("Översyn");
+    if (editForm.syfteRojning) syften.push("Röjning");
+    if (editForm.syfteSaltning) syften.push("Saltning");
+    if (editForm.syfteGrusning) syften.push("Grusning");
+    const syfteText = syften.join(", ");
+
+    if (!editForm.datum) {
+      showPopup("👎 Ange datum.", "error", 3000);
+      return;
+    }
+
+    const arbetstidMin = Number(editForm.arbetstid_min);
+    if (!arbetstidMin || arbetstidMin <= 0) {
+      showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
+      return;
+    }
+
+    const sandKg = Number(editForm.sand_kg) || 0;
+    const saltKg = Number(editForm.salt_kg) || 0;
+
+    if (editForm.syfteSaltning && saltKg === 0) {
+      showPopup("👎 Ange Salt (kg) när du väljer Saltning.", "error", 3000);
+      return;
+    }
+    if (editForm.syfteGrusning && sandKg === 0) {
+      showPopup("👎 Ange Grus (kg) när du väljer Grusning.", "error", 3000);
+      return;
+    }
+
+    let datumIso;
+    try {
+      datumIso = new Date(editForm.datum + "T12:00:00").toISOString();
+    } catch {
+      showPopup("👎 Ogiltigt datum.", "error", 3000);
+      return;
+    }
+
+    setStatus("Uppdaterar rapport…");
+
+    const { error } = await supabase
+      .from("rapporter")
+      .update({
+        datum: datumIso,
+        arbetstid_min: arbetstidMin,
+        sand_kg: sandKg,
+        salt_kg: saltKg,
+        syfte: syfteText,
+      })
+      .eq("id", valdaEditId);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Fel vid uppdatering.", "error", 3000);
+      setStatus("❌ Fel vid uppdatering: " + error.message);
+    } else {
+      showPopup("👍 Rapport uppdaterad.", "success", 3000);
+      setStatus("Rapport uppdaterad.");
+      setVisaEditPopup(false);
+      setEditAdressId(null);
+      setEditRapporter([]);
+      setValdaEditId(null);
+
+      if (visaOversikt) {
+        hamtaRapporter();
+      }
     }
   }
 
@@ -1422,7 +1570,7 @@ function App() {
       .delete({ count: "exact" })
       .gte("datum", fromDate)
       .lte("datum", toDate)
-      .neq("skyddad", true); // radera endast EJ skyddade rader
+      .neq("skyddad", true);
 
     setRaderaPågår(false);
 
@@ -1823,7 +1971,7 @@ function App() {
               let prevÅr = aktuelltÅr;
 
               if (prevVecka < 1) {
-                prevVecka = 52; // enkel wrap till föregående år
+                prevVecka = 52;
                 prevÅr = aktuelltÅr - 1;
               }
 
@@ -1882,6 +2030,7 @@ function App() {
               filterMetod={filterMetod}
               onOpenManuell={openManuellPopup}
               onToggleSkyddad={toggleSkyddadForAdress}
+              onOpenEdit={openEditPopupForAdress}
             />
           )}
 
@@ -2602,6 +2751,249 @@ function App() {
                 onClick={sparaManuellRapport}
               >
                 Spara manuell rapport
+              </button>
+            </div>
+          </div>
+        )}
+
+        {visaEditPopup && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 130,
+              padding: "20px 16px",
+              borderRadius: 16,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              fontSize: 14,
+              maxWidth: "90%",
+              width: 420,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 16,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Editera rapport
+            </h3>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Välj en av de senaste 3 rapporterna för adressen och justera
+              värden.
+            </p>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Välj rapport (datum/tid)</label>
+              <select
+                value={valdaEditId || ""}
+                onChange={(e) => onChangeValdEditId(e.target.value)}
+                style={selectStyle}
+              >
+                {editRapporter.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {formatDatumTid(r.datum)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Datum</label>
+              <input
+                type="date"
+                value={editForm.datum}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, datum: e.target.value }))
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstid (minuter)</label>
+              <input
+                type="number"
+                value={editForm.arbetstid_min}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    arbetstid_min: e.target.value,
+                  }))
+                }
+                style={inputStyle}
+                inputMode="numeric"
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Syfte med arbetsuppgift</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  fontSize: 14,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteOversyn}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteOversyn: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Översyn
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteRojning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteRojning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Röjning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteSaltning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteSaltning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Saltning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteGrusning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteGrusning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Grusning
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Grus (kg)</label>
+              <select
+                value={editForm.sand_kg}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    sand_kg: e.target.value,
+                  }))
+                }
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {[...Array(51)].map((_, i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Salt (kg)</label>
+              <select
+                value={editForm.salt_kg}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    salt_kg: e.target.value,
+                  }))
+                }
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 12,
+                justifyContent: "space-between",
+              }}
+            >
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+                onClick={() => {
+                  setVisaEditPopup(false);
+                  setEditAdressId(null);
+                  setEditRapporter([]);
+                  setValdaEditId(null);
+                }}
+              >
+                Avbryt
+              </button>
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+                onClick={sparaEditRapport}
+              >
+                Spara ändringar
               </button>
             </div>
           </div>
