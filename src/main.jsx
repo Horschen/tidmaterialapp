@@ -2681,7 +2681,6 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "info" ? "#facc15" : "#fef08a",
         color: "#78350f",
-        transition: "background-color 0.2s ease",
       }}
     >
       Info
@@ -2699,7 +2698,6 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "startstop" ? "#facc15" : "#fef08a",
         color: "#78350f",
-        transition: "background-color 0.2s ease",
       }}
     >
       Start/Stop
@@ -2717,7 +2715,6 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "registrera" ? "#facc15" : "#fef08a",
         color: "#78350f",
-        transition: "background-color 0.2s ease",
       }}
     >
       Registrera
@@ -2743,7 +2740,6 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "karta" ? "#facc15" : "#fef08a",
         color: "#78350f",
-        transition: "background-color 0.2s ease",
       }}
     >
       Karta
@@ -2761,7 +2757,6 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "rapport" ? "#facc15" : "#fef08a",
         color: "#78350f",
-        transition: "background-color 0.2s ease",
       }}
     >
       Veckorapport
@@ -2779,18 +2774,15 @@ if (activeTab === "info") {
         fontWeight: 600,
         backgroundColor: activeTab === "radera" ? "#ef4444" : "#fecaca",
         color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
-        transition: "background-color 0.2s ease",
       }}
     >
       Radera
     </button>
   </div>
 </nav>
-</div> {/* stänger huvud‑App-diven */}
-</div> {/* stänger bakgrund/flex-kontainern */}
-); // avsluta return‑parentesen för App
+</div>  {/* stänger inner‑div */}
+</div>  {/* stänger ytter‑div */}
+);
+}   // avslutar App‑funktionen
 
-} // <-- stänger App‑funktionen
-
-// renderar appen i DOM
 createRoot(document.getElementById("app")).render(<App />);
