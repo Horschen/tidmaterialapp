@@ -1654,7 +1654,6 @@ function App() {
   
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
-     function renderContent() {
     if (activeTab === "info") {
       return (
         <section style={sectionStyle}>
@@ -1698,7 +1697,7 @@ function App() {
             </li>
             <li>
               <strong>Stop Paus</strong> – tryck när pausen är slut. Den
-              sparade paus‑tiden visas sedan i <em>Registrera</em> och dras av
+              sparade paus‑tiden visas i <em>Registrera</em> och dras av
               från intervallet när du sparar nästa rapport.
             </li>
           </ul>
@@ -1722,7 +1721,7 @@ function App() {
             <li>
               <strong>Syfte</strong> – bocka i vad ni gjort (Översyn, Röjning,
               Saltning, Grusning). Appen kräver t.ex. Salt (kg) om du väljer
-              Saltning, och Grus (kg) om du väljer Grusning.
+              Saltning och Grus (kg) om du väljer Grusning.
             </li>
             <li>
               <strong>Arbetstid (minuter)</strong> – används <em>endast</em> om
@@ -1824,7 +1823,7 @@ function App() {
         </section>
       );
     }
-       
+
     if (activeTab === "registrera") {
       return (
         <section style={sectionStyle}>
