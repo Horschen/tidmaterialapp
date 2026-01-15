@@ -2255,6 +2255,7 @@ function App() {
             kryssrutan i veckoöversikten. Ingen ångra‑funktion.
           </p>
 
+          {/* År */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>År</label>
             <input
@@ -2267,7 +2268,7 @@ function App() {
             />
           </div>
 
-          {/* NY placering: Vecka direkt efter År */}
+          {/* Vecka – nu mellan År och Månad */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>
               Kalendervecka (valfritt – radera specifik vecka)
@@ -2286,6 +2287,7 @@ function App() {
             </select>
           </div>
 
+          {/* Månad – förvald = blank, men Hela året finns kvar som val */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Månad (valfritt)</label>
             <select
@@ -2293,7 +2295,6 @@ function App() {
               onChange={(e) => setRaderaMånad(e.target.value)}
               style={selectStyle}
             >
-              {/* Förvald = blank (ingen månad). Hela året ligger kvar som alternativ. */}
               <option value="">(ingen månad vald)</option>
               <option value="hela">Hela året</option>
               <option value="1">Januari</option>
@@ -2311,7 +2312,7 @@ function App() {
             </select>
           </div>
 
-          {/* Knapp för vecka – nu ovanför år/månad-knappen */}
+          {/* Knapp för vecka – ovanför år/månad-knappen */}
           <button
             onClick={raderaRapporterVecka}
             disabled={raderaPågår}
@@ -2325,6 +2326,7 @@ function App() {
             Radera ej skyddade rapporter (vald vecka)
           </button>
 
+          {/* Knapp för år/månad */}
           <button
             onClick={raderaRapporter}
             disabled={raderaPågår}
