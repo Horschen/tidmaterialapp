@@ -341,15 +341,16 @@ function App() {
 
   // Paus
   const [paus, setPaus] = useState(null); // { startTid } när paus pågår
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0);
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
-  // Timer
+  // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
+  // Primär timer: total pass-tid
   const passTotalSek =
     aktivtPass != null
       ? Math.max(
@@ -358,6 +359,7 @@ function App() {
         )
       : 0;
 
+  // Sekundär timer: tid sedan senaste adress (eller pass-start om första)
   const pågåendePassSek =
     aktivtPass != null
       ? Math.max(
@@ -370,11 +372,13 @@ function App() {
         )
       : 0;
 
+  // Pågående paus (sekunder sedan Start Paus)
   const pågåendePausSek =
     paus != null
       ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
       : 0;
-    // Syften (auto/registrera)
+
+  // Syften (auto/registrera)
   const [syfteOversyn, setSyfteOversyn] = useState(false);
   const [syfteRojning, setSyfteRojning] = useState(false);
   const [syfteSaltning, setSyfteSaltning] = useState(false);
@@ -389,7 +393,7 @@ function App() {
     return delar.join(", ");
   }
 
-  // Manuell registrering
+  // Manuell registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
   const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
@@ -440,6 +444,7 @@ function App() {
 
   // Editera-rapport popup
   const [visaEditPopup, setVisaEditPopup] = useState(false);
+  const [editAdressId, setEditAdressId] = useState(null);
   const [editRapporter, setEditRapporter] = useState([]);
   const [valdaEditId, setValdaEditId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -451,8 +456,6 @@ function App() {
     syfteRojning: false,
     syfteSaltning: false,
     syfteGrusning: false,
-    antal_anstallda: 1,
-    team_namn: "För hand",
   });
 
   // Kartflik
@@ -476,7 +479,6 @@ function App() {
   const [raderaMånad, setRaderaMånad] = useState("");
   const [raderaPågår, setRaderaPågår] = useState(false);
   const [raderaUnlocked, setRaderaUnlocked] = useState(false);
-  const [raderaVecka, setRaderaVecka] = useState("");
 
   // ======= App-lösenord =======
   function checkAppPassword(e) {
@@ -501,7 +503,9 @@ function App() {
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url: shareUrl });
-      } catch (_) {}
+      } catch (_) {
+        // användaren kan ha avbrutit delningen, ignorera
+      }
     } else {
       const mailto = `mailto:?subject=${encodeURIComponent(
         title
@@ -518,7 +522,9 @@ function App() {
     }
 
     const input = window.prompt("Ange lösenord för att öppna Radera-fliken:");
-    if (input == null) return;
+    if (input == null) {
+      return; // avbröt
+    }
 
     const correct = getCurrentYearPassword();
     if (input === correct) {
@@ -546,7 +552,7 @@ function App() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [aktivtPass]);
 
-  // ======= Spara/Läs pass-state i localStorage =======
+  // ======= Spara/Läs pass-state i localStorage (återuppta pass) =======
   useEffect(() => {
     const payload = {
       aktivtPass,
@@ -558,7 +564,9 @@ function App() {
     };
     try {
       localStorage.setItem("snöjour_pass_state", JSON.stringify(payload));
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }, [
     aktivtPass,
     senasteRapportTid,
@@ -582,7 +590,9 @@ function App() {
         if (data.antalAnstallda) setAntalAnstallda(data.antalAnstallda);
         setStatus("⏱️ Återupptog pågående pass från tidigare session.");
       }
-    } catch (_) {}
+    } catch (_) {
+      // ignore
+    }
   }, []);
 
   // ======= Hämta adresser =======
@@ -602,7 +612,7 @@ function App() {
     const { data, error } = await supabase
       .from("rapporter")
       .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
       )
       .order("datum", { ascending: false });
     if (error) {
@@ -615,7 +625,7 @@ function App() {
     }
   }
 
-  // ======= Valideringar & spara-funktioner =======
+  // ======= Validera fält (adress, syfte, material) =======
   function validateBeforeSaveFields() {
     if (!valda) {
       showPopup("👎 Välj en adress först.", "error", 3000);
@@ -648,6 +658,7 @@ function App() {
     return true;
   }
 
+  // ======= Validera fält för manuell registrering =======
   function validateManuellFields() {
     if (!manuellAdressId) {
       showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
@@ -694,6 +705,7 @@ function App() {
     return true;
   }
 
+  // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
 
@@ -782,6 +794,7 @@ function App() {
     }
   }
 
+  // ======= Spara manuell rapport (popup) =======
   async function sparaManuellRapport() {
     if (!validateManuellFields()) return;
 
@@ -843,6 +856,7 @@ function App() {
     }
   }
 
+  // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
       showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -859,6 +873,7 @@ function App() {
     setStatus("⏱️ Pass startat.");
   }
 
+  // ======= Stoppa pass =======
   function stoppaPass() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass.", "error", 3000);
@@ -885,6 +900,7 @@ function App() {
     setStatus("Pass stoppat.");
   }
 
+  // ======= Start Paus =======
   function startPaus() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
@@ -901,6 +917,7 @@ function App() {
     setStatus("⏸️ Paus startad.");
   }
 
+  // ======= Stop Paus =======
   function stopPaus() {
     if (!paus) {
       showPopup("👎 Ingen paus är igång.", "error", 3000);
@@ -915,7 +932,7 @@ function App() {
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
 
-  // ======= Filtrera rapporter =======
+  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
   const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -946,7 +963,7 @@ function App() {
     .filter((r) => r.arbetssatt === "hand")
     .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
-  // ======= Toggla skydd =======
+  // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
     const rapportIds = filtreradeRapporter
       .filter((r) => r.adress_id === adressId)
@@ -980,7 +997,7 @@ function App() {
     }
   }
 
-  // ======= Edit-popup adresser =======
+  // ======= Öppna edit-popup för en adress (3 senaste rader) =======
   function openEditPopupForAdress(adressId) {
     const raderFörAdress = filtreradeRapporter
       .filter((r) => r.adress_id === adressId)
@@ -992,6 +1009,7 @@ function App() {
       return;
     }
 
+    setEditAdressId(adressId);
     setEditRapporter(raderFörAdress);
 
     const första = raderFörAdress[0];
@@ -1012,8 +1030,6 @@ function App() {
       syfteRojning: syfteSet.has("Röjning"),
       syfteSaltning: syfteSet.has("Saltning"),
       syfteGrusning: syfteSet.has("Grusning"),
-      antal_anstallda: första.antal_anstallda || 1,
-      team_namn: första.team_namn || "För hand",
     });
 
     setVisaEditPopup(true);
@@ -1042,8 +1058,6 @@ function App() {
       syfteRojning: syfteSet.has("Röjning"),
       syfteSaltning: syfteSet.has("Saltning"),
       syfteGrusning: syfteSet.has("Grusning"),
-      antal_anstallda: rad.antal_anstallda || 1,
-      team_namn: rad.team_namn || "För hand",
     });
   }
 
@@ -1080,10 +1094,6 @@ function App() {
       return;
     }
 
-    const antal = Number(editForm.antal_anstallda) || 1;
-    const teamNamn = editForm.team_namn || "För hand";
-    const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
-
     let datumIso;
     try {
       datumIso = new Date(editForm.datum + "T12:00:00").toISOString();
@@ -1102,9 +1112,6 @@ function App() {
         sand_kg: sandKg,
         salt_kg: saltKg,
         syfte: syfteText,
-        antal_anstallda: antal,
-        team_namn: teamNamn,
-        arbetssatt: arbetssatt,
       })
       .eq("id", valdaEditId);
 
@@ -1116,6 +1123,7 @@ function App() {
       showPopup("👍 Rapport uppdaterad.", "success", 3000);
       setStatus("Rapport uppdaterad.");
       setVisaEditPopup(false);
+      setEditAdressId(null);
       setEditRapporter([]);
       setValdaEditId(null);
 
@@ -1312,8 +1320,6 @@ function App() {
       "mailto:" + to + "?subject=" + subject + "&body=" + body;
   }
 
-// fortsättning i del 4/4
-
   // ======= Exportera veckorapport till CSV =======
   function exportVeckorapportCSV() {
     if (filtreradeRapporter.length === 0) {
@@ -1438,7 +1444,82 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  // ======= RADERA: år/månad & vecka =======
+  // ======= Öppna karta för vald adress =======
+  function oppnaKartaForKartAdress() {
+    if (!kartaAdressId) {
+      alert("Välj en adress i kartsektionen först.");
+      return;
+    }
+    const adr = adresser.find(
+      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
+    );
+    if (adr?.gps_url) {
+      window.open(adr.gps_url, "_blank");
+    } else {
+      alert("Ingen GPS‑länk sparad för denna adress.");
+    }
+  }
+
+  // ====== STIL ======
+  const sectionStyle = {
+    marginBottom: 28,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#ffffff",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  };
+
+  const labelStyle = {
+    display: "block",
+    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: 500,
+  };
+
+  const selectStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+    boxSizing: "border-box",
+  };
+
+  const primaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    fontWeight: 600,
+    marginTop: 8,
+  };
+
+  const secondaryButton = {
+    width: "100%",
+    padding: "12px 16px",
+    fontSize: 16,
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#e5e7eb",
+    color: "#111827",
+    fontWeight: 500,
+    marginTop: 8,
+  };
+
+  // ====== RADERA-FUNKTIONER =======
   async function raderaRapporter() {
     if (!raderaÅr) {
       showPopup("👎 Ange år att radera.", "error", 3000);
@@ -1455,7 +1536,7 @@ function App() {
     let toDate;
     let beskrivning;
 
-    if (!raderaMånad || raderaMånad === "hela") {
+    if (!raderaMånad) {
       fromDate = `${årNum}-01-01`;
       toDate = `${årNum}-12-31`;
       beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
@@ -1475,49 +1556,6 @@ function App() {
     }
 
     setDeleteConfirm({ fromDate, toDate, beskrivning });
-  }
-
-  async function raderaRapporterVecka() {
-    if (!raderaÅr || !raderaVecka) {
-      showPopup("👎 Ange både år och vecka.", "error", 3000);
-      return;
-    }
-
-    const årNum = Number(raderaÅr);
-    const veckaNum = Number(raderaVecka);
-
-    if (
-      Number.isNaN(årNum) ||
-      årNum < 2000 ||
-      årNum > 2100 ||
-      Number.isNaN(veckaNum) ||
-      veckaNum < 1 ||
-      veckaNum > 53
-    ) {
-      showPopup("👎 Ogiltigt år eller vecka.", "error", 3000);
-      return;
-    }
-
-    const simple = new Date(Date.UTC(årNum, 0, 4));
-    const dayOfWeek = simple.getUTCDay() || 7;
-    const vecka1Start = new Date(simple);
-    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1);
-
-    const from = new Date(vecka1Start);
-    from.setUTCDate(vecka1Start.getUTCDate() + (veckaNum - 1) * 7);
-
-    const to = new Date(from);
-    to.setUTCDate(from.getUTCDate() + 6);
-
-    const fromDate = from.toISOString().slice(0, 10);
-    const toDate = to.toISOString().slice(0, 10);
-    const beskrivning = `alla rapporter v${veckaNum} ${årNum} (ej skyddade)`;
-
-    setDeleteConfirm({
-      fromDate,
-      toDate,
-      beskrivning,
-    });
   }
 
   async function bekräftaRadering() {
@@ -1556,7 +1594,245 @@ function App() {
 
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
-    if (activeTab === "info") {
+    if (activeTab === "registrera") {
+      return (
+        <section style={sectionStyle}>
+          {paus && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#f97316",
+                color: "#ffffff",
+                fontSize: 14,
+              }}
+            >
+              Paus pågår –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
+          )}
+
+          {!paus && pausSekUnderIntervall > 0 && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#fed7aa",
+                color: "#7c2d12",
+                fontSize: 13,
+              }}
+            >
+              Registrerad paus för denna adress/resa:{" "}
+              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
+              (dras av när du sparar rapport)
+            </div>
+          )}
+
+          {aktivtPass && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående adress/resa (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+            </div>
+          )}
+
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Registrera jobb
+          </h2>
+
+          <label style={labelStyle}>Adress (för rapport)</label>
+          <select
+            value={valda}
+            onChange={(e) => setValda(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {adresser.map((a) => (
+              <option
+                key={a.id}
+                value={a.id}
+                style={{
+                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+                }}
+              >
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+              </option>
+            ))}
+          </select>
+
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: "#4b5563",
+            }}
+          >
+            Adresser märkta (MASKIN) är maskin‑möjliga.
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+            <select
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              style={selectStyle}
+            >
+              <option>För hand</option>
+              <option>Maskin</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Antal anställda</label>
+            <select
+              value={antalAnstallda}
+              onChange={(e) => setAntalAnstallda(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Syfte med arbetsuppgift</label>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                fontSize: 15,
+              }}
+            >
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteOversyn}
+                  onChange={(e) => setSyfteOversyn(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Översyn
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteRojning}
+                  onChange={(e) => setSyfteRojning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Röjning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteSaltning}
+                  onChange={(e) => setSyfteSaltning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Saltning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteGrusning}
+                  onChange={(e) => setSyfteGrusning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Grusning
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>
+              Arbetstid (minuter) – används bara om inget pass är aktivt
+            </label>
+            <input
+              type="number"
+              value={arbetstid}
+              onChange={(e) => setArbetstid(e.target.value)}
+              style={inputStyle}
+              inputMode="numeric"
+            />
+          </div>
+
+          <button style={secondaryButton} onClick={sparaRapport}>
+            Spara rapport
+          </button>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Grus (kg)</label>
+            <select
+              value={sand}
+              onChange={(e) => setSand(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {[...Array(51)].map((_, i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Salt (kg)</label>
+            <select
+              value={salt}
+              onChange={(e) => setSalt(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (activeTab === "karta") {
       return (
         <section style={sectionStyle}>
           <h2
@@ -1566,15 +1842,401 @@ function App() {
               marginBottom: 12,
             }}
           >
-            INFO – Så här använder du appen
+            Karta
           </h2>
-          {/* (du kan fylla på med samma INFO-texter som tidigare här) */}
+
+          <label style={labelStyle}>Välj adress (karta)</label>
+          <select
+            value={kartaAdressId}
+            onChange={(e) => setKartaAdressId(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {adresser.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={oppnaKartaForKartAdress}
+            disabled={!kartaAdressId}
+            style={{
+              ...primaryButton,
+              opacity: kartaAdressId ? 1 : 0.5,
+              marginTop: 16,
+            }}
+          >
+            Öppna karta för vald adress
+          </button>
         </section>
       );
     }
 
-    // Här klistrar du in din befintliga Registrera-, Karta-, Veckorapport-,
-    // Radera- och Start/Stop-UI (de delar som redan fungerar hos dig).
+    if (activeTab === "rapport") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Veckorapport
+          </h2>
+
+          {/* Gula ovala rutor för total tider */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Maskin Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalMaskinMin)}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Man Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalHandMin)}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Vecka</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={filtreradVecka}
+                onChange={(e) => setFiltreradVecka(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>År</label>
+              <input
+                type="number"
+                min="2020"
+                max="2100"
+                value={filtreratÅr}
+                onChange={(e) => setFiltreratÅr(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              const nu = getCurrentIsoWeekAndYear();
+              const aktuellVecka = Number(filtreradVecka) || nu.vecka;
+              const aktuelltÅr = Number(filtreratÅr) || nu.år;
+
+              let prevVecka = aktuellVecka - 1;
+              let prevÅr = aktuelltÅr;
+
+              if (prevVecka < 1) {
+                prevVecka = 52;
+                prevÅr = aktuelltÅr - 1;
+              }
+
+              setFiltreradVecka(String(prevVecka));
+              setFiltreratÅr(String(prevÅr));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 4,
+            }}
+          >
+            Föregående vecka
+          </button>
+
+          <button
+            onClick={() => {
+              const { vecka, år } = getCurrentIsoWeekAndYear();
+              setFiltreradVecka(String(vecka));
+              setFiltreratÅr(String(år));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 8,
+            }}
+          >
+            Denna vecka
+          </button>
+
+          <label style={labelStyle}>Filtrera på metod</label>
+          <select
+            value={filterMetod}
+            onChange={(e) => setFilterMetod(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="alla">Alla</option>
+            <option value="hand">Endast För hand</option>
+            <option value="maskin">Endast Maskin</option>
+          </select>
+
+          <button
+            style={{ ...secondaryButton, marginTop: 12 }}
+            onClick={hamtaRapporter}
+          >
+            Uppdatera översikt
+          </button>
+
+          {visaOversikt && (
+            <VeckoOversikt
+              data={filtreradeRapporter}
+              onSkickaEmail={skickaVeckorapportEmail}
+              onExportCSV={exportVeckorapportCSV}
+              filtreradVecka={filtreradVecka}
+              filtreratÅr={filtreratÅr}
+              filterMetod={filterMetod}
+              onOpenManuell={openManuellPopup}
+              onToggleSkyddad={toggleSkyddadForAdress}
+              onOpenEdit={openEditPopupForAdress}
+            />
+          )}
+
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    if (activeTab === "radera") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 8,
+              color: "#b91c1c",
+            }}
+          >
+            Radera rapporter
+          </h2>
+          <p
+            style={{
+              fontSize: 13,
+              color: "#7f1d1d",
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Varning: Detta tar bort{" "}
+            <strong>endast rapporter som inte är skyddade</strong> med
+            kryssrutan i veckoöversikten. Ingen ångra‑funktion.
+          </p>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>År</label>
+            <input
+              type="number"
+              min="2000"
+              max="2100"
+              value={raderaÅr}
+              onChange={(e) => setRaderaÅr(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={labelStyle}>Månad (valfritt)</label>
+            <select
+              value={raderaMånad}
+              onChange={(e) => setRaderaMånad(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Hela året</option>
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Mars</option>
+              <option value="4">April</option>
+              <option value="5">Maj</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Augusti</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+          </div>
+
+          <button
+            onClick={raderaRapporter}
+            disabled={raderaPågår}
+            style={{
+              ...primaryButton,
+              backgroundColor: "#dc2626",
+              opacity: raderaPågår ? 0.6 : 1,
+              marginTop: 8,
+            }}
+          >
+            {raderaPågår ? "Raderar..." : "Radera ej skyddade rapporter"}
+          </button>
+        </section>
+      );
+    }
+
+    if (activeTab === "startstop") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Start / Stop pass
+          </h2>
+
+          {aktivtPass ? (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående pass (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+              <strong>{formatSekTillHhMm(passTotalSek)}</strong>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#4b5563",
+                  marginTop: 4,
+                }}
+              >
+                Senaste adressintervall:{" "}
+                <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+              </div>
+            </div>
+          ) : (
+            <p
+              style={{
+                fontSize: 14,
+                marginBottom: 12,
+                color: "#4b5563",
+              }}
+            >
+              Inget pass är aktivt just nu.
+            </p>
+          )}
+
+          {paus && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#f97316",
+                color: "#ffffff",
+                fontSize: 14,
+              }}
+            >
+              Paus igång –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
+          )}
+
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#16a34a",
+            }}
+            onClick={startaPass}
+          >
+            Starta passet
+          </button>
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#dc2626",
+            }}
+            onClick={stoppaPass}
+          >
+            Stoppa passet
+          </button>
+
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#ea580c",
+            }}
+            onClick={startPaus}
+          >
+            Start Paus
+          </button>
+          <button
+            style={{
+              ...primaryButton,
+              backgroundColor: "#f97316",
+            }}
+            onClick={stopPaus}
+          >
+            Stop Paus
+          </button>
+        </section>
+      );
+    }
 
     return null;
   }
@@ -1604,7 +2266,108 @@ function App() {
           flexDirection: "column",
         }}
       >
-        {/* exakt samma login-UI du redan har här */}
+        <div
+          style={{
+            maxWidth: 420,
+            margin: "0 auto",
+            padding: "40px 16px",
+            width: "100%",
+            boxSizing: "border-box",
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <form
+            onSubmit={checkAppPassword}
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 24,
+              borderRadius: 16,
+              backgroundColor: "#ffffff",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 20,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Tid & Material – SnöJour
+            </h1>
+            <p
+              style={{
+                fontSize: 13,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              Ange lösenord för att öppna appen.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                marginBottom: 4,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              Lösenord
+            </label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: 16,
+                borderRadius: 10,
+                border: "1px solid #d1d5db",
+                backgroundColor: "#f9fafb",
+                boxSizing: "border-box",
+                marginBottom: 12,
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                fontSize: 16,
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 600,
+              }}
+            >
+              Logga in
+            </button>
+
+            {status && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 13,
+                  color: status.startsWith("❌") ? "#dc2626" : "#4b5563",
+                  textAlign: "center",
+                }}
+              >
+                {status}
+              </p>
+            )}
+          </form>
+        </div>
       </div>
     );
   }
@@ -1624,18 +2387,621 @@ function App() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "12px 12px 120px",
+          padding: "12px 12px 72px",
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
           position: "relative",
         }}
       >
-        {/* header, popup-rutor, manuella & edit-popups, och slutligen: */}
+        <header
+          style={{
+            marginBottom: 8,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <h1
+              style={{
+                fontSize: 20,
+                marginBottom: 2,
+                textAlign: "left",
+              }}
+            >
+              Tid & Material – SnöJour
+            </h1>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                margin: 0,
+              }}
+            >
+              Mobilvy – användarvänlig för iPhone
+            </p>
+          </div>
+          <button
+            onClick={delaApp}
+            style={{
+              flexShrink: 0,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              fontSize: 12,
+            }}
+          >
+            Dela
+          </button>
+        </header>
+
+        {popup && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 100,
+              padding: "24px 32px",
+              borderRadius: 24,
+              border: `2px solid ${popupStyle.borderColor}`,
+              backgroundColor: popupStyle.backgroundColor,
+              color: popupStyle.color,
+              fontSize: 20,
+              fontWeight: 600,
+              textAlign: "center",
+              maxWidth: "80%",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            {popup.text}
+          </div>
+        )}
+
+        {deleteConfirm && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 110,
+              padding: "24px 32px",
+              borderRadius: 24,
+              border: "2px solid #b91c1c",
+              backgroundColor: "#fee2e2",
+              color: "#7f1d1d",
+              fontSize: 16,
+              fontWeight: 600,
+              textAlign: "center",
+              maxWidth: "80%",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <div style={{ marginBottom: 12 }}>
+              Är du säker på att du vill radera data??
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 12,
+                marginTop: 4,
+              }}
+            >
+              <button
+                onClick={bekräftaRadering}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#b91c1c",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                Ja
+              </button>
+              <button
+                onClick={avbrytRadering}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontSize: 14,
+                  fontWeight: 500,
+                }}
+              >
+                Nej
+              </button>
+            </div>
+          </div>
+        )}
+
+        {visaManuellPopup && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 120,
+              padding: "20px 16px",
+              borderRadius: 16,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              fontSize: 14,
+              maxWidth: "90%",
+              width: 420,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 16,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Manuell registrering
+            </h3>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Lägg till jobb i efterhand på vald adress och datum. Dessa räknas
+              in i veckoöversikten precis som vanliga rapporter.
+            </p>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Adress</label>
+              <select
+                value={manuellAdressId}
+                onChange={(e) => setManuellAdressId(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="">-- Välj adress --</option>
+                {adresser.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+              <select
+                value={manuellTeam}
+                onChange={(e) => setManuellTeam(e.target.value)}
+                style={selectStyle}
+              >
+                <option>För hand</option>
+                <option>Maskin</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Antal anställda</label>
+              <select
+                value={manuellAntalAnstallda}
+                onChange={(e) =>
+                  setManuellAntalAnstallda(Number(e.target.value))
+                }
+                style={selectStyle}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Datum</label>
+              <input
+                type="date"
+                value={manuellDatum}
+                onChange={(e) => setManuellDatum(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstid (minuter)</label>
+              <input
+                type="number"
+                value={manuellTidMin}
+                onChange={(e) => setManuellTidMin(e.target.value)}
+                style={inputStyle}
+                inputMode="numeric"
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Syfte med arbetsuppgift</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  fontSize: 14,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteOversyn}
+                    onChange={(e) => setManSyfteOversyn(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Översyn
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteRojning}
+                    onChange={(e) => setManSyfteRojning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Röjning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteSaltning}
+                    onChange={(e) => setManSyfteSaltning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Saltning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={manSyfteGrusning}
+                    onChange={(e) => setManSyfteGrusning(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Grusning
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Grus (kg)</label>
+              <select
+                value={manuellSand}
+                onChange={(e) => setManuellSand(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {[...Array(51)].map((_, i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Salt (kg)</label>
+              <select
+                value={manuellSalt}
+                onChange={(e) => setManuellSalt(e.target.value)}
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 12,
+                justifyContent: "space-between",
+              }}
+            >
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+                onClick={closeManuellPopup}
+              >
+                Avbryt
+              </button>
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+                onClick={sparaManuellRapport}
+              >
+                Spara manuell rapport
+              </button>
+            </div>
+          </div>
+        )}
+
+        {visaEditPopup && (
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 130,
+              padding: "20px 16px",
+              borderRadius: 16,
+              border: "1px solid #d1d5db",
+              backgroundColor: "#ffffff",
+              color: "#111827",
+              fontSize: 14,
+              maxWidth: "90%",
+              width: 420,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 16,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Editera rapport
+            </h3>
+            <p
+              style={{
+                fontSize: 12,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              Välj en av de senaste 3 rapporterna för adressen och justera
+              värden.
+            </p>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Välj rapport (datum/tid)</label>
+              <select
+                value={valdaEditId || ""}
+                onChange={(e) => onChangeValdEditId(e.target.value)}
+                style={selectStyle}
+              >
+                {editRapporter.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {formatDatumTid(r.datum)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Datum</label>
+              <input
+                type="date"
+                value={editForm.datum}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, datum: e.target.value }))
+                }
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstid (minuter)</label>
+              <input
+                type="number"
+                value={editForm.arbetstid_min}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    arbetstid_min: e.target.value,
+                  }))
+                }
+                style={inputStyle}
+                inputMode="numeric"
+              />
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Syfte med arbetsuppgift</label>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  fontSize: 14,
+                }}
+              >
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteOversyn}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteOversyn: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Översyn
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteRojning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteRojning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Röjning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteSaltning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteSaltning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Saltning
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editForm.syfteGrusning}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({
+                        ...prev,
+                        syfteGrusning: e.target.checked,
+                      }))
+                    }
+                    style={{ marginRight: 6 }}
+                  />
+                  Grusning
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Grus (kg)</label>
+              <select
+                value={editForm.sand_kg}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    sand_kg: e.target.value,
+                  }))
+                }
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {[...Array(51)].map((_, i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Salt (kg)</label>
+              <select
+                value={editForm.salt_kg}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    salt_kg: e.target.value,
+                  }))
+                }
+                style={selectStyle}
+              >
+                <option value="0">0</option>
+                {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginTop: 12,
+                justifyContent: "space-between",
+              }}
+            >
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+                onClick={() => {
+                  setVisaEditPopup(false);
+                  setEditAdressId(null);
+                  setEditRapporter([]);
+                  setValdaEditId(null);
+                }}
+              >
+                Avbryt
+              </button>
+              <button
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#2563eb",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+                onClick={sparaEditRapport}
+              >
+                Spara ändringar
+              </button>
+            </div>
+          </div>
+        )}
+
         {renderContent()}
       </div>
 
-      {/* Två-radig navigation */}
       <nav
         style={{
           position: "fixed",
@@ -1644,130 +3010,98 @@ function App() {
           right: 0,
           backgroundColor: "#ffffff",
           borderTop: "1px solid #e5e7eb",
-          padding: "8px 12px",
-          maxWidth: 520,
+          padding: "6px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          maxWidth: 480,
           margin: "0 auto",
-          boxSizing: "border-box",
         }}
       >
-        <div
+        <button
+          onClick={() => setActiveTab("startstop")}
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 6,
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "startstop" ? "#2563eb" : "transparent",
+            color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
           }}
         >
-          <button
-            onClick={() => setActiveTab("info")}
-            style={{
-              flex: 1,
-              marginRight: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "info" ? "#facc15" : "#fefce8",
-              color: "#854d0e",
-            }}
-          >
-            INFO
-          </button>
-          <button
-            onClick={() => setActiveTab("startstop")}
-            style={{
-              flex: 1,
-              marginRight: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "startstop" ? "#facc15" : "#fefce8",
-              color: "#854d0e",
-            }}
-          >
-            Start/Stop
-          </button>
-          <button
-            onClick={() => setActiveTab("registrera")}
-            style={{
-              flex: 1,
-              marginLeft: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "registrera" ? "#facc15" : "#fefce8",
-              color: "#854d0e",
-            }}
-          >
-            Registrera
-          </button>
-        </div>
-
-        <div
+          Start/Stop
+        </button>
+        <button
+          onClick={() => setActiveTab("registrera")}
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "registrera" ? "#2563eb" : "transparent",
+            color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
           }}
         >
-          <button
-            onClick={() => setActiveTab("karta")}
-            style={{
-              flex: 1,
-              marginRight: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "karta" ? "#facc15" : "#fefce8",
-              color: "#854d0e",
-            }}
-          >
-            Karta
-          </button>
-          <button
-            onClick={() => setActiveTab("rapport")}
-            style={{
-              flex: 1,
-              margin: "0 4px",
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "rapport" ? "#facc15" : "#fefce8",
-              color: "#854d0e",
-            }}
-          >
-            Veckorapport
-          </button>
-          <button
-            onClick={openRaderaTab}
-            style={{
-              flex: 1,
-              marginLeft: 4,
-              padding: "10px 4px",
-              borderRadius: 999,
-              border: "none",
-              fontSize: 13,
-              fontWeight: 600,
-              backgroundColor:
-                activeTab === "radera" ? "#b91c1c" : "#fee2e2",
-              color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
-            }}
-          >
-            Radera
-          </button>
-        </div>
+          Registrera
+        </button>
+        <button
+          onClick={() => setActiveTab("karta")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "karta" ? "#2563eb" : "transparent",
+            color: activeTab === "karta" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Karta
+        </button>
+        <button
+          onClick={() => setActiveTab("rapport")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "rapport" ? "#2563eb" : "transparent",
+            color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
+          }}
+        >
+          Veckorapport
+        </button>
+        <button
+          onClick={openRaderaTab}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "8px 6px",
+            borderRadius: 999,
+            border: "none",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "radera" ? "#b91c1c" : "transparent",
+            color: activeTab === "radera" ? "#ffffff" : "#b91c1c",
+          }}
+        >
+          Radera
+        </button>
       </nav>
     </div>
   );
