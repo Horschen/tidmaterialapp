@@ -2251,7 +2251,102 @@ function App() {
         </section>
       );
     }
+if (activeTab === "info") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 20,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Om SnöJour‑appen
+          </h2>
 
+          <p style={{ fontSize: 14, lineHeight: 1.5 }}>
+            Den här webappen används för att registrera, följa upp och exportera arbetstider
+            och materialåtgång under snöjouren. Nedan hittar du en snabbguide till de olika
+            flikarna och hur funktionerna fungerar i bakgrunden.
+          </p>
+
+          <h3 style={{ marginTop: 16 }}>🕓 Start / Stop</h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            Här startar och stoppar du ditt arbetspass. När du trycker <strong>Starta passet</strong>
+            sparas starttiden lokalt i din webbläsare och en timer börjar räkna din effektiva
+            arbetstid. Du kan när som helst pausa via <strong>Start Paus</strong>
+            – då registreras ingen arbetstid. När du trycker <strong>Stop Paus</strong> sparas
+            hur länge du stod på paus, och den tiden dras automatiskt bort från rapporten när
+            du sparar ett jobb i fliken "Registrera". <br />Trycker du
+            <strong> Stoppa passet</strong> avslutas tidsmätningen helt och timern nollställs.
+          </p>
+
+          <h3 style={{ marginTop: 16 }}>📝 Registrera</h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            Här registrerar du dina jobb under ett pass. Välj en <strong>adress</strong>,
+            <strong> arbetssätt (För hand / Maskin)</strong>, antal anställda och vilket
+            <strong> syfte</strong> (t.ex. Översyn / Röjning / Saltning / Grusning) arbetet hade.
+            När du sparar en rapport medan passet är igång beräknas arbetstiden automatiskt.
+            Du kan också ange tid manuellt om ingen timer är aktiv. <br />
+            Timern överst visar hur länge du arbetat sedan förra rapporten,
+            inklusive aktuell pausstatus. Paustiden lagras separat och dras av vid nästa sparning.
+            <br />
+            Behöver du lägga till en rapport i efterhand väljer du knappen
+            <strong> Manuell registrering</strong> i "Veckorapport"‑fliken – den fungerar
+            precis som registreringsvyn men utan aktiv timer.
+          </p>
+
+          <h3 style={{ marginTop: 16 }}>🗺️ Karta</h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            Under fliken <strong>Karta</strong> kan du snabbt öppna GPS‑positionen (om den finns)
+            för en utvald adress. Välj adress i listan och tryck
+            <strong> "Öppna karta för vald adress"</strong>. Kartlänken öppnas i ny flik
+            i exempelvis Google Maps.
+          </p>
+
+          <h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            Här får du en översikt vecka för vecka. Välj vecka och år för att filtrera,
+            och tryck sedan <strong>Uppdatera översikt</strong>. Du kan också snabbt
+            hoppa mellan veckor med knapparna
+            <strong> "Föregående vecka"</strong> och <strong>"Denna vecka"</strong>. <br /><br />
+            De gula ovalerna visar <strong>Total Maskin‑tid</strong> respektive
+            <strong> Total Man‑tid</strong> (tiden räknas ihop för alla rapporter av respektive typ).
+            <br /><br />
+            I tabellen visas varje adress med senaste rapporttid, antal jobb, anställda
+            och material.  
+            – Klicka på <strong>Editera</strong> för att ändra en befintlig rapport
+            (t.ex. justera tid eller material). Ändringen uppdaterar den valda posten
+            direkt i databasen. <br />
+            – Kryssrutan i början av raden markerar raden som
+            <strong> Skyddad</strong>, vilket betyder att den inte kan raderas.
+            Kryssar du ur skyddet blir rapporten möjlig att ta bort.
+            <br /><br />
+            Du kan ladda ner data som <strong>CSV</strong> eller skicka
+            <strong> Veckorapport via e‑post</strong> direkt.  
+            Knappen <strong>Manuell registrering</strong> öppnar ett formulär
+            där du manuellt kan lägga in en rapport för vald adress.
+          </p>
+
+          <h3 style={{ marginTop: 16, color: "#b91c1c" }}>🗑️ Radera</h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            I fliken <strong>Radera</strong> kan du ta bort gamla rapporter efter år och valfri månad.
+            Du anger vilket <strong>år</strong> (och eventuellt månad) som ska rensas.
+            Endast rapporter som <strong>inte</strong> är markerade som skyddade raderas.
+            Skyddade rader (kryssrutan i veckoöversikten) ignoreras alltid vid radering.
+            När du bekräftar visas en sammanfattning och du får frågan "Är du säker"
+            innan något tas bort permanent.
+          </p>
+
+          <h3 style={{ marginTop: 20 }}>💡 Tips</h3>
+          <ul style={{ fontSize: 14, lineHeight: 1.5 }}>
+            <li>Appen sparar pågående pass lokalt, så du kan uppdatera sidan utan att tappa tid.</li>
+            <li>Alla tider sparas i minuter – timmar visas bara som formaterad vy.</li>
+            <li>Inloggningslösenordet ändras automatiskt varje år (Jour+årtal).</li>
+          </ul>
+        </section>
+      );
+    }
     return null;
   }
 
@@ -2566,7 +2661,7 @@ function App() {
     boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
   }}
 >
-  {/* Rad 1: Start/Stop + Registrera */}
+    {/* Rad 1: Info + Start/Stop + Registrera */}
   <div
     style={{
       display: "flex",
@@ -2574,6 +2669,24 @@ function App() {
       marginBottom: 6,
     }}
   >
+    <button
+      onClick={() => setActiveTab("info")}
+      style={{
+        flex: 1,
+        marginRight: 4,
+        padding: "10px 6px",
+        borderRadius: 999,
+        border: "1px solid #facc15",
+        fontSize: 14,
+        fontWeight: 600,
+        backgroundColor:
+          activeTab === "info" ? "#facc15" : "#fef08a",
+        color: "#78350f",
+        transition: "background-color 0.2s ease",
+      }}
+    >
+      Info
+    </button>
     <button
       onClick={() => setActiveTab("startstop")}
       style={{
@@ -2611,72 +2724,5 @@ function App() {
       Registrera
     </button>
   </div>
-
-  {/* Rad 2: Karta + Veckorapport + Radera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-    }}
-  >
-    <button
-      onClick={() => setActiveTab("karta")}
-      style={{
-        flex: 1,
-        marginRight: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "karta" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Karta
-    </button>
-    <button
-      onClick={() => setActiveTab("rapport")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "rapport" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Veckorapport
-    </button>
-    <button
-      onClick={openRaderaTab}
-      style={{
-        flex: 1,
-        marginLeft: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #ef4444",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "radera" ? "#ef4444" : "#fecaca",
-        color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Radera
-    </button>
-  </div>
-</nav>
-    </div>
-  );
-}
 
 createRoot(document.getElementById("app")).render(<App />);
