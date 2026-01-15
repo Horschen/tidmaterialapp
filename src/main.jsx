@@ -2659,151 +2659,238 @@ return (
       )}
 
       {visaEditPopup && (
-        <div
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 150,
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+      Editera rapport
+    </h3>
+
+    <label style={{ display: "block", marginBottom: 8 }}>
+      Välj rapport att redigera:
+    </label>
+    <select
+      value={valdaEditId || ""}
+      onChange={(e) => onChangeValdEditId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      {editRapporter.map((r) => (
+        <option key={r.id} value={r.id}>
+          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "grid", gap: 8 }}>
+      <label>
+        Datum:
+        <input
+          type="date"
+          value={editForm.datum}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, datum: e.target.value }))
+          }
           style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 150,
-            backgroundColor: "#ffffff",
-            border: "2px solid #2563eb",
-            borderRadius: 12,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-            width: "90%",
-            maxWidth: 420,
-            padding: 20,
-            fontFamily: "system-ui, -apple-system, sans-serif",
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+      <label>
+        Arbetstid (minuter):
+        <input
+          type="number"
+          value={editForm.arbetstid_min}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, arbetstid_min: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+      <label>
+        Arbetstyp:
+        <select
+          value={editForm.team_namn}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, team_namn: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
           }}
         >
-          <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
-            Editera rapport
-          </h3>
+          <option>För hand</option>
+          <option>Maskin</option>
+        </select>
+      </label>
 
-          <label style={{ display: "block", marginBottom: 8 }}>
-            Välj rapport att redigera:
-          </label>
-          <select
-            value={valdaEditId || ""}
-            onChange={(e) => onChangeValdEditId(e.target.value)}
-            style={{
-              width: "100%",
-              marginBottom: 12,
-              padding: "8px",
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-            }}
-          >
-            {editRapporter.map((r) => (
-              <option key={r.id} value={r.id}>
-                {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
-              </option>
-            ))}
-          </select>
+      <label>
+        Antal anställda:
+        <select
+          value={editForm.antal_anstallda}
+          onChange={(e) =>
+            setEditForm((f) => ({
+              ...f,
+              antal_anstallda: Number(e.target.value),
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
 
-          <div style={{ display: "grid", gap: 8 }}>
-            <label>
-              Datum:
-              <input
-                type="date"
-                value={editForm.datum}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, datum: e.target.value }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: 8,
-                  border: "1px solid #d1d5db",
-                }}
-              />
-            </label>
+      <label>
+        Grus (kg):
+        <select
+          value={editForm.sand_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, sand_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {[...Array(51)].map((_, i) => (
+            <option key={i} value={i}>
+              {i}
+            </option>
+          ))}
+        </select>
+      </label>
 
-            <label>
-              Arbetstid (minuter):
-              <input
-                type="number"
-                value={editForm.arbetstid_min}
-                onChange={(e) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    arbetstid_min: e.target.value,
-                  }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: 8,
-                  border: "1px solid #d1d5db",
-                }}
-              />
-            </label>
-          </div>
+      <label>
+        Salt (kg):
+        <select
+          value={editForm.salt_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, salt_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-              marginTop: 12,
-            }}
-          >
-            {[
-              ["syfteOversyn", "Översyn"],
-              ["syfteRojning", "Röjning"],
-              ["syfteSaltning", "Saltning"],
-              ["syfteGrusning", "Grusning"],
-            ].map(([key, label]) => (
-              <label key={key} style={{ fontSize: 14 }}>
-                <input
-                  type="checkbox"
-                  checked={editForm[key]}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, [key]: e.target.checked }))
-                  }
-                  style={{ marginRight: 4 }}
-                />
-                {label}
-              </label>
-            ))}
-          </div>
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        marginTop: 12,
+      }}
+    >
+      {[
+        ["syfteOversyn", "Översyn"],
+        ["syfteRojning", "Röjning"],
+        ["syfteSaltning", "Saltning"],
+        ["syfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={editForm[key]}
+            onChange={(e) =>
+              setEditForm((f) => ({ ...f, [key]: e.target.checked }))
+            }
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
 
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: 16,
-            }}
-          >
-            <button
-              onClick={sparaEditRapport}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 999,
-                border: "none",
-                backgroundColor: "#16a34a",
-                color: "#fff",
-                fontWeight: 600,
-              }}
-            >
-              Spara
-            </button>
-            <button
-              onClick={() => setVisaEditPopup(false)}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 999,
-                border: "none",
-                backgroundColor: "#e5e7eb",
-                color: "#111827",
-                fontWeight: 500,
-              }}
-            >
-              Stäng
-            </button>
-          </div>
-        </div>
-      )}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 16,
+      }}
+    >
+      <button
+        onClick={sparaEditRapport}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+        }}
+      >
+        Spara
+      </button>
+      <button
+        onClick={() => setVisaEditPopup(false)}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#111827",
+          fontWeight: 500,
+        }}
+      >
+        Stäng
+      </button>
+    </div>
+  </div>
+)}
 
       {renderContent()}
     </div>
