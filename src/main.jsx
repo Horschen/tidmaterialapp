@@ -1551,8 +1551,6 @@ function App() {
     let toDate;
     let beskrivning;
 
-    // raderaMånad: "" = ingen månad vald => hela året
-    // "hela" = uttryckligt val "Hela året"
     if (!raderaMånad || raderaMånad === "hela") {
       fromDate = `${årNum}-01-01`;
       toDate = `${årNum}-12-31`;
@@ -1574,6 +1572,7 @@ function App() {
 
     setDeleteConfirm({ fromDate, toDate, beskrivning });
   }
+  
     // Beräkna fromDate/toDate för ISO-vecka
     const simple = new Date(Date.UTC(årNum, 0, 4)); // vecka 1 runt 4 jan
     const dayOfWeek = simple.getUTCDay() || 7;
