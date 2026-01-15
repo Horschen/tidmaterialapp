@@ -2320,7 +2320,8 @@ if (activeTab === "info") {
             
             – Klicka på <strong>Editera</strong> för att ändra en befintlig rapport
             (t.ex. justera tid eller material). Ändringen uppdaterar den valda posten
-            direkt i databasen. <br />
+            direkt i databasen. Man kan även hitta här de senast 3 registrerade poster mot denna adress. 
+            Titta på datum för att välja din rätta tid att ändra.<br />
             – Kryssrutan i början av raden markerar raden som
             <strong> Skyddad</strong>, vilket betyder att den inte kan raderas.
             Kryssar du ur skyddet blir rapporten möjlig att ta bort.
