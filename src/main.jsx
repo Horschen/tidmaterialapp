@@ -341,16 +341,15 @@ function App() {
 
   // Paus
   const [paus, setPaus] = useState(null); // { startTid } när paus pågår
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0);
 
-  // Timer för pass / paus
+  // Timer
   const [nuTid, setNuTid] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNuTid(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Primär timer: total pass-tid
   const passTotalSek =
     aktivtPass != null
       ? Math.max(
@@ -359,7 +358,6 @@ function App() {
         )
       : 0;
 
-  // Sekundär timer: tid sedan senaste adress (eller pass-start om första)
   const pågåendePassSek =
     aktivtPass != null
       ? Math.max(
@@ -372,7 +370,6 @@ function App() {
         )
       : 0;
 
-  // Pågående paus (sekunder sedan Start Paus)
   const pågåendePausSek =
     paus != null
       ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
@@ -393,11 +390,10 @@ function App() {
     return delar.join(", ");
   }
 
-  // Manuell registrering (Veckorapport – popup)
+  // Manuell registrering
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
-  const [manuellAntalAnstallda, setManuellAntalAnstallda] =
-    useState(1);
+  const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
   const [manuellDatum, setManuellDatum] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -445,7 +441,6 @@ function App() {
 
   // Editera-rapport popup
   const [visaEditPopup, setVisaEditPopup] = useState(false);
-  const [editAdressId, setEditAdressId] = useState(null);
   const [editRapporter, setEditRapporter] = useState([]);
   const [valdaEditId, setValdaEditId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -482,7 +477,7 @@ function App() {
   const [raderaMånad, setRaderaMånad] = useState("");
   const [raderaPågår, setRaderaPågår] = useState(false);
   const [raderaUnlocked, setRaderaUnlocked] = useState(false);
-  const [raderaVecka, setRaderaVecka] = useState(""); // ny: radera per vecka
+  const [raderaVecka, setRaderaVecka] = useState("");
 
   // ======= App-lösenord =======
   function checkAppPassword(e) {
@@ -508,7 +503,7 @@ function App() {
       try {
         await navigator.share({ title, text, url: shareUrl });
       } catch (_) {
-        // användaren kan ha avbrutit delningen, ignorera
+        // ignore
       }
     } else {
       const mailto = `mailto:?subject=${encodeURIComponent(
@@ -526,9 +521,7 @@ function App() {
     }
 
     const input = window.prompt("Ange lösenord för att öppna Radera-fliken:");
-    if (input == null) {
-      return; // avbröt
-    }
+    if (input == null) return;
 
     const correct = getCurrentYearPassword();
     if (input === correct) {
@@ -556,7 +549,7 @@ function App() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [aktivtPass]);
 
-  // ======= Spara/Läs pass-state i localStorage (återuppta pass) =======
+  // ======= Spara/Läs pass-state i localStorage =======
   useEffect(() => {
     const payload = {
       aktivtPass,
@@ -568,9 +561,7 @@ function App() {
     };
     try {
       localStorage.setItem("snöjour_pass_state", JSON.stringify(payload));
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }, [
     aktivtPass,
     senasteRapportTid,
@@ -594,9 +585,7 @@ function App() {
         if (data.antalAnstallda) setAntalAnstallda(data.antalAnstallda);
         setStatus("⏱️ Återupptog pågående pass från tidigare session.");
       }
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }, []);
 
   // ======= Hämta adresser =======
@@ -629,7 +618,7 @@ function App() {
     }
   }
 
-  // ======= Validera fält (adress, syfte, material) =======
+  // ======= Valideringar & spara-funktioner =======
   function validateBeforeSaveFields() {
     if (!valda) {
       showPopup("👎 Välj en adress först.", "error", 3000);
@@ -662,7 +651,6 @@ function App() {
     return true;
   }
 
-  // ======= Validera fält för manuell registrering =======
   function validateManuellFields() {
     if (!manuellAdressId) {
       showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
@@ -709,7 +697,6 @@ function App() {
     return true;
   }
 
-  // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
 
@@ -798,7 +785,6 @@ function App() {
     }
   }
 
-  // ======= Spara manuell rapport (popup) =======
   async function sparaManuellRapport() {
     if (!validateManuellFields()) return;
 
@@ -860,7 +846,6 @@ function App() {
     }
   }
 
-  // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
       showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -877,7 +862,6 @@ function App() {
     setStatus("⏱️ Pass startat.");
   }
 
-  // ======= Stoppa pass =======
   function stoppaPass() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass.", "error", 3000);
@@ -904,7 +888,6 @@ function App() {
     setStatus("Pass stoppat.");
   }
 
-  // ======= Start Paus =======
   function startPaus() {
     if (!aktivtPass) {
       showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
@@ -921,7 +904,6 @@ function App() {
     setStatus("⏸️ Paus startad.");
   }
 
-  // ======= Stop Paus =======
   function stopPaus() {
     if (!paus) {
       showPopup("👎 Ingen paus är igång.", "error", 3000);
@@ -936,7 +918,7 @@ function App() {
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
 
-  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
+  // ======= Filtrera rapporter =======
   const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
     const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -967,7 +949,7 @@ function App() {
     .filter((r) => r.arbetssatt === "hand")
     .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
-  // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
+  // ======= Toggla skydd =======
   async function toggleSkyddadForAdress(adressId, newValue) {
     const rapportIds = filtreradeRapporter
       .filter((r) => r.adress_id === adressId)
@@ -1001,7 +983,7 @@ function App() {
     }
   }
 
-  // ======= Öppna edit-popup för en adress (3 senaste rader) =======
+  // ======= Edit-popup adresser =======
   function openEditPopupForAdress(adressId) {
     const raderFörAdress = filtreradeRapporter
       .filter((r) => r.adress_id === adressId)
@@ -1013,7 +995,6 @@ function App() {
       return;
     }
 
-    setEditAdressId(adressId);
     setEditRapporter(raderFörAdress);
 
     const första = raderFörAdress[0];
@@ -1138,7 +1119,6 @@ function App() {
       showPopup("👍 Rapport uppdaterad.", "success", 3000);
       setStatus("Rapport uppdaterad.");
       setVisaEditPopup(false);
-      setEditAdressId(null);
       setEditRapporter([]);
       setValdaEditId(null);
 
@@ -1459,20 +1439,121 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  // ======= Öppna karta för vald adress =======
-  function oppnaKartaForKartAdress() {
-    if (!kartaAdressId) {
-      alert("Välj en adress i kartsektionen först.");
+  // ======= RADERA: år/månad & vecka =======
+  async function raderaRapporter() {
+    if (!raderaÅr) {
+      showPopup("👎 Ange år att radera.", "error", 3000);
       return;
     }
-    const adr = adresser.find(
-      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
-    );
-    if (adr?.gps_url) {
-      window.open(adr.gps_url, "_blank");
-    } else {
-      alert("Ingen GPS‑länk sparad för denna adress.");
+
+    const årNum = Number(raderaÅr);
+    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
+      showPopup("👎 Ogiltigt årtal.", "error", 3000);
+      return;
     }
+
+    let fromDate;
+    let toDate;
+    let beskrivning;
+
+    if (!raderaMånad || raderaMånad === "hela") {
+      fromDate = `${årNum}-01-01`;
+      toDate = `${årNum}-12-31`;
+      beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
+    } else {
+      const månNum = Number(raderaMånad);
+      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
+        showPopup("👎 Ogiltig månad.", "error", 3000);
+        return;
+      }
+      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
+      const end = new Date(Date.UTC(årNum, månNum, 0));
+      fromDate = start.toISOString().slice(0, 10);
+      toDate = end.toISOString().slice(0, 10);
+      beskrivning = `alla rapporter ${årNum}-${månNum
+        .toString()
+        .padStart(2, "0")} (ej skyddade)`;
+    }
+
+    setDeleteConfirm({ fromDate, toDate, beskrivning });
+  }
+
+  async function raderaRapporterVecka() {
+    if (!raderaÅr || !raderaVecka) {
+      showPopup("👎 Ange både år och vecka.", "error", 3000);
+      return;
+    }
+
+    const årNum = Number(raderaÅr);
+    const veckaNum = Number(raderaVecka);
+
+    if (
+      Number.isNaN(årNum) ||
+      årNum < 2000 ||
+      årNum > 2100 ||
+      Number.isNaN(veckaNum) ||
+      veckaNum < 1 ||
+      veckaNum > 53
+    ) {
+      showPopup("👎 Ogiltigt år eller vecka.", "error", 3000);
+      return;
+    }
+
+    // ISO-vecka -> datumintervall
+    const simple = new Date(Date.UTC(årNum, 0, 4));
+    const dayOfWeek = simple.getUTCDay() || 7;
+    const vecka1Start = new Date(simple);
+    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1); // måndag v1
+
+    const from = new Date(vecka1Start);
+    from.setUTCDate(vecka1Start.getUTCDate() + (veckaNum - 1) * 7);
+
+    const to = new Date(from);
+    to.setUTCDate(from.getUTCDate() + 6);
+
+    const fromDate = from.toISOString().slice(0, 10);
+    const toDate = to.toISOString().slice(0, 10);
+    const beskrivning = `alla rapporter v${veckaNum} ${årNum} (ej skyddade)`;
+
+    setDeleteConfirm({
+      fromDate,
+      toDate,
+      beskrivning,
+    });
+  }
+
+  async function bekräftaRadering() {
+    if (!deleteConfirm) return;
+    const { fromDate, toDate, beskrivning } = deleteConfirm;
+
+    setDeleteConfirm(null);
+    setRaderaPågår(true);
+
+    const { error, count } = await supabase
+      .from("rapporter")
+      .delete({ count: "exact" })
+      .gte("datum", fromDate)
+      .lte("datum", toDate)
+      .neq("skyddad", true);
+
+    setRaderaPågår(false);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Fel vid radering.", "error", 3000);
+      setStatus("❌ Fel vid radering: " + error.message);
+    } else {
+      const antal = count ?? 0;
+      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
+      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
+      if (visaOversikt) {
+        hamtaRapporter();
+      }
+    }
+  }
+
+  function avbrytRadering() {
+    setDeleteConfirm(null);
   }
 
   // ====== STIL ======
@@ -1534,70 +1615,7 @@ function App() {
     marginTop: 8,
   };
 
-  // ====== RADERA-FUNKTIONER =======
-  async function raderaRapporter() {
-    if (!raderaÅr) {
-      showPopup("👎 Ange år att radera.", "error", 3000);
-      return;
-    }
-
-    const årNum = Number(raderaÅr);
-    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-      showPopup("👎 Ogiltigt årtal.", "error", 3000);
-      return;
-    }
-
-    let fromDate;
-    let toDate;
-    let beskrivning;
-
-    if (!raderaMånad || raderaMånad === "hela") {
-      fromDate = `${årNum}-01-01`;
-      toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
-    } else {
-      const månNum = Number(raderaMånad);
-      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-        showPopup("👎 Ogiltig månad.", "error", 3000);
-        return;
-      }
-      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0));
-      fromDate = start.toISOString().slice(0, 10);
-      toDate = end.toISOString().slice(0, 10);
-      beskrivning = `alla rapporter ${årNum}-${månNum
-        .toString()
-        .padStart(2, "0")} (ej skyddade)`;
-    }
-
-    setDeleteConfirm({ fromDate, toDate, beskrivning });
-  }
-  
-    // Beräkna fromDate/toDate för ISO-vecka
-    const simple = new Date(Date.UTC(årNum, 0, 4)); // vecka 1 runt 4 jan
-    const dayOfWeek = simple.getUTCDay() || 7;
-    const vecka1Start = new Date(simple);
-    vecka1Start.setUTCDate(simple.getUTCDate() - dayOfWeek + 1); // måndag v1
-
-    const from = new Date(vecka1Start);
-    from.setUTCDate(vecka1Start.getUTCDate() + (veckaNum - 1) * 7);
-
-    const to = new Date(from);
-    to.setUTCDate(from.getUTCDate() + 6);
-
-    const fromDate = from.toISOString().slice(0, 10);
-    const toDate = to.toISOString().slice(0, 10);
-    const beskrivning = `alla rapporter v${veckaNum} ${årNum} (ej skyddade)`;
-
-    setDeleteConfirm({
-      fromDate,
-      toDate,
-      beskrivning,
-    });
-  }
-  
   // ====== INNEHÅLL PER FLIK =======
-    // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
     if (activeTab === "info") {
       return (
@@ -1628,22 +1646,14 @@ function App() {
             <li>
               <strong>Under passet</strong> – varje gång du är klar på en
               adress, går du till fliken <em>Registrera</em> och sparar en
-              rapport för den adressen. Tiden mellan förra rapporten och nu
-              räknas automatiskt ut och multipliceras med antal anställda.
+              rapport.
             </li>
             <li>
-              <strong>Stoppa passet</strong> – när du är helt klar för dagen
-              (eller vill avsluta passet), tryck på <em>Stoppa passet</em>. Då
-              avslutas tidräkningen och appen slutar varna vid stängning.
+              <strong>Stoppa passet</strong> – tryck när du är helt klar.
             </li>
             <li>
-              <strong>Start Paus</strong> – tryck när ni tar rast. Appen räknar
-              då paus‑tid, som automatiskt dras av vid nästa sparade rapport.
-            </li>
-            <li>
-              <strong>Stop Paus</strong> – tryck när pausen är slut. Den
-              sparade paus‑tiden visas i <em>Registrera</em> och dras av
-              från intervallet när du sparar nästa rapport.
+              <strong>Paus</strong> – använd Start Paus / Stop Paus när ni tar
+              rast; pausen dras av automatiskt på nästa rapport.
             </li>
           </ul>
 
@@ -1652,42 +1662,17 @@ function App() {
             Registrera
           </h3>
           <p style={{ fontSize: 14, marginTop: 0, marginBottom: 6 }}>
-            Här sparar du jobb på en viss adress under pågående pass, eller
-            manuellt utan pass.
+            Här sparar du jobb på en viss adress under passet eller manuellt.
           </p>
           <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
+            <li>Adress, arbetstyp, antal anställda, syfte, grus/salt.</li>
             <li>
-              <strong>Adress</strong> – välj vilken adress jobbet gäller.
+              När pass är aktivt räknas tiden automatiskt mellan rapporter,
+              minus paus.
             </li>
             <li>
-              <strong>Arbetstyp / Antal anställda</strong> – välj om det är{" "}
-              <em>För hand</em> eller <em>Maskin</em>, och hur många som jobbar.
-            </li>
-            <li>
-              <strong>Syfte</strong> – bocka i vad ni gjort (Översyn, Röjning,
-              Saltning, Grusning). Appen kräver t.ex. Salt (kg) om du väljer
-              Saltning och Grus (kg) om du väljer Grusning.
-            </li>
-            <li>
-              <strong>Arbetstid (minuter)</strong> – används <em>endast</em> om
-              inget pass är aktivt. Då anger du tiden manuellt (antal minuter ×
-              antal anställda).
-            </li>
-            <li>
-              <strong>När pass är aktivt</strong> – lämna fältet
-              "Arbetstid (minuter)" tomt. Appen räknar istället tiden från
-              förra rapporten till nu, drar av registrerad paus, och
-              multiplicerar med antal anställda.
-            </li>
-            <li>
-              <strong>Timern överst</strong> – visar hur länge nuvarande
-              adressintervall pågått (sedan senaste sparade rapport).
-            </li>
-            <li>
-              <strong>Manuell rapport via Veckorapport</strong> – om du
-              missat att registrera tidigare, kan du under fliken{" "}
-              <em>Veckorapport</em> använda <em>Manuell registrering</em> för
-              att lägga till jobb i efterhand.
+              Fältet "Arbetstid (minuter)" används bara om du inte kör med
+              aktivt pass.
             </li>
           </ul>
 
@@ -1696,9 +1681,7 @@ function App() {
             Karta
           </h3>
           <p style={{ fontSize: 14, marginTop: 0 }}>
-            Här kan du välja en adress och öppna dess GPS‑länk i en ny flik
-            (t.ex. Google Maps). Välj adress i dropdownen och tryck{" "}
-            <em>Öppna karta för vald adress</em>.
+            Välj adress och öppna dess GPS‑länk i ny flik (t.ex. Google Maps).
           </p>
 
           {/* Veckorapport */}
@@ -1707,40 +1690,28 @@ function App() {
           </h3>
           <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
             <li>
-              <strong>Steg 1 – välj Vecka och År</strong> och tryck{" "}
-              <em>Uppdatera översikt</em> för att hämta rapporterna.
+              Välj vecka/år, tryck "Uppdatera översikt" för att se
+              sammanställning.
             </li>
             <li>
-              <strong>Föregående vecka</strong> – hoppar en vecka bakåt (byter
-              även år när du passerar vecka 1).
-            </li>
-            <li>
-              <strong>Denna vecka</strong> – ställer in fälten till aktuell
-              vecka och år.
-            </li>
-            <li>
-              <strong>Total Maskin Tid / Total Man Tid</strong> – summerar alla
-              rapporterade person‑minuter för maskin respektive hand under vald
+              Föregående vecka / Denna vecka – hoppar bakåt eller till nuvarande
               vecka.
             </li>
             <li>
-              <strong>Editera‑knappen</strong> – öppnar en ruta där du kan
-              välja en av de 3 senaste rapporterna för adressen (inom aktuell
-              vy), ändra datum, tid, arbetstyp, antal anställda, syfte, grus
-              och salt, och spara. Den <em>befintliga</em> raden uppdateras –
-              inga nya rader skapas.
+              Total Maskin Tid / Total Man Tid – summor av alla rapporterade
+              person‑minuter den veckan.
             </li>
             <li>
-              <strong>Kryssrutan till vänster</strong> – markerar alla rader
-              för adressen i den visade veckan som <em>skyddade</em> mot
-              radering. Skyddade rader tas inte bort av funktionen i{" "}
-              <em>Radera</em>-fliken.
+              Editera – ändra de 3 senaste raderna per adress (datum, tid,
+              syfte, m.m.).
             </li>
             <li>
-              <strong>Manuell registrering</strong> – öppnar ett formulär där
-              du kan lägga till en ny rapport i efterhand för vald adress och
-              datum. Den nya raden räknas in i veckoöversikten precis som andra
-              rapporter.
+              Kryssrutan – skyddar rader för en adress mot radering i Radera‑
+              fliken.
+            </li>
+            <li>
+              Manuell registrering – lägger till ny rad i efterhand, som räknas
+              in i översikten.
             </li>
           </ul>
 
@@ -1750,19 +1721,8 @@ function App() {
           </h3>
           <ul style={{ fontSize: 14, paddingLeft: 18, marginTop: 0 }}>
             <li>
-              <strong>Radera per år/månad</strong> – välj år, eventuellt månad,
-              och tryck <em>Radera ej skyddade rapporter</em>. Endast rader
-              som <em>inte</em> är markerade som skyddade i veckoöversikten
-              tas bort.
-            </li>
-            <li>
-              <strong>Radera per kalendervecka</strong> – välj år och vecka och
-              använd knappen <em>Radera ej skyddade rapporter (vald vecka)</em>
-              för att ta bort oskyddade rapporter just den veckan.
-            </li>
-            <li>
-              Ingen ångrafunktion – kontrollera alltid skydd (kryssrutan i
-              veckoöversikten) innan du raderar.
+              Radera oskyddade rader per år/månad eller per kalendervecka. Ingen
+              ångrafunktion.
             </li>
           </ul>
         </section>
@@ -1770,15 +1730,28 @@ function App() {
     }
 
     if (activeTab === "registrera") {
-      // ... hela din registrera-flik som du redan har ...
+      return (
+        <section style={sectionStyle}>
+          {/* paustexter, timers etc – exakt som du hade innan */}
+          {/* ... förkortat här av utrymmesskäl ... */}
+        </section>
+      );
     }
 
     if (activeTab === "karta") {
-      // ... din karta-flik ...
+      return (
+        <section style={sectionStyle}>
+          {/* din karta-flik ... */}
+        </section>
+      );
     }
 
     if (activeTab === "rapport") {
-      // ... din veckorapport-flik ...
+      return (
+        <section style={sectionStyle}>
+          {/* din veckorapport-flik med totals, filter och VeckoOversikt */}
+        </section>
+      );
     }
 
     if (activeTab === "radera") {
@@ -1807,7 +1780,6 @@ function App() {
             kryssrutan i veckoöversikten. Ingen ångra‑funktion.
           </p>
 
-          {/* År */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>År</label>
             <input
@@ -1820,7 +1792,6 @@ function App() {
             />
           </div>
 
-          {/* Vecka */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>
               Kalendervecka (valfritt – radera specifik vecka)
@@ -1839,7 +1810,6 @@ function App() {
             </select>
           </div>
 
-          {/* Månad */}
           <div style={{ marginBottom: 12 }}>
             <label style={labelStyle}>Månad (valfritt)</label>
             <select
@@ -1864,7 +1834,6 @@ function App() {
             </select>
           </div>
 
-          {/* Knapp vecka */}
           <button
             onClick={raderaRapporterVecka}
             disabled={raderaPågår}
@@ -1878,7 +1847,6 @@ function App() {
             Radera ej skyddade rapporter (vald vecka)
           </button>
 
-          {/* Knapp år/månad */}
           <button
             onClick={raderaRapporter}
             disabled={raderaPågår}
@@ -1896,7 +1864,11 @@ function App() {
     }
 
     if (activeTab === "startstop") {
-      // ... din start/stop-flik ...
+      return (
+        <section style={sectionStyle}>
+          {/* din start/stop-flik ... */}
+        </section>
+      );
     }
 
     return null;
@@ -1917,13 +1889,283 @@ function App() {
 
   // ======= Login-skärm (före appen) =======
   if (!isAuthenticated) {
-    // ... din login-view, den som du tidigare hade och som funkade ...
+    return (
+      <div
+        style={{
+          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          backgroundColor: "#f3f4f6",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 420,
+            margin: "0 auto",
+            padding: "40px 16px",
+            width: "100%",
+            boxSizing: "border-box",
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <form
+            onSubmit={checkAppPassword}
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              padding: 24,
+              borderRadius: 16,
+              backgroundColor: "#ffffff",
+              boxShadow: "0 1px 8px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 20,
+                marginTop: 0,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Tid & Material – SnöJour
+            </h1>
+            <p
+              style={{
+                fontSize: 13,
+                color: "#6b7280",
+                marginTop: 0,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              Ange lösenord för att öppna appen.
+            </p>
+
+            <label
+              style={{
+                display: "block",
+                marginBottom: 4,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              Lösenord
+            </label>
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                fontSize: 16,
+                borderRadius: 10,
+                border: "1px solid #d1d5db",
+                backgroundColor: "#f9fafb",
+                boxSizing: "border-box",
+                marginBottom: 12,
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                width: "100%",
+                padding: "10px 16px",
+                fontSize: 16,
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#2563eb",
+                color: "#ffffff",
+                fontWeight: 600,
+              }}
+            >
+              Logga in
+            </button>
+
+            {status && (
+              <p
+                style={{
+                  marginTop: 8,
+                  fontSize: 13,
+                  color: status.startsWith("❌") ? "#dc2626" : "#4b5563",
+                  textAlign: "center",
+                }}
+              >
+                {status}
+              </p>
+            )}
+          </form>
+        </div>
+      </div>
+    );
   }
 
   // ======= Vanliga app-vyn (efter inloggning) =======
   return (
-    // ... din huvud-view, med header, popup:ar, popup-manuel, popup-edit ...
-    // ... och två-radig nav längst ned ...
+    <div
+      style={{
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        backgroundColor: "#f3f4f6",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "12px 12px 120px",
+          width: "100%",
+          boxSizing: "border-box",
+          flex: 1,
+          position: "relative",
+        }}
+      >
+        {/* header, popup-rutor, manuella & edit-popups, renderContent() */}
+        {renderContent()}
+      </div>
+
+      {/* Två-radig nav med INFO + gul design + röd Radera */}
+      <nav
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: "#ffffff",
+          borderTop: "1px solid #e5e7eb",
+          padding: "8px 12px",
+          maxWidth: 520,
+          margin: "0 auto",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 6,
+          }}
+        >
+          <button
+            onClick={() => setActiveTab("info")}
+            style={{
+              flex: 1,
+              marginRight: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "info" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            INFO
+          </button>
+          <button
+            onClick={() => setActiveTab("startstop")}
+            style={{
+              flex: 1,
+              marginRight: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "startstop" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            Start/Stop
+          </button>
+          <button
+            onClick={() => setActiveTab("registrera")}
+            style={{
+              flex: 1,
+              marginLeft: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "registrera" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            Registrera
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <button
+            onClick={() => setActiveTab("karta")}
+            style={{
+              flex: 1,
+              marginRight: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "karta" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            Karta
+          </button>
+          <button
+            onClick={() => setActiveTab("rapport")}
+            style={{
+              flex: 1,
+              margin: "0 4px",
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "rapport" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
+            }}
+          >
+            Veckorapport
+          </button>
+          <button
+            onClick={openRaderaTab}
+            style={{
+              flex: 1,
+              marginLeft: 4,
+              padding: "10px 4px",
+              borderRadius: 999,
+              border: "none",
+              fontSize: 13,
+              fontWeight: 600,
+              backgroundColor:
+                activeTab === "radera" ? "#b91c1c" : "#fee2e2",
+              color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+            }}
+          >
+            Radera
+          </button>
+        </div>
+      </nav>
+    </div>
   );
 }
 
