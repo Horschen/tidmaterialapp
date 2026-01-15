@@ -2639,53 +2639,151 @@ return (
       )}
 
       {visaManuellPopup && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#ffffff",
-            borderRadius: 12,
-            boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
-            padding: 24,
-            zIndex: 120,
-            width: "90%",
-            maxWidth: 420,
-          }}
-        >
-          {/* Din befintliga manuell-popupkod kan återläggas här */}
-        </div>
-      )}
-
-      {visaEditPopup && (
   <div
     style={{
       position: "fixed",
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      zIndex: 150,
       backgroundColor: "#ffffff",
-      border: "2px solid #2563eb",
+      border: "2px solid #facc15",
       borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+      padding: 24,
+      zIndex: 120,
       width: "90%",
       maxWidth: 420,
-      padding: 20,
       fontFamily: "system-ui, -apple-system, sans-serif",
     }}
   >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
-      Editera rapport
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#854d0e" }}>
+      Manuell registrering
     </h3>
 
-    <label style={{ display: "block", marginBottom: 8 }}>
-      Välj rapport att redigera:
-    </label>
+    <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
     <select
-      value={valdaEditId || ""}
-      onChange={(e) => onChangeValdEditId(e.target.value)}
+      value={manuellAdressId}
+      onChange={(e) => setManuellAdressId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option value="">-- Välj adress --</option>
+      {adresser.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.namn}
+        </option>
+      ))}
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
+    <select
+      value={manuellTeam}
+      onChange={(e) => setManuellTeam(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option>För hand</option>
+      <option>Maskin</option>
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Antal anställda</label>
+    <select
+      value={manuellAntalAnstallda}
+      onChange={(e) => setManuellAntalAnstallda(Number(e.target.value))}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+      {[
+        ["manSyfteOversyn", "Översyn"],
+        ["manSyfteRojning", "Röjning"],
+        ["manSyfteSaltning", "Saltning"],
+        ["manSyfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={eval(key)} // använder befintligt state
+            onChange={(e) => {
+              switch (key) {
+                case "manSyfteOversyn":
+                  setManSyfteOversyn(e.target.checked);
+                  break;
+                case "manSyfteRojning":
+                  setManSyfteRojning(e.target.checked);
+                  break;
+                case "manSyfteSaltning":
+                  setManSyfteSaltning(e.target.checked);
+                  break;
+                case "manSyfteGrusning":
+                  setManSyfteGrusning(e.target.checked);
+                  break;
+              }
+            }}
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <label>Datum:</label>
+    <input
+      type="date"
+      value={manuellDatum}
+      onChange={(e) => setManuellDatum(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Arbetstid (minuter)</label>
+    <input
+      type="number"
+      value={manuellTidMin}
+      onChange={(e) => setManuellTidMin(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Grus (kg)</label>
+    <select
+      value={manuellSand}
+      onChange={(e) => setManuellSand(e.target.value)}
       style={{
         width: "100%",
         marginBottom: 12,
@@ -2694,189 +2792,50 @@ return (
         border: "1px solid #d1d5db",
       }}
     >
-      {editRapporter.map((r) => (
-        <option key={r.id} value={r.id}>
-          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
+      <option value="0">0</option>
+      {[...Array(51)].map((_, i) => (
+        <option key={i} value={i}>
+          {i}
         </option>
       ))}
     </select>
 
-    <div style={{ display: "grid", gap: 8 }}>
-      <label>
-        Datum:
-        <input
-          type="date"
-          value={editForm.datum}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, datum: e.target.value }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        />
-      </label>
-
-      <label>
-        Arbetstid (minuter):
-        <input
-          type="number"
-          value={editForm.arbetstid_min}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, arbetstid_min: e.target.value }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        />
-      </label>
-
-      <label>
-        Arbetstyp:
-        <select
-          value={editForm.team_namn}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, team_namn: e.target.value }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          <option>För hand</option>
-          <option>Maskin</option>
-        </select>
-      </label>
-
-      <label>
-        Antal anställda:
-        <select
-          value={editForm.antal_anstallda}
-          onChange={(e) =>
-            setEditForm((f) => ({
-              ...f,
-              antal_anstallda: Number(e.target.value),
-            }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Grus (kg):
-        <select
-          value={editForm.sand_kg}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, sand_kg: Number(e.target.value) }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          <option value="0">0</option>
-          {[...Array(51)].map((_, i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Salt (kg):
-        <select
-          value={editForm.salt_kg}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, salt_kg: Number(e.target.value) }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          <option value="0">0</option>
-          {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
-
-    <div
+    <label>Salt (kg)</label>
+    <select
+      value={manuellSalt}
+      onChange={(e) => setManuellSalt(e.target.value)}
       style={{
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        marginTop: 12,
+        width: "100%",
+        marginBottom: 16,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
       }}
     >
-      {[
-        ["syfteOversyn", "Översyn"],
-        ["syfteRojning", "Röjning"],
-        ["syfteSaltning", "Saltning"],
-        ["syfteGrusning", "Grusning"],
-      ].map(([key, label]) => (
-        <label key={key} style={{ fontSize: 14 }}>
-          <input
-            type="checkbox"
-            checked={editForm[key]}
-            onChange={(e) =>
-              setEditForm((f) => ({ ...f, [key]: e.target.checked }))
-            }
-            style={{ marginRight: 4 }}
-          />
-          {label}
-        </label>
+      <option value="0">0</option>
+      {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
       ))}
-    </div>
+    </select>
 
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginTop: 16,
-      }}
-    >
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
       <button
-        onClick={sparaEditRapport}
+        onClick={sparaManuellRapport}
         style={{
           padding: "10px 16px",
           borderRadius: 999,
           border: "none",
           backgroundColor: "#16a34a",
-          color: "#fff",
+          color: "#ffffff",
           fontWeight: 600,
         }}
       >
-        Spara
+        Spara manuellt
       </button>
       <button
-        onClick={() => setVisaEditPopup(false)}
+        onClick={closeManuellPopup}
         style={{
           padding: "10px 16px",
           borderRadius: 999,
