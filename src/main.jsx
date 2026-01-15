@@ -2285,7 +2285,11 @@ if (activeTab === "info") {
             Timern överst visar hur länge du arbetat sedan förra rapporten,
             inklusive aktuell pausstatus. Paustiden lagras separat och dras av vid nästa sparning.
             <br />
-           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+            Behöver du lägga till en rapport i efterhand väljer du knappen
+            <strong> Manuell registrering</strong> i "Veckorapport"‑fliken – den fungerar
+            precis som registreringsvyn men utan aktiv timer.
+          </p>
+<p style={{ fontSize: 14, lineHeight: 1.6 }}>
   💡 <strong>Flera team samtidigt:</strong><br />
   Ibland arbetar två team parallellt på olika arbetsplatser under samma period — 
   ett med <strong>För hand</strong> och ett med <strong>Maskin</strong>.
@@ -2300,7 +2304,7 @@ if (activeTab === "info") {
   <strong> Total Maskin Tid</strong> (maskin), vilket ger en korrekt och tydlig
   sammanställning.
 </p>
-
+          
           <h3 style={{ marginTop: 16 }}>🗺️ Karta</h3>
           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
             Under fliken <strong>Karta</strong> kan du snabbt öppna GPS‑positionen (om den finns)
