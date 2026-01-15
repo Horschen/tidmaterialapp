@@ -2557,12 +2557,13 @@ function App() {
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fffbea", // svagt varm bakgrund som hela navfältet
     borderTop: "1px solid #e5e7eb",
     padding: "8px 12px",
     maxWidth: 520,
     margin: "0 auto",
     boxSizing: "border-box",
+    boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
   }}
 >
   {/* Rad 1: Start/Stop + Registrera */}
@@ -2580,12 +2581,13 @@ function App() {
         marginRight: 4,
         padding: "10px 6px",
         borderRadius: 999,
-        border: "none",
+        border: "1px solid #facc15",
         fontSize: 14,
         fontWeight: 600,
         backgroundColor:
-          activeTab === "startstop" ? "#fde047" : "#fef9c3", // mörkare aktiv
+          activeTab === "startstop" ? "#facc15" : "#fef08a",
         color: "#78350f",
+        transition: "background-color 0.2s ease",
       }}
     >
       Start/Stop
@@ -2597,12 +2599,13 @@ function App() {
         marginLeft: 4,
         padding: "10px 6px",
         borderRadius: 999,
-        border: "none",
+        border: "1px solid #facc15",
         fontSize: 14,
         fontWeight: 600,
         backgroundColor:
-          activeTab === "registrera" ? "#fde047" : "#fef9c3",
+          activeTab === "registrera" ? "#facc15" : "#fef08a",
         color: "#78350f",
+        transition: "background-color 0.2s ease",
       }}
     >
       Registrera
@@ -2623,12 +2626,13 @@ function App() {
         marginRight: 4,
         padding: "10px 4px",
         borderRadius: 999,
-        border: "none",
+        border: "1px solid #facc15",
         fontSize: 13,
         fontWeight: 600,
         backgroundColor:
-          activeTab === "karta" ? "#fde047" : "#fef9c3",
+          activeTab === "karta" ? "#facc15" : "#fef08a",
         color: "#78350f",
+        transition: "background-color 0.2s ease",
       }}
     >
       Karta
@@ -2640,12 +2644,13 @@ function App() {
         margin: "0 4px",
         padding: "10px 4px",
         borderRadius: 999,
-        border: "none",
+        border: "1px solid #facc15",
         fontSize: 13,
         fontWeight: 600,
         backgroundColor:
-          activeTab === "rapport" ? "#fde047" : "#fef9c3",
+          activeTab === "rapport" ? "#facc15" : "#fef08a",
         color: "#78350f",
+        transition: "background-color 0.2s ease",
       }}
     >
       Veckorapport
@@ -2657,12 +2662,13 @@ function App() {
         marginLeft: 4,
         padding: "10px 4px",
         borderRadius: 999,
-        border: "none",
+        border: "1px solid #ef4444",
         fontSize: 13,
         fontWeight: 600,
         backgroundColor:
-          activeTab === "radera" ? "#dc2626" : "#fecaca",
+          activeTab === "radera" ? "#ef4444" : "#fecaca",
         color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+        transition: "background-color 0.2s ease",
       }}
     >
       Radera
