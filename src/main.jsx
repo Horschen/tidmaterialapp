@@ -2787,4 +2787,13 @@ if (activeTab === "info") {
   </div>
 </nav>
 
+{/* stäng huvudkontainern */}
+</div>
+
+{/* App‑rot */}
+</div>
+</div>
+</div>
+
+{/* rendera huvudappen */}
 createRoot(document.getElementById("app")).render(<App />);
