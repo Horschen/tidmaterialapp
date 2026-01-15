@@ -2786,14 +2786,11 @@ if (activeTab === "info") {
     </button>
   </div>
 </nav>
+</div> {/* stänger huvud‑App-diven */}
+</div> {/* stänger bakgrund/flex-kontainern */}
+); // avsluta return‑parentesen för App
 
-{/* stäng huvudkontainern */}
-</div>
+} // <-- stänger App‑funktionen
 
-{/* App‑rot */}
-</div>
-</div>
-</div>
-
-{/* rendera huvudappen */}
+// renderar appen i DOM
 createRoot(document.getElementById("app")).render(<App />);
