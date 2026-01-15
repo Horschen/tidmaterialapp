@@ -396,7 +396,8 @@ function App() {
   // Manuell registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
-  const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
+  const [manuellAntalAnstallda, setManuellAntalAnstallda] =
+    useState(1);
   const [manuellDatum, setManuellDatum] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -456,6 +457,8 @@ function App() {
     syfteRojning: false,
     syfteSaltning: false,
     syfteGrusning: false,
+    antal_anstallda: 1,
+    team_namn: "För hand",
   });
 
   // Kartflik
@@ -612,7 +615,7 @@ function App() {
     const { data, error } = await supabase
       .from("rapporter")
       .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
       )
       .order("datum", { ascending: false });
     if (error) {
@@ -1030,6 +1033,8 @@ function App() {
       syfteRojning: syfteSet.has("Röjning"),
       syfteSaltning: syfteSet.has("Saltning"),
       syfteGrusning: syfteSet.has("Grusning"),
+      antal_anstallda: första.antal_anstallda || 1,
+      team_namn: första.team_namn || "För hand",
     });
 
     setVisaEditPopup(true);
@@ -1058,6 +1063,8 @@ function App() {
       syfteRojning: syfteSet.has("Röjning"),
       syfteSaltning: syfteSet.has("Saltning"),
       syfteGrusning: syfteSet.has("Grusning"),
+      antal_anstallda: rad.antal_anstallda || 1,
+      team_namn: rad.team_namn || "För hand",
     });
   }
 
@@ -1094,6 +1101,10 @@ function App() {
       return;
     }
 
+    const antal = Number(editForm.antal_anstallda) || 1;
+    const teamNamn = editForm.team_namn || "För hand";
+    const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
+
     let datumIso;
     try {
       datumIso = new Date(editForm.datum + "T12:00:00").toISOString();
@@ -1112,6 +1123,9 @@ function App() {
         sand_kg: sandKg,
         salt_kg: saltKg,
         syfte: syfteText,
+        antal_anstallda: antal,
+        team_namn: teamNamn,
+        arbetssatt: arbetssatt,
       })
       .eq("id", valdaEditId);
 
@@ -2387,7 +2401,7 @@ function App() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "12px 12px 72px",
+          padding: "12px 12px 84px",
           width: "100%",
           boxSizing: "border-box",
           flex: 1,
@@ -2842,6 +2856,43 @@ function App() {
             </div>
 
             <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+              <select
+                value={editForm.team_namn}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    team_namn: e.target.value,
+                  }))
+                }
+                style={selectStyle}
+              >
+                <option>För hand</option>
+                <option>Maskin</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Antal anställda</label>
+              <select
+                value={editForm.antal_anstallda}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    antal_anstallda: Number(e.target.value),
+                  }))
+                }
+                style={selectStyle}
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
               <label style={labelStyle}>Syfte med arbetsuppgift</label>
               <div
                 style={{
@@ -3010,10 +3061,10 @@ function App() {
           right: 0,
           backgroundColor: "#ffffff",
           borderTop: "1px solid #e5e7eb",
-          padding: "6px 12px",
+          padding: "10px 12px",
           display: "flex",
           justifyContent: "space-between",
-          maxWidth: 480,
+          maxWidth: 520,
           margin: "0 auto",
         }}
       >
@@ -3022,10 +3073,10 @@ function App() {
           style={{
             flex: 1,
             margin: "0 4px",
-            padding: "8px 6px",
+            padding: "10px 6px",
             borderRadius: 999,
             border: "none",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             backgroundColor:
               activeTab === "startstop" ? "#2563eb" : "transparent",
@@ -3039,10 +3090,10 @@ function App() {
           style={{
             flex: 1,
             margin: "0 4px",
-            padding: "8px 6px",
+            padding: "10px 6px",
             borderRadius: 999,
             border: "none",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             backgroundColor:
               activeTab === "registrera" ? "#2563eb" : "transparent",
@@ -3056,10 +3107,10 @@ function App() {
           style={{
             flex: 1,
             margin: "0 4px",
-            padding: "8px 6px",
+            padding: "10px 6px",
             borderRadius: 999,
             border: "none",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             backgroundColor:
               activeTab === "karta" ? "#2563eb" : "transparent",
@@ -3073,10 +3124,10 @@ function App() {
           style={{
             flex: 1,
             margin: "0 4px",
-            padding: "8px 6px",
+            padding: "10px 6px",
             borderRadius: 999,
             border: "none",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             backgroundColor:
               activeTab === "rapport" ? "#2563eb" : "transparent",
@@ -3090,10 +3141,10 @@ function App() {
           style={{
             flex: 1,
             margin: "0 4px",
-            padding: "8px 6px",
+            padding: "10px 6px",
             borderRadius: 999,
             border: "none",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             backgroundColor:
               activeTab === "radera" ? "#b91c1c" : "transparent",
