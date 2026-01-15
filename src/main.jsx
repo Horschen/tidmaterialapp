@@ -73,57 +73,69 @@ function VeckoOversikt({
   filtreratÅr,
   filterMetod,
   onOpenManuell,
+  onToggleSkyddad,
 }) {
   const grupperad = {};
+
   data.forEach((rad) => {
+    const adressId = rad.adress_id ?? "okänd";
     const namn = rad.adresser?.namn || "Okänd adress";
-    if (!grupperad[namn]) {
-      grupperad[namn] = {
+
+    if (!grupperad[adressId]) {
+      grupperad[adressId] = {
+        adressId,
+        namn,
         tid: 0,
         grus: 0,
         salt: 0,
-        antal: 0,
+        antalJobb: 0,
         anstallda: 0,
         syften: new Set(),
         senasteDatumTid: null,
+        totalRader: 0,
+        skyddadRader: 0,
       };
     }
-    grupperad[namn].tid += rad.arbetstid_min || 0;
-    grupperad[namn].grus += rad.sand_kg || 0;
-    grupperad[namn].salt += rad.salt_kg || 0;
-    grupperad[namn].antal++;
-    grupperad[namn].anstallda += rad.antal_anstallda || 0;
+
+    const g = grupperad[adressId];
+    g.tid += rad.arbetstid_min || 0;
+    g.grus += rad.sand_kg || 0;
+    g.salt += rad.salt_kg || 0;
+    g.antalJobb++;
+    g.anstallda += rad.antal_anstallda || 0;
+    g.totalRader++;
+    if (rad.skyddad) g.skyddadRader++;
 
     if (rad.syfte) {
       rad.syfte
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
-        .forEach((s) => grupperad[namn].syften.add(s));
+        .forEach((s) => g.syften.add(s));
     }
 
     if (rad.datum) {
       const d = new Date(rad.datum);
       if (!Number.isNaN(d.getTime())) {
-        const prev = grupperad[namn].senasteDatumTid
-          ? new Date(grupperad[namn].senasteDatumTid)
-          : null;
+        const prev = g.senasteDatumTid ? new Date(g.senasteDatumTid) : null;
         if (!prev || d > prev) {
-          grupperad[namn].senasteDatumTid = rad.datum;
+          g.senasteDatumTid = rad.datum;
         }
       }
     }
   });
 
-  const lista = Object.entries(grupperad).map(([namn, v]) => ({
-    namn,
-    tid: v.tid,
-    grus: v.grus,
-    salt: v.salt,
-    antal: v.antal,
-    anstallda: v.anstallda,
-    syften: Array.from(v.syften).join(", "),
-    senasteDatumTid: v.senasteDatumTid,
+  const lista = Object.values(grupperad).map((g) => ({
+    adressId: g.adressId,
+    namn: g.namn,
+    tid: g.tid,
+    grus: g.grus,
+    salt: g.salt,
+    antal: g.antalJobb,
+    anstallda: g.anstallda,
+    syften: Array.from(g.syften).join(", "),
+    senasteDatumTid: g.senasteDatumTid,
+    skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
   }));
 
   const metodText =
@@ -220,6 +232,7 @@ function VeckoOversikt({
                 borderBottom: "1px solid #e5e7eb",
               }}
             >
+              <th></th>
               <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
               <th style={{ textAlign: "left" }}>Adress</th>
               <th>Antal jobb</th>
@@ -233,13 +246,23 @@ function VeckoOversikt({
           <tbody>
             {lista.map((r, idx) => (
               <tr
-                key={r.namn}
+                key={r.adressId}
                 style={{
                   backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                   borderBottom: "1px solid #e5e7eb",
                   height: 44,
                 }}
               >
+                <td style={{ textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={r.skyddad}
+                    onChange={(e) =>
+                      onToggleSkyddad &&
+                      onToggleSkyddad(r.adressId, e.target.checked)
+                    }
+                  />
+                </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>{r.namn}</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
@@ -253,7 +276,7 @@ function VeckoOversikt({
             {lista.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{
                     textAlign: "center",
                     fontStyle: "italic",
@@ -556,7 +579,7 @@ function App() {
     const { data, error } = await supabase
       .from("rapporter")
       .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, adresser(namn)"
+        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
       )
       .order("datum", { ascending: false });
     if (error) {
@@ -727,6 +750,7 @@ function App() {
         salt_kg: parseInt(salt, 10) || 0,
         syfte: syfteText,
         antal_anstallda: antalAnstallda,
+        skyddad: true,
       },
     ]);
     if (error) {
@@ -793,6 +817,7 @@ function App() {
         salt_kg: parseInt(manuellSalt, 10) || 0,
         syfte: syfteText,
         antal_anstallda: manuellAntalAnstallda,
+        skyddad: true,
       },
     ]);
 
@@ -923,6 +948,42 @@ function App() {
   const totalHandMin = veckansRapporter
     .filter((r) => r.arbetssatt === "hand")
     .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
+  async function toggleSkyddadForAdress(adressId, newValue) {
+    // Hitta vilka rapport-id som syns i nuvarande veckoöversikt för denna adress
+    const rapportIds = filtreradeRapporter
+      .filter((r) => r.adress_id === adressId)
+      .map((r) => r.id);
+
+    if (rapportIds.length === 0) return;
+
+    const { error } = await supabase
+      .from("rapporter")
+      .update({ skyddad: newValue })
+      .in("id", rapportIds);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Kunde inte uppdatera skydd.", "error", 3000);
+      setStatus("❌ Fel vid uppdatering av skydd: " + error.message);
+    } else {
+      showPopup(
+        newValue
+          ? "👍 Markerade rader som skyddade mot radering."
+          : "👍 Tog bort skydd – dessa rader kan raderas.",
+        "success",
+        3000
+      );
+      setStatus(
+        newValue
+          ? "Markerade rader som skyddade mot radering."
+          : "Tog bort skydd – dessa rader kan raderas."
+      );
+      // Ladda om rapporter så att veckoöversikten uppdateras
+      hamtaRapporter();
+    }
+  }
 
   // ======= Skicka veckorapport via mail =======
   function skickaVeckorapportEmail() {
@@ -1276,15 +1337,15 @@ function App() {
     backgroundColor: "#f9fafb",
   };
 
- const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  fontSize: 16,
-  borderRadius: 10,
-  border: "1px solid #d1d5db",
-  backgroundColor: "#f9fafb",
-  boxSizing: "border-box",
-};
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    fontSize: 16,
+    borderRadius: 10,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+    boxSizing: "border-box",
+  };
 
   const primaryButton = {
     width: "100%",
@@ -1330,7 +1391,7 @@ function App() {
     if (!raderaMånad) {
       fromDate = `${årNum}-01-01`;
       toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum}`;
+      beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
     } else {
       const månNum = Number(raderaMånad);
       if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
@@ -1343,7 +1404,7 @@ function App() {
       toDate = end.toISOString().slice(0, 10);
       beskrivning = `alla rapporter ${årNum}-${månNum
         .toString()
-        .padStart(2, "0")}`;
+        .padStart(2, "0")} (ej skyddade)`;
     }
 
     setDeleteConfirm({ fromDate, toDate, beskrivning });
@@ -1360,7 +1421,8 @@ function App() {
       .from("rapporter")
       .delete({ count: "exact" })
       .gte("datum", fromDate)
-      .lte("datum", toDate);
+      .lte("datum", toDate)
+      .neq("skyddad", true); // radera endast EJ skyddade rader
 
     setRaderaPågår(false);
 
@@ -1819,6 +1881,7 @@ function App() {
               filtreratÅr={filtreratÅr}
               filterMetod={filterMetod}
               onOpenManuell={openManuellPopup}
+              onToggleSkyddad={toggleSkyddadForAdress}
             />
           )}
 
@@ -1863,7 +1926,9 @@ function App() {
               marginBottom: 12,
             }}
           >
-            Varning: Detta tar bort rapporter permanent. Ingen ångra‑funktion.
+            Varning: Detta tar bort{" "}
+            <strong>endast rapporter som inte är skyddade</strong> med
+            kryssrutan i veckoöversikten. Ingen ångra‑funktion.
           </p>
 
           <div style={{ marginBottom: 12 }}>
@@ -1911,7 +1976,7 @@ function App() {
               marginTop: 8,
             }}
           >
-            {raderaPågår ? "Raderar..." : "Radera rapporter"}
+            {raderaPågår ? "Raderar..." : "Radera ej skyddade rapporter"}
           </button>
         </section>
       );
