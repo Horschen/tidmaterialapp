@@ -2486,316 +2486,438 @@ if (activeTab === "info") {
   }
 
     // ======= Vanliga app-vyn (efter inloggning) =======
-  return (
+return (
+  <div
+    style={{
+      fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+      backgroundColor: "#f3f4f6",
+      minHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+    }}
+  >
     <div
       style={{
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-        backgroundColor: "#f3f4f6",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
+        maxWidth: 1200,
+        margin: "0 auto",
+        padding: "12px 12px 100px",
+        width: "100%",
+        boxSizing: "border-box",
+        flex: 1,
+        position: "relative",
       }}
     >
-      <div
+      <header
         style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "12px 12px 100px", // extra bottenpadding för två rader nav
-          width: "100%",
-          boxSizing: "border-box",
-          flex: 1,
-          position: "relative",
+          marginBottom: 8,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 8,
         }}
       >
-        <header
+        <div style={{ flex: 1 }}>
+          <h1
+            style={{
+              fontSize: 20,
+              marginBottom: 2,
+              textAlign: "left",
+            }}
+          >
+            Tid & Material – SnöJour
+          </h1>
+          <p
+            style={{
+              fontSize: 12,
+              color: "#6b7280",
+              margin: 0,
+            }}
+          >
+            Mobilvy – användarvänlig för iPhone
+          </p>
+        </div>
+        <button
+          onClick={delaApp}
           style={{
-            marginBottom: 8,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 8,
+            flexShrink: 0,
+            padding: "6px 10px",
+            borderRadius: 999,
+            border: "1px solid #d1d5db",
+            backgroundColor: "#ffffff",
+            fontSize: 12,
           }}
         >
-          <div style={{ flex: 1 }}>
-            <h1
-              style={{
-                fontSize: 20,
-                marginBottom: 2,
-                textAlign: "left",
-              }}
-            >
-              Tid & Material – SnöJour
-            </h1>
-            <p
-              style={{
-                fontSize: 12,
-                color: "#6b7280",
-                margin: 0,
-              }}
-            >
-              Mobilvy – användarvänlig för iPhone
-            </p>
+          Dela
+        </button>
+      </header>
+
+      {popup && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 100,
+            padding: "24px 32px",
+            borderRadius: 24,
+            border: `2px solid ${popupStyle.borderColor}`,
+            backgroundColor: popupStyle.backgroundColor,
+            color: popupStyle.color,
+            fontSize: 20,
+            fontWeight: 600,
+            textAlign: "center",
+            maxWidth: "80%",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          {popup.text}
+        </div>
+      )}
+
+      {deleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 110,
+            padding: "24px 32px",
+            borderRadius: 24,
+            border: "2px solid #b91c1c",
+            backgroundColor: "#fee2e2",
+            color: "#7f1d1d",
+            fontSize: 16,
+            fontWeight: 600,
+            textAlign: "center",
+            maxWidth: "80%",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div style={{ marginBottom: 12 }}>
+            Är du säker på att du vill radera data??
           </div>
-          <button
-            onClick={delaApp}
+          <div
             style={{
-              flexShrink: 0,
-              padding: "6px 10px",
-              borderRadius: 999,
+              display: "flex",
+              justifyContent: "center",
+              gap: 12,
+              marginTop: 4,
+            }}
+          >
+            <button
+              onClick={bekräftaRadering}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#b91c1c",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              Ja
+            </button>
+            <button
+              onClick={avbrytRadering}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#e5e7eb",
+                color: "#111827",
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              Nej
+            </button>
+          </div>
+        </div>
+      )}
+
+      {visaManuellPopup && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            backgroundColor: "#ffffff",
+            borderRadius: 12,
+            boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+            padding: 24,
+            zIndex: 120,
+            width: "90%",
+            maxWidth: 420,
+          }}
+        >
+          {/* Din befintliga manuell-popupkod kan återläggas här */}
+        </div>
+      )}
+
+      {visaEditPopup && (
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 150,
+            backgroundColor: "#ffffff",
+            border: "2px solid #2563eb",
+            borderRadius: 12,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+            width: "90%",
+            maxWidth: 420,
+            padding: 20,
+            fontFamily: "system-ui, -apple-system, sans-serif",
+          }}
+        >
+          <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+            Editera rapport
+          </h3>
+
+          <label style={{ display: "block", marginBottom: 8 }}>
+            Välj rapport att redigera:
+          </label>
+          <select
+            value={valdaEditId || ""}
+            onChange={(e) => onChangeValdEditId(e.target.value)}
+            style={{
+              width: "100%",
+              marginBottom: 12,
+              padding: "8px",
+              borderRadius: 8,
               border: "1px solid #d1d5db",
-              backgroundColor: "#ffffff",
-              fontSize: 12,
             }}
           >
-            Dela
-          </button>
-        </header>
+            {editRapporter.map((r) => (
+              <option key={r.id} value={r.id}>
+                {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
+              </option>
+            ))}
+          </select>
 
-        {popup && (
-          <div
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 100,
-              padding: "24px 32px",
-              borderRadius: 24,
-              border: `2px solid ${popupStyle.borderColor}`,
-              backgroundColor: popupStyle.backgroundColor,
-              color: popupStyle.color,
-              fontSize: 20,
-              fontWeight: 600,
-              textAlign: "center",
-              maxWidth: "80%",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-            }}
-          >
-            {popup.text}
+          <div style={{ display: "grid", gap: 8 }}>
+            <label>
+              Datum:
+              <input
+                type="date"
+                value={editForm.datum}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, datum: e.target.value }))
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: 8,
+                  border: "1px solid #d1d5db",
+                }}
+              />
+            </label>
+
+            <label>
+              Arbetstid (minuter):
+              <input
+                type="number"
+                value={editForm.arbetstid_min}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    arbetstid_min: e.target.value,
+                  }))
+                }
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: 8,
+                  border: "1px solid #d1d5db",
+                }}
+              />
+            </label>
           </div>
-        )}
 
-        {deleteConfirm && (
           <div
             style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 110,
-              padding: "24px 32px",
-              borderRadius: 24,
-              border: "2px solid #b91c1c",
-              backgroundColor: "#fee2e2",
-              color: "#7f1d1d",
-              fontSize: 16,
-              fontWeight: 600,
-              textAlign: "center",
-              maxWidth: "80%",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              marginTop: 12,
             }}
           >
-            <div style={{ marginBottom: 12 }}>
-              Är du säker på att du vill radera data??
-            </div>
-            <div
+            {[
+              ["syfteOversyn", "Översyn"],
+              ["syfteRojning", "Röjning"],
+              ["syfteSaltning", "Saltning"],
+              ["syfteGrusning", "Grusning"],
+            ].map(([key, label]) => (
+              <label key={key} style={{ fontSize: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={editForm[key]}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, [key]: e.target.checked }))
+                  }
+                  style={{ marginRight: 4 }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 16,
+            }}
+          >
+            <button
+              onClick={sparaEditRapport}
               style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 12,
-                marginTop: 4,
+                padding: "10px 16px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#16a34a",
+                color: "#fff",
+                fontWeight: 600,
               }}
             >
-              <button
-                onClick={bekräftaRadering}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 999,
-                  border: "none",
-                  backgroundColor: "#b91c1c",
-                  color: "#fff",
-                  fontSize: 14,
-                  fontWeight: 600,
-                }}
-              >
-                Ja
-              </button>
-              <button
-                onClick={avbrytRadering}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: 999,
-                  border: "none",
-                  backgroundColor: "#e5e7eb",
-                  color: "#111827",
-                  fontSize: 14,
-                  fontWeight: 500,
-                }}
-              >
-                Nej
-              </button>
-            </div>
+              Spara
+            </button>
+            <button
+              onClick={() => setVisaEditPopup(false)}
+              style={{
+                padding: "10px 16px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#e5e7eb",
+                color: "#111827",
+                fontWeight: 500,
+              }}
+            >
+              Stäng
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {visaManuellPopup && (
-          {/* ... din befintliga manuell-popup här, oförändrad ... */}
-        )}
+      {renderContent()}
+    </div>
 
-        {visaEditPopup && (
-          {/* ... din befintliga edit-popup här, oförändrad ... */}
-        )}
+    {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+    <nav
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "#fffbea",
+        borderTop: "1px solid #e5e7eb",
+        padding: "8px 12px",
+        maxWidth: 520,
+        margin: "0 auto",
+        boxSizing: "border-box",
+        boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
+      }}
+    >
+      {/* Rad 1: Info + Start/Stop + Registrera */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 6,
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("info")}
+          style={{
+            flex: 1,
+            marginRight: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "info" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Info
+        </button>
 
-        {renderContent()}
+        <button
+          onClick={() => setActiveTab("startstop")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "startstop" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Start/Stop
+        </button>
+
+        <button
+          onClick={() => setActiveTab("registrera")}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "registrera" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Registrera
+        </button>
       </div>
 
-      {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
-<nav
-  style={{
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fffbea", // svagt varm bakgrund som hela navfältet
-    borderTop: "1px solid #e5e7eb",
-    padding: "8px 12px",
-    maxWidth: 520,
-    margin: "0 auto",
-    boxSizing: "border-box",
-    boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
-  }}
->
-    {/* Rad 1: Info + Start/Stop + Registrera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: 6,
-    }}
-  >
-    <button
-      onClick={() => setActiveTab("info")}
-      style={{
-        flex: 1,
-        marginRight: 4,
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "info" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Info
-    </button>
-
-    <button
-      onClick={() => setActiveTab("startstop")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "startstop" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Start/Stop
-    </button>
-
-    <button
-      onClick={() => setActiveTab("registrera")}
-      style={{
-        flex: 1,
-        marginLeft: 4,
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "registrera" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Registrera
-    </button>
-  </div>
-
-  {/* Rad 2: Karta + Veckorapport + Radera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-    }}
-  >
-    <button
-      onClick={() => setActiveTab("karta")}
-      style={{
-        flex: 1,
-        marginRight: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "karta" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Karta
-    </button>
-    <button
-      onClick={() => setActiveTab("rapport")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "rapport" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Veckorapport
-    </button>
-    <button
-      onClick={openRaderaTab}
-      style={{
-        flex: 1,
-        marginLeft: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #ef4444",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "radera" ? "#ef4444" : "#fecaca",
-        color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
-        transition: "background-color 0.2s ease",
-      }}
-    >
-      Radera
-    </button>
-  </div>
-</nav>
-    </div>
-  );
-}
-
-createRoot(document.getElementById("app")).render(<App />);
+      {/* Rad 2: Karta + Veckorapport + Radera */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("karta")}
+          style={{
+            flex: 1,
+            marginRight: 4,
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "karta" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Karta
+        </button>
+        <button
+          onClick={() => setActiveTab("rapport")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 13,
+            fontWeight: 
