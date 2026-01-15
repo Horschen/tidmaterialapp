@@ -2861,18 +2861,18 @@ return (
         Spara
       </button>
       <button
-        onClick={() => setVisaEditPopup(false)}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#e5e7eb",
-          color: "#111827",
-          fontWeight: 500,
-        }}
-      >
-        Stäng
-      </button>
+  onClick={() => setVisaEditPopup(false)}
+  style={{
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#dc2626",   // 🔴 röd bakgrund
+    color: "#ffffff",
+    fontWeight: 600,
+  }}
+>
+  Avbryt
+</button>
     </div>
   </div>
 )}
