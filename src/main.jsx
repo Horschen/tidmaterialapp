@@ -2272,7 +2272,7 @@ if (activeTab === "info") {
 
           <h3 style={{ marginTop: 16 }}>🕓 Start / Stop</h3>
           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            Här startar och stoppar du ditt arbetspass. När du trycker <strong>Starta passet</strong>
+            Här startar och stoppar du ditt arbetspass. När du trycker <strong>Starta passet, </strong>
             sparas starttiden lokalt i din webbläsare och en timer börjar räkna din effektiva
             arbetstid. Du kan när som helst pausa via <strong>Start Paus</strong>
             – då registreras ingen arbetstid. När du trycker <strong>Stop Paus</strong> sparas
