@@ -2550,7 +2550,7 @@ function App() {
         {renderContent()}
       </div>
 
-      {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+            {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
       <nav
         style={{
           position: "fixed",
@@ -2584,8 +2584,8 @@ function App() {
               fontSize: 14,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "startstop" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
+                activeTab === "startstop" ? "#facc15" : "#fefce8", // ljus gul aktiv / ännu ljusare bakgrund
+              color: "#854d0e",
             }}
           >
             Start/Stop
@@ -2601,8 +2601,8 @@ function App() {
               fontSize: 14,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "registrera" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
+                activeTab === "registrera" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Registrera
@@ -2627,8 +2627,8 @@ function App() {
               fontSize: 13,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "karta" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "karta" ? "#ffffff" : "#4b5563",
+                activeTab === "karta" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Karta
@@ -2644,8 +2644,8 @@ function App() {
               fontSize: 13,
               fontWeight: 600,
               backgroundColor:
-                activeTab === "rapport" ? "#2563eb" : "#f3f4f6",
-              color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
+                activeTab === "rapport" ? "#facc15" : "#fefce8",
+              color: "#854d0e",
             }}
           >
             Veckorapport
@@ -2660,17 +2660,15 @@ function App() {
               border: "none",
               fontSize: 13,
               fontWeight: 600,
+              // mörkare röd för aktiv, ljus röd för inaktiv
               backgroundColor:
-                activeTab === "radera" ? "#b91c1c" : "#fef2f2",
-              color: activeTab === "radera" ? "#ffffff" : "#b91c1c",
+                activeTab === "radera" ? "#b91c1c" : "#fee2e2",
+              color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
             }}
           >
             Radera
           </button>
         </div>
       </nav>
-    </div>
-  );
-}
 
 createRoot(document.getElementById("app")).render(<App />);
