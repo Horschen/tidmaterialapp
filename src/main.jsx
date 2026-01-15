@@ -2281,19 +2281,17 @@ function App() {
         }}
       >
         <div
-          style={{
-            maxWidth: 420,
-            margin: "0 auto",
-            padding: "40px 16px",
-            width: "100%",
-            boxSizing: "border-box",
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <form
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "12px 12px 100px", // tidigare 84px – justerat uppåt
+          width: "100%",
+          boxSizing: "border-box",
+          flex: 1,
+          position: "relative",
+        }}
+      >
+        <form
             onSubmit={checkAppPassword}
             style={{
               width: "100%",
@@ -3054,107 +3052,6 @@ function App() {
       </div>
 
       <nav
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: "#ffffff",
-          borderTop: "1px solid #e5e7eb",
-          padding: "10px 12px",
-          display: "flex",
-          justifyContent: "space-between",
-          maxWidth: 520,
-          margin: "0 auto",
-        }}
-      >
-        <button
-          onClick={() => setActiveTab("startstop")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "startstop" ? "#2563eb" : "transparent",
-            color: activeTab === "startstop" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Start/Stop
-        </button>
-        <button
-          onClick={() => setActiveTab("registrera")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "registrera" ? "#2563eb" : "transparent",
-            color: activeTab === "registrera" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Registrera
-        </button>
-        <button
-          onClick={() => setActiveTab("karta")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "karta" ? "#2563eb" : "transparent",
-            color: activeTab === "karta" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Karta
-        </button>
-        <button
-          onClick={() => setActiveTab("rapport")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "rapport" ? "#2563eb" : "transparent",
-            color: activeTab === "rapport" ? "#ffffff" : "#4b5563",
-          }}
-        >
-          Veckorapport
-        </button>
-        <button
-          onClick={openRaderaTab}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 6px",
-            borderRadius: 999,
-            border: "none",
-            fontSize: 14,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "radera" ? "#b91c1c" : "transparent",
-            color: activeTab === "radera" ? "#ffffff" : "#b91c1c",
-          }}
-        >
-          Radera
-        </button>
-      </nav>
-    </div>
   );
 }
 
