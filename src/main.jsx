@@ -2830,18 +2830,18 @@ return (
         Spara manuellt
       </button>
       <button
-        onClick={closeManuellPopup}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#e5e7eb",
-          color: "#111827",
-          fontWeight: 500,
-        }}
-      >
-        Stäng
-      </button>
+  onClick={closeManuellPopup}
+  style={{
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#e5e7eb",
+    color: "#111827",
+    fontWeight: 500,
+  }}
+>
+  Stäng
+</button>
     </div>
   </div>
 )}
