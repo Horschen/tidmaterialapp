@@ -1132,7 +1132,7 @@ function App() {
       return;
     }
 
-    const grupperad: any = {};
+    const grupperad = {};
     filtreradeRapporter.forEach((rad) => {
       const namn = rad.adresser?.namn || "Okänd adress";
       if (!grupperad[namn]) {
