@@ -2268,7 +2268,7 @@ function App() {
           borderColor: "#15803d",
         };
 
-    // ======= Login-skärm (före appen) =======
+      // ======= Login-skärm (före appen) =======
   if (!isAuthenticated) {
     return (
       <div
