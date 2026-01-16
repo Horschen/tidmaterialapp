@@ -1983,7 +1983,7 @@ if (activeTab === "karta") {
                 {formatTid(totalMaskinMin)}
               </span>
             </div>
-            <div
+            </div>
               style={{
                 padding: "6px 12px",
                 borderRadius: 999,
