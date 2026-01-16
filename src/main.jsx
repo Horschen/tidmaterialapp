@@ -2,8 +2,6 @@ import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { Loader } from "@googlemaps/js-api-loader";
 import { GOOGLE_MAPS_API_KEY } from "./config.js";
-import { createRoot } from "react-dom/client";
-import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
