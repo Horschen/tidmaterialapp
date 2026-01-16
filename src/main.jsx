@@ -1885,32 +1885,6 @@ if (activeTab === "karta") {
         Karta
       </h2>
 
-      <div
-        id="map"
-        style={{
-          width: "100%",
-          height: "400px",
-          borderRadius: 12,
-          marginTop: 12,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-        }}
-      ></div>
-
-      {!mapLoaded && (
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: 8,
-            color: "#6b7280",
-          }}
-        >
-          Laddar karta…
-        </p>
-      )}
-    </section>
-  );
-}
-
       {/* PLANERAD RUTT-KNAPP */}
       {aktivRutt && aktivRutt.length > 0 ? (
         <div
@@ -1971,7 +1945,13 @@ if (activeTab === "karta") {
       ></div>
 
       {!mapLoaded && (
-        <p style={{ textAlign: "center", marginTop: 8, color: "#6b7280" }}>
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: 8,
+            color: "#6b7280",
+          }}
+        >
           Laddar karta…
         </p>
       )}
