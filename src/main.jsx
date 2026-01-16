@@ -1,5 +1,9 @@
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
+import { Loader } from "@googlemaps/js-api-loader";
+import { GOOGLE_MAPS_API_KEY } from "./config.js";
+import { createRoot } from "react-dom/client";
+import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -344,11 +348,41 @@ function App() {
   const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
-  const [nuTid, setNuTid] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNuTid(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+const [nuTid, setNuTid] = useState(Date.now());
+useEffect(() => {
+  const id = setInterval(() => setNuTid(Date.now()), 1000);
+  return () => clearInterval(id);
+}, []);
+
+// ======= Google Maps‑initiering =======
+const [mapLoaded, setMapLoaded] = useState(false);
+
+useEffect(() => {
+  async function loadMap() {
+    const loader = new Loader({
+      apiKey: GOOGLE_MAPS_API_KEY,
+      version: "weekly",
+    });
+    await loader.load();
+
+    const map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 59.3293, lng: 18.0686 }, // Stockholm default
+      zoom: 11,
+      mapTypeControl: false,
+      streetViewControl: false,
+    });
+
+    new google.maps.Marker({
+      position: { lat: 59.3293, lng: 18.0686 },
+      map,
+      title: "Startpunkt",
+    });
+
+    setMapLoaded(true);
+  }
+
+  loadMap();
+}, []);
 
   // Primär timer: total pass-tid
   const passTotalSek =
