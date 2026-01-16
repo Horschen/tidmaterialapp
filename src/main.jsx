@@ -1872,60 +1872,86 @@ function stoppaPass() {
       );
     }
 
-    if (activeTab === "karta") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Karta
-          </h2>
+if (activeTab === "karta") {
+  return (
+    <section style={sectionStyle}>
+      <h2
+        style={{
+          fontSize: 18,
+          marginTop: 0,
+          marginBottom: 12,
+        }}
+      >
+        Karta
+      </h2>
 
-          <label style={labelStyle}>Välj adress (karta)</label>
-          <select
-            value={kartaAdressId}
-            onChange={(e) => setKartaAdressId(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">-- Välj adress --</option>
-            {adresser.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-              </option>
-            ))}
-          </select>
-
+      {/* PLANERAD RUTT-KNAPP */}
+      {aktivRutt && aktivRutt.length > 0 ? (
+        <div
+          style={{
+            marginBottom: 10,
+            padding: "8px 12px",
+            background: "#fef9c3",
+            borderRadius: 8,
+            color: "#78350f",
+            fontSize: 14,
+          }}
+        >
+          Nästa stopp:{" "}
+          <strong>
+            {aktivRutt.find((a) => !a.klar)?.namn || "Alla klara!"}
+          </strong>{" "}
           <button
-            onClick={oppnaKartaForKartAdress}
-            disabled={!kartaAdressId}
+            onClick={() => setVisaRuttPopup(true)}
             style={{
-              ...primaryButton,
-              opacity: kartaAdressId ? 1 : 0.5,
-              marginTop: 16,
+              marginLeft: 8,
+              padding: "4px 8px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#2563eb",
+              color: "#fff",
             }}
           >
-            Öppna karta för vald adress
+            Ny rutt
           </button>
-        </section>
-      );
-    }
+        </div>
+      ) : (
+        <button
+          onClick={() => setVisaRuttPopup(true)}
+          style={{
+            padding: "10px 12px",
+            borderRadius: 999,
+            border: "none",
+            backgroundColor: "#2563eb",
+            color: "#fff",
+            fontWeight: 600,
+            marginBottom: 8,
+          }}
+        >
+          Planera rutt
+        </button>
+      )}
 
-    if (activeTab === "rapport") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Veckorapport
-          </h2>
+      {/* HÄR RITAS GOOGLE-KARTAN */}
+      <div
+        id="map"
+        style={{
+          width: "100%",
+          height: "400px",
+          borderRadius: 12,
+          marginTop: 12,
+          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+        }}
+      ></div>
+
+      {!mapLoaded && (
+        <p style={{ textAlign: "center", marginTop: 8, color: "#6b7280" }}>
+          Laddar karta…
+        </p>
+      )}
+    </section>
+  );
+}
 
           {/* Gula ovala rutor för total tider */}
           <div
