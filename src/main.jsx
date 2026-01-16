@@ -1885,47 +1885,6 @@ if (activeTab === "karta") {
         Karta
       </h2>
 
-      <button
-        onClick={() => setVisaRuttPopup(true)}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          fontWeight: 600,
-          marginBottom: 8,
-        }}
-      >
-        Planera rutt
-      </button>
-
-      <div
-        id="map"
-        style={{
-          width: "100%",
-          height: "400px",
-          borderRadius: 12,
-          marginTop: 12,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-        }}
-      ></div>
-
-      {!mapLoaded && (
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: 8,
-            color: "#6b7280",
-          }}
-        >
-          Laddar karta…
-        </p>
-      )}
-    </section>
-  );
-}
-
       {/* PLANERAD RUTT-KNAPP */}
       {aktivRutt && aktivRutt.length > 0 ? (
         <div
@@ -1999,7 +1958,6 @@ if (activeTab === "karta") {
     </section>
   );
 }
-
           {/* Gula ovala rutor för total tider */}
           <div
             style={{
