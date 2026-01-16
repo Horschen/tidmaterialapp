@@ -1872,6 +1872,7 @@ function stoppaPass() {
       );
     }
 
+// ======= Karta-flik =======
 if (activeTab === "karta") {
   return (
     <section style={sectionStyle}>
