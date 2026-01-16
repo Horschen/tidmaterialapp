@@ -1,7 +1,5 @@
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
-import { GOOGLE_MAPS_API_KEY } from "./config.js";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
@@ -346,41 +344,11 @@ function App() {
   const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
-const [nuTid, setNuTid] = useState(Date.now());
-useEffect(() => {
-  const id = setInterval(() => setNuTid(Date.now()), 1000);
-  return () => clearInterval(id);
-}, []);
-
-// ======= Google Maps‑initiering =======
-const [mapLoaded, setMapLoaded] = useState(false);
-
-useEffect(() => {
-  async function loadMap() {
-    const loader = new Loader({
-      apiKey: GOOGLE_MAPS_API_KEY,
-      version: "weekly",
-    });
-    await loader.load();
-
-    const map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat: 59.3293, lng: 18.0686 }, // Stockholm default
-      zoom: 11,
-      mapTypeControl: false,
-      streetViewControl: false,
-    });
-
-    new google.maps.Marker({
-      position: { lat: 59.3293, lng: 18.0686 },
-      map,
-      title: "Startpunkt",
-    });
-
-    setMapLoaded(true);
-  }
-
-  loadMap();
-}, []);
+  const [nuTid, setNuTid] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNuTid(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Primär timer: total pass-tid
   const passTotalSek =
@@ -1872,93 +1840,61 @@ function stoppaPass() {
       );
     }
 
-// ======= Karta-flik =======
-if (activeTab === "karta") {
-  return (
-    <section style={sectionStyle}>
-      <h2
-        style={{
-          fontSize: 18,
-          marginTop: 0,
-          marginBottom: 12,
-        }}
-      >
-        Karta
-      </h2>
-
-      {/* PLANERAD RUTT-KNAPP */}
-      {aktivRutt && aktivRutt.length > 0 ? (
-        <div
-          style={{
-            marginBottom: 10,
-            padding: "8px 12px",
-            background: "#fef9c3",
-            borderRadius: 8,
-            color: "#78350f",
-            fontSize: 14,
-          }}
-        >
-          Nästa stopp:{" "}
-          <strong>
-            {aktivRutt.find((a) => !a.klar)?.namn || "Alla klara!"}
-          </strong>{" "}
-          <button
-            onClick={() => setVisaRuttPopup(true)}
+    if (activeTab === "karta") {
+      return (
+        <section style={sectionStyle}>
+          <h2
             style={{
-              marginLeft: 8,
-              padding: "4px 8px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#2563eb",
-              color: "#fff",
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
             }}
           >
-            Ny rutt
+            Karta
+          </h2>
+
+          <label style={labelStyle}>Välj adress (karta)</label>
+          <select
+            value={kartaAdressId}
+            onChange={(e) => setKartaAdressId(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {adresser.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={oppnaKartaForKartAdress}
+            disabled={!kartaAdressId}
+            style={{
+              ...primaryButton,
+              opacity: kartaAdressId ? 1 : 0.5,
+              marginTop: 16,
+            }}
+          >
+            Öppna karta för vald adress
           </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => setVisaRuttPopup(true)}
-          style={{
-            padding: "10px 12px",
-            borderRadius: 999,
-            border: "none",
-            backgroundColor: "#2563eb",
-            color: "#fff",
-            fontWeight: 600,
-            marginBottom: 8,
-          }}
-        >
-          Planera rutt
-        </button>
-      )}
+        </section>
+      );
+    }
 
-      {/* HÄR RITAS GOOGLE-KARTAN */}
-      <div
-        id="map"
-        style={{
-          width: "100%",
-          height: "400px",
-          borderRadius: 12,
-          marginTop: 12,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-        }}
-      ></div>
+    if (activeTab === "rapport") {
+      return (
+        <section style={sectionStyle}>
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Veckorapport
+          </h2>
 
-      {!mapLoaded && (
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: 8,
-            color: "#6b7280",
-          }}
-        >
-          Laddar karta…
-        </p>
-      )}
-    </section>
-  );
-}
           {/* Gula ovala rutor för total tider */}
           <div
             style={{
@@ -1983,7 +1919,7 @@ if (activeTab === "karta") {
                 {formatTid(totalMaskinMin)}
               </span>
             </div>
-            </div>
+            <div
               style={{
                 padding: "6px 12px",
                 borderRadius: 999,
