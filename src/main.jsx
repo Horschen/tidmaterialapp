@@ -2876,7 +2876,219 @@ return (
     </div>
   </div>
 )}
+{visaManuellPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#ffffff",
+      border: "2px solid #facc15",
+      borderRadius: 12,
+      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+      padding: 24,
+      zIndex: 120,
+      width: "90%",
+      maxWidth: 420,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#854d0e" }}>
+      Manuell registrering
+    </h3>
 
+    <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
+    <select
+      value={manuellAdressId}
+      onChange={(e) => setManuellAdressId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option value="">-- Välj adress --</option>
+      {adresser.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.namn}
+        </option>
+      ))}
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
+    <select
+      value={manuellTeam}
+      onChange={(e) => setManuellTeam(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option>För hand</option>
+      <option>Maskin</option>
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Antal anställda</label>
+    <select
+      value={manuellAntalAnstallda}
+      onChange={(e) => setManuellAntalAnstallda(Number(e.target.value))}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+      {[
+        ["manSyfteOversyn", "Översyn"],
+        ["manSyfteRojning", "Röjning"],
+        ["manSyfteSaltning", "Saltning"],
+        ["manSyfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={eval(key)}
+            onChange={(e) => {
+              switch (key) {
+                case "manSyfteOversyn":
+                  setManSyfteOversyn(e.target.checked);
+                  break;
+                case "manSyfteRojning":
+                  setManSyfteRojning(e.target.checked);
+                  break;
+                case "manSyfteSaltning":
+                  setManSyfteSaltning(e.target.checked);
+                  break;
+                case "manSyfteGrusning":
+                  setManSyfteGrusning(e.target.checked);
+                  break;
+              }
+            }}
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <label>Datum:</label>
+    <input
+      type="date"
+      value={manuellDatum}
+      onChange={(e) => setManuellDatum(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Arbetstid (minuter)</label>
+    <input
+      type="number"
+      value={manuellTidMin}
+      onChange={(e) => setManuellTidMin(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Grus (kg)</label>
+    <select
+      value={manuellSand}
+      onChange={(e) => setManuellSand(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {[...Array(51)].map((_, i) => (
+        <option key={i} value={i}>
+          {i}
+        </option>
+      ))}
+    </select>
+
+    <label>Salt (kg)</label>
+    <select
+      value={manuellSalt}
+      onChange={(e) => setManuellSalt(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 16,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <button
+        onClick={sparaManuellRapport}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Spara manuellt
+      </button>
+      <button
+        onClick={closeManuellPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+      
       {renderContent()}
     </div>
 
