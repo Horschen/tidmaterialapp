@@ -1,2 +1,3 @@
 export const SUPABASE_URL = "https://coytabpyufxkmqswfnio.supabase.co";
 export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNveXRhYnB5dWZ4a21xc3dmbmlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMzM0MzUsImV4cCI6MjA4MzcwOTQzNX0.gzn3vwnFfO5L4_Ziwd5TQCpW08bs_VKvh-EEj2vC6q8"
+export const GOOGLE_MAPS_API_KEY = "AIzaSyAnS3NiMlg8cVOxUl_IyAQ3QknHp1SkwZw"; 
