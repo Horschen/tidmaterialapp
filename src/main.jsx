@@ -4418,7 +4418,7 @@ return (
         backgroundColor: "#f9fafb",
       }}
     >
-      <option>För hand</option>
+      <option>För hand</option>
       <option>Maskin</option>
     </select>
 
