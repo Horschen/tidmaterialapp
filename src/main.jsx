@@ -1522,81 +1522,124 @@ function stoppaPass() {
   }
 
   // ======= Öppna karta för vald adress =======
-  function oppnaKartaForKartAdress() {
-    if (!kartaAdressId) {
-      alert("Välj en adress i kartsektionen först.");
-      return;
-    }
-    const adr = adresser.find(
-      (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
-    );
-    if (adr?.gps_url) {
-      window.open(adr.gps_url, "_blank");
-    } else {
-      alert("Ingen GPS‑länk sparad för denna adress.");
-    }
+function oppnaKartaForKartAdress() {
+  if (!kartaAdressId) {
+    alert("Välj en adress i kartsektionen först.");
+    return;
+  }
+  const adr = adresser.find(
+    (a) => a.id === Number(kartaAdressId) || a.id === kartaAdressId
+  );
+  if (adr?.gps_url) {
+    window.open(adr.gps_url, "_blank");
+  } else {
+    alert("Ingen GPS‑länk sparad för denna adress.");
+  }
+}
+
+// ====== STIL ======
+const sectionStyle = {
+  marginBottom: 28,
+  padding: 16,
+  borderRadius: 12,
+  backgroundColor: "#ffffff",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+};
+
+const labelStyle = {
+  display: "block",
+  marginBottom: 4,
+  fontSize: 15,
+  fontWeight: 500,
+};
+
+const selectStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  fontSize: 16,
+  borderRadius: 10,
+  border: "1px solid #d1d5db",
+  backgroundColor: "#f9fafb",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  fontSize: 16,
+  borderRadius: 10,
+  border: "1px solid #d1d5db",
+  backgroundColor: "#f9fafb",
+  boxSizing: "border-box",
+};
+
+const primaryButton = {
+  width: "100%",
+  padding: "12px 16px",
+  fontSize: 16,
+  borderRadius: 999,
+  border: "none",
+  backgroundColor: "#2563eb",
+  color: "#ffffff",
+  fontWeight: 600,
+  marginTop: 8,
+};
+
+const secondaryButton = {
+  width: "100%",
+  padding: "12px 16px",
+  fontSize: 16,
+  borderRadius: 999,
+  border: "none",
+  backgroundColor: "#e5e7eb",
+  color: "#111827",
+  fontWeight: 500,
+  marginTop: 8,
+};
+
+// ======= RUTT-FUNKTIONER =======
+
+// Ladda aktiv rutt från databasen (utan nested relation)
+async function laddaAktivRutt() {
+  console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
+  
+  // Hämta rutt-data
+  const { data: ruttData, error: ruttError } = await supabase
+    .from("aktiv_rutt")
+    .select("*")
+    .order("ordning", { ascending: true });
+
+  if (ruttError) {
+    console.error("❌ Fel vid laddning av rutt:", ruttError);
+    setRuttStatus("❌ Kunde inte ladda rutt: " + ruttError.message);
+    return;
   }
 
-  // ====== STIL ======
-  const sectionStyle = {
-    marginBottom: 28,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#ffffff",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-  };
+  // Hämta alla adresser
+  const { data: adresserData, error: adresserError } = await supabase
+    .from("adresser")
+    .select("id, namn, lat, lng");
 
-  const labelStyle = {
-    display: "block",
-    marginBottom: 4,
-    fontSize: 15,
-    fontWeight: 500,
-  };
+  if (adresserError) {
+    console.error("❌ Fel vid laddning av adresser:", adresserError);
+    setRuttStatus("❌ Kunde inte ladda adresser: " + adresserError.message);
+    return;
+  }
 
-  const selectStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: "1px solid #d1d5db",
-    backgroundColor: "#f9fafb",
-  };
+  // Merga data manuellt
+  const adresserMap = {};
+  adresserData.forEach((a) => {
+    adresserMap[a.id] = a;
+  });
 
-  const inputStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 16,
-    borderRadius: 10,
-    border: "1px solid #d1d5db",
-    backgroundColor: "#f9fafb",
-    boxSizing: "border-box",
-  };
+  const ruttMedAdresser = ruttData.map((r) => ({
+    ...r,
+    adresser: adresserMap[r.adress_id] || null,
+  }));
 
-  const primaryButton = {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: 16,
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 600,
-    marginTop: 8,
-  };
-
-  const secondaryButton = {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: 16,
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#e5e7eb",
-    color: "#111827",
-    fontWeight: 500,
-    marginTop: 8,
-  };
-
-  // ======= RUTT-FUNKTIONER =======
+  console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
+  setRuttAdresser(ruttMedAdresser);
+  setRuttStatus(""); // Rensa felmeddelande
+}
 
 // ======= Ladda väntande rutt =======
 async function laddaVantandeRutt() {
@@ -1611,6 +1654,29 @@ async function laddaVantandeRutt() {
     setVantandeRuttAdresser(data || []);
     setVisaAktiveraRuttKnapp(data && data.length > 0);
   }
+}
+
+// Öppna popup för att välja adresser till rutt
+function oppnaRuttPopup() {
+  setValjbaraRuttAdresser(
+    adresser.map((a) => ({ ...a, vald: false, ordning: 0 }))
+  );
+  setVisaRuttPopup(true);
+}
+
+// Stäng popup
+function stangRuttPopup() {
+  setVisaRuttPopup(false);
+  setValjbaraRuttAdresser([]);
+}
+
+// Toggla adress i popup
+function toggleRuttAdress(adressId, checked) {
+  setValjbaraRuttAdresser((prev) =>
+    prev.map((a) =>
+      a.id === adressId ? { ...a, vald: checked } : a
+    )
+  );
 }
 
 // ======= Spara planerad rutt (innan pass) =======
@@ -1825,78 +1891,116 @@ async function aktiveraVantandeRutt() {
     await beraknaOchSparaRutt(origin, destination, waypoints);
   }
 }
+
+// ======= Radera väntande rutt =======
+async function raderaVantandeRutt() {
+  const { error } = await supabase.from("vantande_rutt").delete().neq("id", 0);
+  if (error) {
+    showPopup("👎 Kunde inte radera väntande rutt.", "error", 3000);
+  } else {
+    setVantandeRuttAdresser([]);
+    setVisaAktiveraRuttKnapp(false);
+    showPopup("👍 Väntande rutt raderad.", "success", 3000);
+  }
+}
+
+// Bocka av adress när jobb sparas
+async function bockAvAdressIRutt(adressId) {
+  const { error } = await supabase
+    .from("aktiv_rutt")
+    .update({ avklarad: true })
+    .eq("adress_id", adressId)
+    .eq("avklarad", false);
+
+  if (!error) {
+    await laddaAktivRutt();
+  }
+}
+
+// Rensa hela rutten
+async function rensaRutt() {
+  const { error } = await supabase.from("aktiv_rutt").delete().neq("id", 0);
+  if (error) {
+    showPopup("👎 Kunde inte rensa rutt.", "error", 3000);
+  } else {
+    setRuttAdresser([]);
+    setRuttVagbeskrivning(null);
+    showPopup("👍 Rutten rensad.", "success", 3000);
+  }
+}
+
 // ====== RADERA-FUNKTIONER =======
-  async function raderaRapporter() {
-    if (!raderaÅr) {
-      showPopup("👎 Ange år att radera.", "error", 3000);
+async function raderaRapporter() {
+  if (!raderaÅr) {
+    showPopup("👎 Ange år att radera.", "error", 3000);
+    return;
+  }
+
+  const årNum = Number(raderaÅr);
+  if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
+    showPopup("👎 Ogiltigt årtal.", "error", 3000);
+    return;
+  }
+
+  let fromDate;
+  let toDate;
+  let beskrivning;
+
+  if (!raderaMånad) {
+    fromDate = `${årNum}-01-01`;
+    toDate = `${årNum}-12-31`;
+    beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
+  } else {
+    const månNum = Number(raderaMånad);
+    if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
+      showPopup("👎 Ogiltig månad.", "error", 3000);
       return;
     }
-
-    const årNum = Number(raderaÅr);
-    if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-      showPopup("👎 Ogiltigt årtal.", "error", 3000);
-      return;
-    }
-
-    let fromDate;
-    let toDate;
-    let beskrivning;
-
-    if (!raderaMånad) {
-      fromDate = `${årNum}-01-01`;
-      toDate = `${årNum}-12-31`;
-      beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
-    } else {
-      const månNum = Number(raderaMånad);
-      if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-        showPopup("👎 Ogiltig månad.", "error", 3000);
-        return;
-      }
-      const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-      const end = new Date(Date.UTC(årNum, månNum, 0));
-      fromDate = start.toISOString().slice(0, 10);
-      toDate = end.toISOString().slice(0, 10);
-      beskrivning = `alla rapporter ${årNum}-${månNum
-        .toString()
-        .padStart(2, "0")} (ej skyddade)`;
-    }
-
-    setDeleteConfirm({ fromDate, toDate, beskrivning });
+    const start = new Date(Date.UTC(årNum, månNum - 1, 1));
+    const end = new Date(Date.UTC(årNum, månNum, 0));
+    fromDate = start.toISOString().slice(0, 10);
+    toDate = end.toISOString().slice(0, 10);
+    beskrivning = `alla rapporter ${årNum}-${månNum
+      .toString()
+      .padStart(2, "0")} (ej skyddade)`;
   }
 
-  async function bekräftaRadering() {
-    if (!deleteConfirm) return;
-    const { fromDate, toDate, beskrivning } = deleteConfirm;
+  setDeleteConfirm({ fromDate, toDate, beskrivning });
+}
 
-    setDeleteConfirm(null);
-    setRaderaPågår(true);
+async function bekräftaRadering() {
+  if (!deleteConfirm) return;
+  const { fromDate, toDate, beskrivning } = deleteConfirm;
 
-    const { error, count } = await supabase
-      .from("rapporter")
-      .delete({ count: "exact" })
-      .gte("datum", fromDate)
-      .lte("datum", toDate)
-      .neq("skyddad", true);
+  setDeleteConfirm(null);
+  setRaderaPågår(true);
 
-    setRaderaPågår(false);
+  const { error, count } = await supabase
+    .from("rapporter")
+    .delete({ count: "exact" })
+    .gte("datum", fromDate)
+    .lte("datum", toDate)
+    .neq("skyddad", true);
 
-    if (error) {
-      console.error(error);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-      setStatus("❌ Fel vid radering: " + error.message);
-    } else {
-      const antal = count ?? 0;
-      showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-      setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
+  setRaderaPågår(false);
+
+  if (error) {
+    console.error(error);
+    showPopup("👎 Fel vid radering.", "error", 3000);
+    setStatus("❌ Fel vid radering: " + error.message);
+  } else {
+    const antal = count ?? 0;
+    showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
+    setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
+    if (visaOversikt) {
+      hamtaRapporter();
     }
   }
+}
 
-  function avbrytRadering() {
-    setDeleteConfirm(null);
-  }
+function avbrytRadering() {
+  setDeleteConfirm(null);
+}
 
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
