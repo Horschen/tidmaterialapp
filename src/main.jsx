@@ -476,20 +476,6 @@ const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
 const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
 const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
   
-  // State för Maskin-rutt
-const [vantandeMaskinRuttAdresser, setVantandeMaskinRuttAdresser] = useState([]);
-const [visaAktiveraMaskinRuttKnapp, setVisaAktiveraMaskinRuttKnapp] = useState(false);
-const [visaMaskinRuttPopup, setVisaMaskinRuttPopup] = useState(false);
-const [valjbaraMaskinRuttAdresser, setValjbaraMaskinRuttAdresser] = useState([]);
-
-// State för automatiska rutter
-const [visaAutoRuttPopup, setVisaAutoRuttPopup] = useState(false);
-const [autoRuttTyp, setAutoRuttTyp] = useState(""); // "hand-upp", "hand-ner", "maskin"
-const [autoRuttStartAdress, setAutoRuttStartAdress] = useState("");
-const [autoRuttForetagId, setAutoRuttForetagId] = useState("");
-const [visaForetagVal, setVisaForetagVal] = useState(false);
-  
-  
   // Popup-notis
   const [popup, setPopup] = useState(null);
   function showPopup(text, type = "success", durationMs = 4000) {
@@ -625,7 +611,7 @@ const [visaForetagVal, setVisaForetagVal] = useState(false);
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("id, namn, lat, lng, prio, bostad_foretag, gps_url, maskin_mojlig");
+    .select("id, namn, gps_url, maskin_mojlig, lat, lng");
   if (error) {
     setRuttStatus("❌ Fel vid laddning av adresser: " + error.message);
   } else {
@@ -703,7 +689,6 @@ useEffect(() => {
   if (isAuthenticated) {
     laddaAktivRutt();
     laddaVantandeRutt();
-    laddaVantandeMaskinRutt();
   }
 }, [isAuthenticated]);
   
@@ -1613,202 +1598,6 @@ const secondaryButton = {
 
 // ======= RUTT-FUNKTIONER =======
 
-  // ======= MASKIN-RUTT FUNKTIONER =======
-
-// Ladda väntande maskin-rutt
-async function laddaVantandeMaskinRutt() {
-  const { data, error } = await supabase
-    .from("vantande_maskin_rutt")
-    .select("*");
-
-  if (error) {
-    console.error("❌ Fel vid laddning av väntande maskin-rutt:", error);
-  } else {
-    console.log("📋 Väntande maskin-rutt laddad:", data);
-    setVantandeMaskinRuttAdresser(data || []);
-    setVisaAktiveraMaskinRuttKnapp(data && data.length > 0);
-  }
-}
-
-// Öppna popup för maskin-rutt
-function oppnaMaskinRuttPopup() {
-  const sorterade = [...adresser].sort((a, b) => {
-    const prioA = a.prio || 9999;
-    const prioB = b.prio || 9999;
-    return prioA - prioB;
-  });
-  setValjbaraMaskinRuttAdresser(
-    sorterade.map((a) => ({ ...a, vald: false, ordning: 0 }))
-  );
-  setVisaMaskinRuttPopup(true);
-}
-
-// Stäng maskin-popup
-function stangMaskinRuttPopup() {
-  setVisaMaskinRuttPopup(false);
-  setValjbaraMaskinRuttAdresser([]);
-}
-
-// Toggla adress i maskin-popup
-function toggleMaskinRuttAdress(adressId, checked) {
-  setValjbaraMaskinRuttAdresser((prev) =>
-    prev.map((a) =>
-      a.id === adressId ? { ...a, vald: checked } : a
-    )
-  );
-}
-
-// Spara planerad maskin-rutt
-async function sparaPlaneradMaskinRutt() {
-  const valda = valjbaraMaskinRuttAdresser.filter((a) => a.vald);
-  
-  if (valda.length < 2) {
-    showPopup("👎 Välj minst 2 adresser för planerad maskin-rutt.", "error", 3000);
-    return;
-  }
-
-  setRuttStatus("Sparar planerad maskin-rutt...");
-
-  // Rensa gammal väntande maskin-rutt
-  await supabase.from("vantande_maskin_rutt").delete().neq("id", 0);
-
-  // Spara valda adresser
-  const rader = valda.map((a) => ({
-    adress_id: a.id,
-  }));
-
-  const { error } = await supabase.from("vantande_maskin_rutt").insert(rader);
-
-  if (error) {
-    showPopup("👎 Kunde inte spara planerad maskin-rutt.", "error", 3000);
-    setRuttStatus("❌ Fel vid sparning: " + error.message);
-  } else {
-    showPopup("👍 Planerad maskin-rutt sparad!", "success", 4000);
-    setRuttStatus("✅ Planerad maskin-rutt sparad.");
-    await laddaVantandeMaskinRutt();
-    stangMaskinRuttPopup();
-  }
-}
-
-// Radera väntande maskin-rutt
-async function raderaVantandeMaskinRutt() {
-  const { error } = await supabase.from("vantande_maskin_rutt").delete().neq("id", 0);
-  if (error) {
-    showPopup("👎 Kunde inte radera väntande maskin-rutt.", "error", 3000);
-  } else {
-    setVantandeMaskinRuttAdresser([]);
-    setVisaAktiveraMaskinRuttKnapp(false);
-    showPopup("👍 Väntande maskin-rutt raderad.", "success", 3000);
-  }
-}
-
-// ======= AUTOMATISKA RUTTER =======
-
-// Starta automatisk rutt-wizard
-function startaAutoRutt(typ) {
-  setAutoRuttTyp(typ);
-  setAutoRuttStartAdress("");
-  setAutoRuttForetagId("");
-  setVisaForetagVal(false);
-  setVisaAutoRuttPopup(true);
-}
-
-// Stäng auto-rutt popup
-function stangAutoRuttPopup() {
-  setVisaAutoRuttPopup(false);
-  setAutoRuttTyp("");
-  setAutoRuttStartAdress("");
-  setAutoRuttForetagId("");
-  setVisaForetagVal(false);
-}
-
-// Nästa steg i auto-rutt wizard
-function nastaStegAutoRutt() {
-  if (!autoRuttStartAdress) {
-    showPopup("👎 Välj en startadress.", "error", 3000);
-    return;
-  }
-
-  if (autoRuttTyp === "hand-upp" || autoRuttTyp === "hand-ner") {
-    // Visa företagsval
-    setVisaForetagVal(true);
-  } else {
-    // Maskin – beräkna direkt
-    beraknaAutoRutt();
-  }
-}
-
-// Beräkna automatisk rutt
-async function beraknaAutoRutt() {
-  setRuttStatus("Beräknar automatisk rutt...");
-  setVisaAutoRuttPopup(false);
-
-  let filtreradeAdresser = [];
-
-  if (autoRuttTyp === "hand-upp" || autoRuttTyp === "hand-ner") {
-    // För Hand: Bostäder + eventuellt företag
-    filtreradeAdresser = adresser.filter(
-      (a) => a.bostad_foretag === "Bostad"
-    );
-
-   if (autoRuttForetagId && autoRuttForetagId !== "NEJ" && autoRuttForetagId !== "VÄLJ") {
-  const foretag = adresser.find((a) => a.id === Number(autoRuttForetagId));
-
-    // Sortera efter prio
-    filtreradeAdresser.sort((a, b) => {
-      const prioA = a.prio || 9999;
-      const prioB = b.prio || 9999;
-      if (autoRuttTyp === "hand-upp") {
-        return prioA - prioB; // Uppifrån & Ner
-      } else {
-        return prioB - prioA; // Nerifrån & Upp
-      }
-    });
-  } else if (autoRuttTyp === "maskin") {
-    // Maskin: Alla företag
-    filtreradeAdresser = adresser.filter(
-      (a) => a.bostad_foretag === "Företag"
-    );
-  }
-
-  if (filtreradeAdresser.length === 0) {
-    showPopup("👎 Inga adresser matchade kriterierna.", "error", 3000);
-    setRuttStatus("");
-    return;
-  }
-
-  // Rensa gammal väntande rutt
-  const tabell = autoRuttTyp === "maskin" ? "vantande_maskin_rutt" : "vantande_rutt";
-  await supabase.from(tabell).delete().neq("id", 0);
-
-  // Spara adresser
-  const rader = filtreradeAdresser.map((a) => ({
-    adress_id: a.id,
-  }));
-
-  const { error } = await supabase.from(tabell).insert(rader);
-
-  if (error) {
-    showPopup("👎 Kunde inte spara automatisk rutt.", "error", 3000);
-    setRuttStatus("❌ Fel vid sparning.");
-  } else {
-    showPopup("👍 Automatisk rutt skapad!", "success", 4000);
-    setRuttStatus("✅ Automatisk rutt sparad.");
-    
-    if (autoRuttTyp === "maskin") {
-      await laddaVantandeMaskinRutt();
-    } else {
-      await laddaVantandeRutt();
-    }
-  }
-
-  // Rensa state
-  setAutoRuttTyp("");
-  setAutoRuttStartAdress("");
-  setAutoRuttForetagId("");
-  setVisaForetagVal(false);
-}
-
 // Ladda aktiv rutt från databasen (utan nested relation)
 async function laddaAktivRutt() {
   console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
@@ -1867,17 +1656,18 @@ async function laddaVantandeRutt() {
   }
 }
 
-// Öppna popup för att välja adresser till rutt (För Hand)
+// Öppna popup för att välja adresser till rutt
 function oppnaRuttPopup() {
-  const sorterade = [...adresser].sort((a, b) => {
-    const prioA = a.prio || 9999;
-    const prioB = b.prio || 9999;
-    return prioA - prioB;
-  });
   setValjbaraRuttAdresser(
-    sorterade.map((a) => ({ ...a, vald: false, ordning: 0 }))
+    adresser.map((a) => ({ ...a, vald: false, ordning: 0 }))
   );
   setVisaRuttPopup(true);
+}
+
+// Stäng popup
+function stangRuttPopup() {
+  setVisaRuttPopup(false);
+  setValjbaraRuttAdresser([]);
 }
 
 // Toggla adress i popup
@@ -2920,106 +2710,15 @@ function avbrytRadering() {
         </div>
       )}
 
-      {/* För Hand - Manuell */}
-<button
-  onClick={oppnaRuttPopup}
-  style={{
-    ...primaryButton,
-    backgroundColor: "#10b981",
-  }}
->
-  Välj adresser & planera rutt - För Hand
-</button>
-
-{/* För Hand - Automatiska rutter */}
-<div
-  style={{
-    marginTop: 12,
-    padding: "12px 16px",
-    borderRadius: 12,
-    backgroundColor: "#f0fdf4",
-    border: "1px solid #86efac",
-  }}
->
-  <strong style={{ fontSize: 14, color: "#166534" }}>
-    Automatiska rutter - För Hand:
-  </strong>
-  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-    <button
-      onClick={() => startaAutoRutt("hand-upp")}
-      style={{
-        flex: 1,
-        padding: "8px 12px",
-        borderRadius: 999,
-        border: "none",
-        backgroundColor: "#22c55e",
-        color: "#ffffff",
-        fontWeight: 600,
-        fontSize: 13,
-      }}
-    >
-      ⬆️ Uppifrån & Ner
-    </button>
-    <button
-      onClick={() => startaAutoRutt("hand-ner")}
-      style={{
-        flex: 1,
-        padding: "8px 12px",
-        borderRadius: 999,
-        border: "none",
-        backgroundColor: "#22c55e",
-        color: "#ffffff",
-        fontWeight: 600,
-        fontSize: 13,
-      }}
-    >
-      ⬇️ Nerifrån & Upp
-    </button>
-  </div>
-</div>
-
-{/* För Maskin - Manuell */}
-<button
-  onClick={oppnaMaskinRuttPopup}
-  style={{
-    ...primaryButton,
-    backgroundColor: "#f59e0b",
-    marginTop: 12,
-  }}
->
-  Välj adresser & planera rutt - För Maskin
-</button>
-
-{/* För Maskin - Automatisk rutt */}
-<div
-  style={{
-    marginTop: 12,
-    padding: "12px 16px",
-    borderRadius: 12,
-    backgroundColor: "#fffbeb",
-    border: "1px solid #fcd34d",
-  }}
->
-  <strong style={{ fontSize: 14, color: "#92400e" }}>
-    Automatisk rutt - För Maskin:
-  </strong>
-  <button
-    onClick={() => startaAutoRutt("maskin")}
-    style={{
-      width: "100%",
-      marginTop: 8,
-      padding: "8px 12px",
-      borderRadius: 999,
-      border: "none",
-      backgroundColor: "#f59e0b",
-      color: "#ffffff",
-      fontWeight: 600,
-      fontSize: 13,
-    }}
-  >
-    🏢 Alla Företag (optimerad)
-  </button>
-</div>
+      <button
+        onClick={oppnaRuttPopup}
+        style={{
+          ...primaryButton,
+          backgroundColor: "#10b981",
+        }}
+      >
+        Välj adresser & planera rutt
+      </button>
 
       {harVantandeRutt && (
         <div
@@ -3070,59 +2769,6 @@ function avbrytRadering() {
           </div>
         </div>
       )}
-
-      {visaAktiveraMaskinRuttKnapp && (
-  <div
-    style={{
-      marginTop: 12,
-      padding: "12px 16px",
-      borderRadius: 12,
-      backgroundColor: "#fff7ed",
-      color: "#9a3412",
-      fontSize: 14,
-    }}
-  >
-    <strong>🚜 Planerad Maskin-rutt väntar</strong>
-    <p style={{ margin: "4px 0 0", fontSize: 13 }}>
-      {vantandeMaskinRuttAdresser.length} adresser valda. Aktivera vid pass-start.
-    </p>
-    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-      <button
-        onClick={aktiveraVantandeRutt}
-        style={{
-          flex: 1,
-          padding: "8px 12px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#f59e0b",
-          color: "#ffffff",
-          fontWeight: 600,
-          fontSize: 13,
-        }}
-      >
-        ✅ Aktivera maskin-rutt nu
-      </button>
-      <button
-        onClick={raderaVantandeMaskinRutt}
-        style={{
-          flex: 1,
-          padding: "8px 12px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          fontWeight: 600,
-          fontSize: 13,
-        }}
-      >
-        🗑️ Radera
-      </button>
-    </div>
-  </div>
-)}
-
-
-      
 
       <button
         onClick={laddaAdresser}
@@ -3665,28 +3311,29 @@ return (
       </header>
 
       {popup && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 9999,
-            padding: "24px 32px",
-            borderRadius: 24,
-            border: `2px solid ${popup.type === "error" ? "#b91c1c" : "#15803d"}`,
-            backgroundColor: popup.type === "error" ? "#dc2626" : "#16a34a",
-            color: "#ffffff",
-            fontSize: 20,
-            fontWeight: 600,
-            textAlign: "center",
-            maxWidth: "80%",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          {popup.text}
-        </div>
-      )}
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      // 🔼 Lägg den ovanför allt annat:
+      zIndex: 9999,
+      padding: "24px 32px",
+      borderRadius: 24,
+      border: `2px solid ${popupStyle.borderColor}`,
+      backgroundColor: popupStyle.backgroundColor,
+      color: popupStyle.color,
+      fontSize: 20,
+      fontWeight: 600,
+      textAlign: "center",
+      maxWidth: "80%",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    }}
+  >
+    {popup.text}
+  </div>
+)}
 
       {deleteConfirm && (
         <div
@@ -3751,9 +3398,528 @@ return (
         </div>
       )}
 
+      {visaEditPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 150,
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+      Editera rapport
+    </h3>
+
+    <select
+      value={valdaEditId || ""}
+      onChange={(e) => onChangeValdEditId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      {editRapporter.map((r) => (
+        <option key={r.id} value={r.id}>
+          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "grid", gap: 8 }}>
+      <label>
+        Datum:
+        <input
+          type="date"
+          value={editForm.datum}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, datum: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+      <label>
+        Arbetstid (minuter):
+        <input
+          type="number"
+          value={editForm.arbetstid_min}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, arbetstid_min: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+      <label>
+        Arbetstyp:
+        <select
+          value={editForm.team_namn}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, team_namn: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option>För hand</option>
+          <option>Maskin</option>
+        </select>
+      </label>
+
+      <label>
+        Antal anställda:
+        <select
+          value={editForm.antal_anstallda}
+          onChange={(e) =>
+            setEditForm((f) => ({
+              ...f,
+              antal_anstallda: Number(e.target.value),
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Grus (kg):
+        <select
+          value={editForm.sand_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, sand_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {[...Array(51)].map((_, i) => (
+            <option key={i} value={i}>
+              {i}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Salt (kg):
+        <select
+          value={editForm.salt_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, salt_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+            <option key={v} value={v}>{v}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        marginTop: 12,
+      }}
+    >
+      {[
+        ["syfteOversyn", "Översyn"],
+        ["syfteRojning", "Röjning"],
+        ["syfteSaltning", "Saltning"],
+        ["syfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={editForm[key]}
+            onChange={(e) =>
+              setEditForm((f) => ({ ...f, [key]: e.target.checked }))
+            }
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 16,
+      }}
+    >
+      <button
+        onClick={sparaEditRapport}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+        }}
+      >
+        Spara
+      </button>
+      <button
+  onClick={() => setVisaEditPopup(false)}
+  style={{
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#dc2626",   // 🔴 röd bakgrund
+    color: "#ffffff",
+    fontWeight: 600,
+  }}
+>
+  Avbryt
+</button>
+    </div>
+  </div>
+)}
+
+      {visaRuttPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 140,
+      backgroundColor: "#ffffff",
+      border: "2px solid #10b981",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      maxHeight: "80vh",
+      overflowY: "auto",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#065f46" }}>
+      Välj adresser för rutt
+    </h3>
+    <p style={{ fontSize: 13, color: "#6b7280" }}>
+      Markera de adresser du vill köra. Google optimerar ordningen.
+    </p>
+
+    {valjbaraRuttAdresser.map((a) => (
+      <label
+        key={a.id}
+        style={{
+          display: "block",
+          marginBottom: 8,
+          fontSize: 14,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={a.vald}
+          onChange={(e) => toggleRuttAdress(a.id, e.target.checked)}
+          style={{ marginRight: 8 }}
+        />
+        {a.namn}
+      </label>
+    ))}
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+  <button
+    onClick={sparaPlaneradRutt}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#f59e0b",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    💾 Spara som planerad rutt
+  </button>
+  <button
+    onClick={stangRuttPopup}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Avbryt
+  </button>
+</div>
+  </div>
+)}
+      
+{visaManuellPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#ffffff",
+      border: "2px solid #facc15",
+      borderRadius: 12,
+      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+      padding: 24,
+      zIndex: 120,
+      width: "90%",
+      maxWidth: 420,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#854d0e" }}>
+      Manuell registrering
+    </h3>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
+    <select
+      value={manuellAdressId}
+      onChange={(e) => setManuellAdressId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option value="">-- Välj adress --</option>
+      {adresser.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.namn}
+        </option>
+      ))}
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
+    <select
+      value={manuellTeam}
+      onChange={(e) => setManuellTeam(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option>För hand</option>
+      <option>Maskin</option>
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Antal anställda</label>
+    <select
+      value={manuellAntalAnstallda}
+      onChange={(e) => setManuellAntalAnstallda(Number(e.target.value))}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+      {[
+        ["manSyfteOversyn", "Översyn"],
+        ["manSyfteRojning", "Röjning"],
+        ["manSyfteSaltning", "Saltning"],
+        ["manSyfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={eval(key)}
+            onChange={(e) => {
+              switch (key) {
+                case "manSyfteOversyn":
+                  setManSyfteOversyn(e.target.checked);
+                  break;
+                case "manSyfteRojning":
+                  setManSyfteRojning(e.target.checked);
+                  break;
+                case "manSyfteSaltning":
+                  setManSyfteSaltning(e.target.checked);
+                  break;
+                case "manSyfteGrusning":
+                  setManSyfteGrusning(e.target.checked);
+                  break;
+              }
+            }}
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <label>Datum:</label>
+    <input
+      type="date"
+      value={manuellDatum}
+      onChange={(e) => setManuellDatum(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Arbetstid (minuter)</label>
+    <input
+      type="number"
+      value={manuellTidMin}
+      onChange={(e) => setManuellTidMin(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Grus (kg)</label>
+    <select
+      value={manuellSand}
+      onChange={(e) => setManuellSand(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {[...Array(51)].map((_, i) => (
+        <option key={i} value={i}>
+          {i}
+        </option>
+      ))}
+    </select>
+
+    <label>Salt (kg)</label>
+    <select
+      value={manuellSalt}
+      onChange={(e) => setManuellSalt(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 16,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <button
+        onClick={sparaManuellRapport}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Spara manuellt
+      </button>
+      <button
+        onClick={closeManuellPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+      
       {renderContent()}
     </div>
 
+    {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
     <nav
       style={{
         position: "fixed",
@@ -3769,6 +3935,7 @@ return (
         boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
       }}
     >
+      {/* Rad 1: Info + Start/Stop + Registrera */}
       <div
         style={{
           display: "flex",
@@ -3786,7 +3953,8 @@ return (
             border: "1px solid #facc15",
             fontSize: 14,
             fontWeight: 600,
-            backgroundColor: activeTab === "info" ? "#facc15" : "#fef08a",
+            backgroundColor:
+              activeTab === "info" ? "#facc15" : "#fef08a",
             color: "#78350f",
           }}
         >
@@ -3803,7 +3971,8 @@ return (
             border: "1px solid #facc15",
             fontSize: 14,
             fontWeight: 600,
-            backgroundColor: activeTab === "startstop" ? "#facc15" : "#fef08a",
+            backgroundColor:
+              activeTab === "startstop" ? "#facc15" : "#fef08a",
             color: "#78350f",
           }}
         >
@@ -3820,7 +3989,8 @@ return (
             border: "1px solid #facc15",
             fontSize: 14,
             fontWeight: 600,
-            backgroundColor: activeTab === "registrera" ? "#facc15" : "#fef08a",
+            backgroundColor:
+              activeTab === "registrera" ? "#facc15" : "#fef08a",
             color: "#78350f",
           }}
         >
@@ -3828,6 +3998,7 @@ return (
         </button>
       </div>
 
+      {/* Rad 2: Karta + Veckorapport + Radera */}
       <div
         style={{
           display: "flex",
@@ -3835,38 +4006,40 @@ return (
         }}
       >
         <button
-          onClick={() => setActiveTab("rutt")}
-          style={{
-            flex: 1,
-            marginRight: 4,
-            padding: "10px 4px",
-            borderRadius: 999,
-            border: "1px solid #10b981",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor: activeTab === "rutt" ? "#10b981" : "#d1fae5",
-            color: activeTab === "rutt" ? "#ffffff" : "#065f46",
-          }}
-        >
-          Rutt
-        </button>
-        <button
-          onClick={() => setActiveTab("karta")}
-          style={{
-            flex: 1,
-            margin: "0 4px",
-            padding: "10px 4px",
-            borderRadius: 999,
-            border: "1px solid #facc15",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor: activeTab === "karta" ? "#facc15" : "#fef08a",
-            color: "#78350f",
-          }}
-        >
-          Karta
-        </button>
-
+  onClick={() => setActiveTab("rutt")}
+  style={{
+    flex: 1,
+    marginRight: 4,
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #10b981",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "rutt" ? "#10b981" : "#d1fae5",
+    color: activeTab === "rutt" ? "#ffffff" : "#065f46",
+  }}
+>
+  Rutt
+</button>
+<button
+  onClick={() => setActiveTab("karta")}
+  style={{
+    flex: 1,
+    margin: "0 4px",
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #facc15",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "karta" ? "#facc15" : "#fef08a",
+    color: "#78350f",
+  }}
+>
+  Karta
+</button>
+        
         <button
           onClick={() => setActiveTab("rapport")}
           style={{
@@ -3877,7 +4050,8 @@ return (
             border: "1px solid #facc15",
             fontSize: 13,
             fontWeight: 600,
-            backgroundColor: activeTab === "rapport" ? "#facc15" : "#fef08a",
+            backgroundColor:
+              activeTab === "rapport" ? "#facc15" : "#fef08a",
             color: "#78350f",
           }}
         >
@@ -3893,7 +4067,8 @@ return (
             border: "1px solid #ef4444",
             fontSize: 13,
             fontWeight: 600,
-            backgroundColor: activeTab === "radera" ? "#ef4444" : "#fecaca",
+            backgroundColor:
+              activeTab === "radera" ? "#ef4444" : "#fecaca",
             color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
           }}
         >
