@@ -1751,12 +1751,8 @@ async function beraknaAutoRutt() {
       (a) => a.bostad_foretag === "Bostad"
     );
 
-    if (autoRuttForetagId) {
-      const foretag = adresser.find((a) => a.id === Number(autoRuttForetagId));
-      if (foretag) {
-        filtreradeAdresser.push(foretag);
-      }
-    }
+   if (autoRuttForetagId && autoRuttForetagId !== "NEJ" && autoRuttForetagId !== "VÄLJ") {
+  const foretag = adresser.find((a) => a.id === Number(autoRuttForetagId));
 
     // Sortera efter prio
     filtreradeAdresser.sort((a, b) => {
@@ -4005,7 +4001,7 @@ return (
     }}
   >
     <h3 style={{ marginTop: 0, fontSize: 18, color: "#065f46" }}>
-      Välj adresser för rutt
+      Välj adresser för För Hand-rutt
     </h3>
     <p style={{ fontSize: 13, color: "#6b7280" }}>
       Markera de adresser du vill köra. Google optimerar ordningen.
@@ -4026,38 +4022,38 @@ return (
           onChange={(e) => toggleRuttAdress(a.id, e.target.checked)}
           style={{ marginRight: 8 }}
         />
-        {a.namn}
+        {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
       </label>
     ))}
 
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-  <button
-    onClick={sparaPlaneradRutt}
-    style={{
-      padding: "10px 16px",
-      borderRadius: 999,
-      border: "none",
-      backgroundColor: "#f59e0b",
-      color: "#ffffff",
-      fontWeight: 600,
-    }}
-  >
-    💾 Spara som planerad rutt
-  </button>
-  <button
-    onClick={stangRuttPopup}
-    style={{
-      padding: "10px 16px",
-      borderRadius: 999,
-      border: "none",
-      backgroundColor: "#dc2626",
-      color: "#ffffff",
-      fontWeight: 600,
-    }}
-  >
-    Avbryt
-  </button>
-</div>
+      <button
+        onClick={sparaPlaneradRutt}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#10b981",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        💾 Spara som planerad För Hand-rutt
+      </button>
+      <button
+        onClick={stangRuttPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
   </div>
 )}
 
@@ -4087,24 +4083,24 @@ return (
       Markera de adresser du vill köra med maskin. Google optimerar ordningen.
     </p>
 
-    {valjbaraMaskinRuttAdresser.map((a) => (
-      <label
-        key={a.id}
-        style={{
-          display: "block",
-          marginBottom: 8,
-          fontSize: 14,
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={a.vald}
-          onChange={(e) => toggleMaskinRuttAdress(a.id, e.target.checked)}
-          style={{ marginRight: 8 }}
-        />
-        {a.namn}
-      </label>
-    ))}
+   {valjbaraMaskinRuttAdresser.map((a) => (
+  <label
+    key={a.id}
+    style={{
+      display: "block",
+      marginBottom: 8,
+      fontSize: 14,
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={a.vald}
+      onChange={(e) => toggleMaskinRuttAdress(a.id, e.target.checked)}
+      style={{ marginRight: 8 }}
+    />
+    {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
+  </label>
+))}
 
     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
       <button
@@ -4160,7 +4156,8 @@ return (
       {autoRuttTyp === "maskin" && "Automatisk Maskin-rutt"}
     </h3>
 
-    {!visaForetagVal ? (
+    {/* STEG 1: Välj startadress */}
+    {!visaForetagVal && !autoRuttStartAdress && (
       <>
         <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
           Välj vilken adress du startar från:
@@ -4187,14 +4184,24 @@ return (
             })
             .map((a) => (
               <option key={a.id} value={a.id}>
-                {a.prio ? `${a.prio}. ` : ""}{a.namn}
+                {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
               </option>
             ))}
         </select>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button
-            onClick={nastaStegAutoRutt}
+            onClick={() => {
+              if (!autoRuttStartAdress) {
+                showPopup("👎 Välj en startadress.", "error", 3000);
+                return;
+              }
+              if (autoRuttTyp === "maskin") {
+                beraknaAutoRutt();
+              } else {
+                setVisaForetagVal(true);
+              }
+            }}
             style={{
               padding: "10px 16px",
               borderRadius: 999,
@@ -4221,13 +4228,74 @@ return (
           </button>
         </div>
       </>
-    ) : (
+    )}
+
+    {/* STEG 2: JA/NEJ för företag (endast För Hand) */}
+    {visaForetagVal && !autoRuttForetagId && autoRuttForetagId !== "NEJ" && (
       <>
         <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
           Vill du lägga till ett företag i rutten?
         </p>
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <button
+            onClick={() => setAutoRuttForetagId("VÄLJ")}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            ✅ Ja
+          </button>
+          <button
+            onClick={() => {
+              setAutoRuttForetagId("NEJ");
+              beraknaAutoRutt();
+            }}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#dc2626",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            ❌ Nej
+          </button>
+        </div>
+
+        <button
+          onClick={stangAutoRuttPopup}
+          style={{
+            width: "100%",
+            padding: "10px 16px",
+            borderRadius: 999,
+            border: "none",
+            backgroundColor: "#9ca3af",
+            color: "#ffffff",
+            fontWeight: 600,
+          }}
+        >
+          Avbryt
+        </button>
+      </>
+    )}
+
+    {/* STEG 3: Välj företag från dropdown */}
+    {autoRuttForetagId === "VÄLJ" && (
+      <>
+        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
+          Välj vilket företag:
+        </p>
         <select
-          value={autoRuttForetagId}
+          value={autoRuttForetagId === "VÄLJ" ? "" : autoRuttForetagId}
           onChange={(e) => setAutoRuttForetagId(e.target.value)}
           style={{
             width: "100%",
@@ -4239,7 +4307,7 @@ return (
             marginBottom: 16,
           }}
         >
-          <option value="">-- Inget företag --</option>
+          <option value="">-- Välj företag --</option>
           {adresser
             .filter((a) => a.bostad_foretag === "Företag")
             .sort((a, b) => {
@@ -4249,14 +4317,20 @@ return (
             })
             .map((a) => (
               <option key={a.id} value={a.id}>
-                {a.prio ? `${a.prio}. ` : ""}{a.namn}
+                {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
               </option>
             ))}
         </select>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <button
-            onClick={beraknaAutoRutt}
+            onClick={() => {
+              if (!autoRuttForetagId || autoRuttForetagId === "VÄLJ") {
+                showPopup("👎 Välj ett företag eller gå tillbaka.", "error", 3000);
+                return;
+              }
+              beraknaAutoRutt();
+            }}
             style={{
               padding: "10px 16px",
               borderRadius: 999,
