@@ -2895,7 +2895,7 @@ async function rensaRutt() {
               </div>
             ))}
           </div>
-       </div>
+        </div>
       )}
 
       {ruttAdresser.length === 0 && !harVantandeRutt && (
