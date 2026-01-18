@@ -3620,6 +3620,7 @@ return (
     Avbryt
   </button>
 </div>
+  </div>
 )}
       
 {visaManuellPopup && (
