@@ -2895,7 +2895,7 @@ async function rensaRutt() {
               </div>
             ))}
           </div>
-        </div>
+       </div>
       )}
 
       {ruttAdresser.length === 0 && !harVantandeRutt && (
@@ -2914,13 +2914,13 @@ async function rensaRutt() {
     </section>
   );
 }
-    
+
 if (activeTab === "info") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 20,
+  return (
+    <section style={sectionStyle}>
+      <h2
+        style={{
+          fontSize: 20,
               marginTop: 0,
               marginBottom: 12,
             }}
