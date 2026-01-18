@@ -2991,6 +2991,77 @@ if (activeTab === "info") {
             <strong> "Öppna karta för vald adress"</strong>. Kartlänken öppnas i ny flik
             i exempelvis Google Maps.
           </p>
+          <h3 style={{ marginTop: 16 }}>🚗 Rutt (optimerad körordning)</h3>
+<p style={{ fontSize: 14, lineHeight: 1.6 }}>
+  <strong>Rutt-funktionen</strong> hjälper dig att planera och köra så effektivt som möjligt
+  genom att automatiskt beräkna den <strong>kortaste vägen</strong> mellan alla adresser.
+  Google Maps optimerar ordningen åt dig baserat på avstånd och restid.
+  <br /><br />
+  
+  <strong>📋 Så här planerar du en rutt (före passet):</strong><br />
+  1. Gå till fliken <strong>Rutt</strong><br />
+  2. Tryck <strong>"Välj adresser & planera rutt"</strong><br />
+  3. Kryssa i alla adresser du ska köra under passet<br />
+  4. Tryck <strong>"💾 Spara som planerad rutt"</strong><br />
+  5. ✅ Rutten sparas i systemet – alla användare som loggar in ser nu samma planerade rutt<br />
+  <br />
+  
+  <strong>✅ Aktivera rutten (när passet startar):</strong><br />
+  1. Starta ditt arbetspass i <strong>Start/Stop</strong>-fliken<br />
+  2. Gå till <strong>Rutt</strong> → Tryck <strong>"✅ Aktivera rutt nu"</strong><br />
+  3. Tillåt GPS-åtkomst om appen frågar (se instruktioner nedan)<br />
+  4. <strong>Om GPS fungerar:</strong> Rutten optimeras från din faktiska position<br />
+  5. <strong>Om GPS saknas/nekas:</strong> Rutten beräknas från första adressen i listan<br />
+  6. Google Maps beräknar automatiskt kortaste vägen mellan alla stopp<br />
+  <br />
+  
+  <strong>📍 Arbeta enligt rutten:</strong><br />
+  – Högst upp i <strong>Rutt</strong>-fliken ser du <strong>"🚗 Nästa stopp"</strong> – dit ska du åka nu<br />
+  – Gå till <strong>Registrera</strong>-fliken och fyll i uppgifter för jobbet<br />
+  – När du sparar rapporten bockas adressen automatiskt av i rutten (✅)<br />
+  – Nästa adress i ordningen visas direkt som "Nästa stopp"<br />
+  – Tryck <strong>"🗺️ Öppna rutt i Google Maps"</strong> för turn-by-turn vägbeskrivning<br />
+  <br />
+  
+  <strong>🔴 Adresser utan GPS-koordinater:</strong><br />
+  – Visas med <strong>röd bakgrund</strong> och märket <strong>"(Ingen GPS)"</strong><br />
+  – Läggs automatiskt <strong>sist i rutten</strong> (efter alla optimerade stopp)<br />
+  – Du kan fortfarande registrera jobb på dem – avbockning fungerar normalt<br />
+  – Uppdatera GPS-koordinater i Supabase för att inkludera dem i optimeringen<br />
+  <br />
+  
+  <strong>🔄 Uppdatera eller ändra rutt:</strong><br />
+  – <strong>"Uppdatera adresser"</strong> – Hämtar senaste GPS-data från databasen<br />
+  – <strong>"🗑️ Radera"</strong> (gul ruta) – Tar bort planerad rutt innan aktivering<br />
+  – <strong>"🗑️ Rensa rutt"</strong> (röd knapp) – Tar bort aktiv rutt och börjar om<br />
+  <br />
+  
+  <strong>💡 Smarta tips:</strong><br />
+  – <strong>Planera kvällen innan</strong> – då är allt klart när passet startar på morgonen<br />
+  – <strong>Teamsamordning</strong> – alla som loggar in ser samma planerade rutt (perfekt för koordinering)<br />
+  – <strong>Adresslistan sorteras alltid i samma ordning</strong> – lätt att hitta rätt adress<br />
+  – <strong>Rutten sparas tills någon aktiverar den</strong> – kan ligga och vänta flera dagar<br />
+  – <strong>GPS valfri</strong> – rutten fungerar även utan GPS-åtkomst (startar från första adressen)<br />
+  <br />
+  
+  <strong>📱 GPS-åtkomst (iPhone/Safari):</strong><br />
+  Om appen frågar om GPS-tillstånd och du nekar av misstag:<br />
+  1. Öppna <strong>Inställningar</strong> på din iPhone<br />
+  2. Scrolla ner och välj <strong>Safari</strong><br />
+  3. Tryck på <strong>"Plats"</strong><br />
+  4. Välj <strong>"Tillåt"</strong> eller <strong>"Fråga"</strong><br />
+  5. Ladda om sidan och tryck "Aktivera rutt nu" igen<br />
+  <br />
+  
+  <strong>🎯 Exempel på arbetsflöde:</strong><br />
+  <em>Kväll före passet:</em> Planera rutt med 8 adresser → Spara<br />
+  <em>Morgon, 06:00:</em> Starta pass → Aktivera rutt → GPS hämtas → Rutt optimerad från din position<br />
+  <em>Stopp 1:</em> Registrera → Spara → Bockas av ✅<br />
+  <em>Stopp 2:</em> Visas som "Nästa stopp" → Öppna Google Maps för vägbeskrivning<br />
+  <em>...och så vidare tills alla 8 stopp är klara!</em>
+</p>
+
+<h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
 
           <h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
           <p style={{ fontSize: 14, lineHeight: 1.6 }}>
