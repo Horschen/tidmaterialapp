@@ -718,7 +718,7 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
   async function sparaRapport() {
     if (!validateBeforeSaveFields()) return;
 
-    const metod = team === "För hand" ? "hand" : "maskin";
+    const metod = team === "För hand" ? "hand" : "maskin";
     const syfteText = buildSyfteString();
 
     let arbetstidMin = 0;
@@ -783,6 +783,7 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
         skyddad: true,
       },
     ]);
+    
     if (error) {
       setStatus("❌ " + error.message);
       showPopup("👎 Fel vid sparning", "error", 3000);
@@ -799,7 +800,7 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
       
-// Bocka av adress i aktiv rutt
+      // Bocka av adress i aktiv rutt
       await bockAvAdressIRutt(valda);
       
       setPaus(null);
