@@ -472,6 +472,7 @@ const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, o
 const [visaRuttPopup, setVisaRuttPopup] = useState(false);
 const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]); // För checkboxar i popup
 const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Maps route data
+const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
   
   // Popup-notis
   const [popup, setPopup] = useState(null);
@@ -604,6 +605,23 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
     }
   }, []);
 
+  // ======= Ladda adresser (manuellt eller vid start) =======
+async function laddaAdresser() {
+  const { data, error } = await supabase
+    .from("adresser")
+    .select("id, namn, gps_url, maskin_mojlig, lat, lng");
+  if (error) {
+    setRuttStatus("❌ Fel vid laddning av adresser: " + error.message);
+  } else {
+    setAdresser(data || []);
+    setRuttStatus("✅ Adresser uppdaterade.");
+  }
+}
+
+useEffect(() => {
+  laddaAdresser();
+}, []);
+  
   // ======= Hämta adresser =======
   useEffect(() => {
     async function laddaAdresser() {
@@ -1688,9 +1706,10 @@ async function laddaAktivRutt() {
 
   if (error) {
     console.error(error);
-    setStatus("❌ Kunde inte ladda rutt.");
+    setRuttStatus("❌ Kunde inte ladda rutt.");
   } else {
     setRuttAdresser(data || []);
+    setRuttStatus(""); // Rensa felmeddelande
   }
 }
 
@@ -2447,6 +2466,24 @@ async function rensaRutt() {
         Rutt (optimerad)
       </h2>
 
+      {ruttStatus && (
+        <p
+          style={{
+            marginTop: 8,
+            marginBottom: 12,
+            fontSize: 13,
+            color: ruttStatus.startsWith("✅")
+              ? "#16a34a"
+              : ruttStatus.startsWith("❌")
+              ? "#dc2626"
+              : "#4b5563",
+            textAlign: "center",
+          }}
+        >
+          {ruttStatus}
+        </p>
+      )}
+
       {nastaAdress && (
         <div
           style={{
@@ -2471,6 +2508,16 @@ async function rensaRutt() {
         }}
       >
         Välj adresser & beräkna rutt
+      </button>
+
+      <button
+        onClick={laddaAdresser}
+        style={{
+          ...secondaryButton,
+          marginTop: 8,
+        }}
+      >
+        Uppdatera adresser
       </button>
 
       <button
