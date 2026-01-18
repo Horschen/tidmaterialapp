@@ -2710,108 +2710,219 @@ function avbrytRadering() {
         </div>
       )}
 
-     <button
-  onClick={oppnaRuttPopup}
-  style={{
-    ...primaryButton,
-    backgroundColor: "#10b981",
-  }}
->
-  Välj adresser & planera rutt
-</button>
-
-{harVantandeRutt && (
-  <div
-    style={{
-      marginTop: 12,
-      padding: "12px 16px",
-      borderRadius: 12,
-      backgroundColor: "#fef3c7",
-      color: "#92400e",
-      fontSize: 14,
-    }}
-  >
-    <strong>📋 Planerad rutt väntar</strong>
-    <p style={{ margin: "4px 0 0", fontSize: 13 }}>
-      {vantandeRuttAdresser.length} adresser valda. Aktivera vid pass-start för optimal rutt från din position.
-    </p>
-    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
       <button
-        onClick={aktiveraVantandeRutt}
+        onClick={oppnaRuttPopup}
         style={{
-          flex: 1,
-          padding: "8px 12px",
-          borderRadius: 999,
-          border: "none",
+          ...primaryButton,
           backgroundColor: "#10b981",
-          color: "#ffffff",
-          fontWeight: 600,
-          fontSize: 13,
         }}
       >
-        ✅ Aktivera rutt nu
+        Välj adresser & planera rutt
       </button>
+
+      {harVantandeRutt && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: "12px 16px",
+            borderRadius: 12,
+            backgroundColor: "#fef3c7",
+            color: "#92400e",
+            fontSize: 14,
+          }}
+        >
+          <strong>📋 Planerad rutt väntar</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+            {vantandeRuttAdresser.length} adresser valda. Aktivera vid pass-start för optimal rutt från din position.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button
+              onClick={aktiveraVantandeRutt}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#10b981",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              ✅ Aktivera rutt nu
+            </button>
+            <button
+              onClick={raderaVantandeRutt}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#dc2626",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              🗑️ Radera
+            </button>
+          </div>
+        </div>
+      )}
+
       <button
-        onClick={raderaVantandeRutt}
+        onClick={laddaAdresser}
         style={{
-          flex: 1,
-          padding: "8px 12px",
-          borderRadius: 999,
-          border: "none",
+          ...secondaryButton,
+          marginTop: 8,
+        }}
+      >
+        Uppdatera adresser
+      </button>
+
+      {ruttAdresser.length > 0 && (
+        <button
+          onClick={() => {
+            // Öppna hela rutten i Google Maps
+            const coords = ruttAdresser
+              .map((r) => `${r.adresser.lat},${r.adresser.lng}`)
+              .join("/");
+            const url = `https://www.google.com/maps/dir/${coords}`;
+            window.open(url, "_blank");
+          }}
+          style={{
+            ...secondaryButton,
+            marginTop: 8,
+            backgroundColor: "#3b82f6",
+            color: "#ffffff",
+          }}
+        >
+          🗺️ Öppna rutt i Google Maps
+        </button>
+      )}
+
+      <button
+        onClick={rensaRutt}
+        style={{
+          ...secondaryButton,
+          marginTop: 8,
           backgroundColor: "#dc2626",
           color: "#ffffff",
-          fontWeight: 600,
-          fontSize: 13,
         }}
       >
-        🗑️ Radera
+        🗑️ Rensa rutt
       </button>
-    </div>
-  </div>
-)}
 
-<button
-  onClick={laddaAdresser}
-  style={{
-    ...secondaryButton,
-    marginTop: 8,
-  }}
->
-  Uppdatera adresser
-</button>
+      {ruttAdresser.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 16, marginBottom: 8 }}>Din rutt:</h3>
+          <div
+            style={{
+              backgroundColor: "#f9fafb",
+              borderRadius: 12,
+              padding: 12,
+            }}
+          >
+            {ruttAdresser.map((r, idx) => {
+              const harGPS = r.adresser?.lat && r.adresser?.lng;
+              
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "10px 12px",
+                    marginBottom: 8,
+                    borderRadius: 8,
+                    backgroundColor: r.avklarad 
+                      ? "#d1fae5" 
+                      : !harGPS 
+                      ? "#fee2e2" 
+                      : "#ffffff",
+                    border: r.avklarad
+                      ? "2px solid #10b981"
+                      : !harGPS
+                      ? "2px solid #dc2626"
+                      : "1px solid #e5e7eb",
+                    textDecoration: r.avklarad ? "line-through" : "none",
+                    color: r.avklarad 
+                      ? "#065f46" 
+                      : !harGPS 
+                      ? "#7f1d1d" 
+                      : "#111827",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      backgroundColor: r.avklarad 
+                        ? "#10b981" 
+                        : !harGPS 
+                        ? "#dc2626" 
+                        : "#3b82f6",
+                      color: "#ffffff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      marginRight: 12,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {idx + 1}
+                  </div>
+                  <div style={{ flex: 1, fontSize: 14 }}>
+                    <strong>{r.adresser?.namn}</strong>
+                    {!harGPS && (
+                      <span style={{ marginLeft: 8, fontSize: 11, color: "#dc2626" }}>
+                        (Ingen GPS)
+                      </span>
+                    )}
+                    {r.avklarad && (
+                      <span style={{ marginLeft: 8, fontSize: 16 }}>✅</span>
+                    )}
+                  </div>
+                  {!r.avklarad && nastaAdress?.id === r.id && (
+                    <div
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: 999,
+                        backgroundColor: "#dbeafe",
+                        color: "#1e40af",
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      NÄSTA
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-{ruttAdresser.length > 0 && (
-  <button
-    onClick={() => {
-      // Öppna hela rutten i Google Maps
-      const coords = ruttAdresser
-        .map((r) => `${r.adresser.lat},${r.adresser.lng}`)
-        .join("/");
-      const url = `https://www.google.com/maps/dir/${coords}`;
-      window.open(url, "_blank");
-    }}
-    style={{
-      ...secondaryButton,
-      marginTop: 8,
-      backgroundColor: "#3b82f6",
-      color: "#ffffff",
-    }}
-  >
-    🗺️ Öppna rutt i Google Maps
-  </button>
-)}
-
-<button
-  onClick={rensaRutt}
-  style={{
-    ...secondaryButton,
-    marginTop: 8,
-    backgroundColor: "#dc2626",
-    color: "#ffffff",
-  }}
->
-  🗑️ Rensa rutt
-</button>
+      {ruttAdresser.length === 0 && !harVantandeRutt && (
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: 14,
+            color: "#6b7280",
+            textAlign: "center",
+            fontStyle: "italic",
+          }}
+        >
+          Ingen rutt vald. Tryck "Välj adresser & planera rutt" för att börja.
+        </p>
+      )}
+    </section>
+  );
+}
 
 if (activeTab === "info") {
   return (
