@@ -634,6 +634,43 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
     }
   }
 
+  // ======= Hämta rapporter =======
+async function hamtaRapporter() {
+  const { data, error } = await supabase
+    .from("rapporter")
+    .select(
+      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
+    )
+    .order("datum", { ascending: false });
+  if (error) {
+    setStatus("❌ " + error.message);
+    showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
+  } else {
+    setRapporter(data || []);
+    setVisaOversikt(true);
+    setStatus("✅ Rapporter uppdaterade.");
+  }
+}
+
+// ======= Hämta adresser =======
+useEffect(() => {
+  async function laddaAdresser() {
+    const { data, error } = await supabase
+      .from("adresser")
+      .select("id, namn, gps_url, maskin_mojlig, lat, lng");
+    if (error) setStatus("Fel vid laddning av adresser: " + error.message);
+    else setAdresser(data || []);
+  }
+  laddaAdresser();
+}, []);
+
+// ======= Ladda aktiv rutt vid start (efter inloggning) =======
+useEffect(() => {
+  if (isAuthenticated) {
+    laddaAktivRutt();
+  }
+}, [isAuthenticated]);
+  
   // ======= Validera fält (adress, syfte, material) =======
   function validateBeforeSaveFields() {
     if (!valda) {
@@ -1682,12 +1719,6 @@ async function rensaRutt() {
   }
 }
 
-// Ladda rutt vid start
-useEffect(() => {
-  laddaAktivRutt();
-}, []);
-
-  
 // ====== RADERA-FUNKTIONER =======
   async function raderaRapporter() {
     if (!raderaÅr) {
