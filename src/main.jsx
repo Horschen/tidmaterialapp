@@ -467,6 +467,12 @@ function App() {
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
+// ======= Rutt-flik state =======
+const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
+const [visaRuttPopup, setVisaRuttPopup] = useState(false);
+const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]); // För checkboxar i popup
+const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Maps route data
+  
   // Popup-notis
   const [popup, setPopup] = useState(null);
   function showPopup(text, type = "success", durationMs = 4000) {
@@ -797,6 +803,9 @@ function App() {
     }
   }
 
+// Bocka av adress i aktiv rutt
+await bockAvAdressIRutt(valda);
+  
   // ======= Spara manuell rapport (popup) =======
   async function sparaManuellRapport() {
     if (!validateManuellFields()) return;
@@ -1527,7 +1536,157 @@ function stoppaPass() {
     marginTop: 8,
   };
 
-  // ====== RADERA-FUNKTIONER =======
+  // ======= RUTT-FUNKTIONER =======
+
+// Öppna popup för att välja adresser till rutt
+function oppnaRuttPopup() {
+  setValjbaraRuttAdresser(
+    adresser.map((a) => ({ ...a, vald: false, ordning: 0 }))
+  );
+  setVisaRuttPopup(true);
+}
+
+// Stäng popup
+function stangRuttPopup() {
+  setVisaRuttPopup(false);
+  setValjbaraRuttAdresser([]);
+}
+
+// Toggla adress i popup
+function toggleRuttAdress(adressId, checked) {
+  setValjbaraRuttAdresser((prev) =>
+    prev.map((a) =>
+      a.id === adressId ? { ...a, vald: checked } : a
+    )
+  );
+}
+
+// Beräkna och spara rutt
+async function beraknaRutt() {
+  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
+  
+  if (valda.length < 2) {
+    showPopup("👎 Välj minst 2 adresser för att beräkna rutt.", "error", 3000);
+    return;
+  }
+
+  // Kolla att alla har lat/lng
+  const saknarKoordinater = valda.filter((a) => !a.lat || !a.lng);
+  if (saknarKoordinater.length > 0) {
+    showPopup(
+      `👎 Följande adresser saknar GPS-koordinater: ${saknarKoordinater.map(a => a.namn).join(", ")}`,
+      "error",
+      4000
+    );
+    return;
+  }
+
+  setStatus("Beräknar rutt...");
+
+  // Rensa gammal rutt i databasen
+  await supabase.from("aktiv_rutt").delete().neq("id", 0);
+
+  // Optimera rutt med Google Directions API (Waypoint Optimization)
+  const origin = `${valda[0].lat},${valda[0].lng}`;
+  const destination = `${valda[valda.length - 1].lat},${valda[valda.length - 1].lng}`;
+  
+  const waypoints = valda
+    .slice(1, -1)
+    .map((a) => `${a.lat},${a.lng}`)
+    .join("|");
+
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=optimize:true|${waypoints}&key=${GOOGLE_MAPS_API_KEY}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.status !== "OK") {
+      showPopup("👎 Kunde inte beräkna rutt. Kontrollera API-nyckel.", "error", 3000);
+      setStatus("❌ Google Maps API-fel: " + data.status);
+      return;
+    }
+
+    const optimizedOrder = data.routes[0].waypoint_order || [];
+    const sorterade = [
+      valda[0],
+      ...optimizedOrder.map((i) => valda[i + 1]),
+      valda[valda.length - 1],
+    ];
+
+    // Spara till aktiv_rutt
+    const ruttRader = sorterade.map((a, idx) => ({
+      adress_id: a.id,
+      ordning: idx + 1,
+      avklarad: false,
+    }));
+
+    const { error } = await supabase.from("aktiv_rutt").insert(ruttRader);
+
+    if (error) {
+      showPopup("👎 Kunde inte spara rutt.", "error", 3000);
+      setStatus("❌ Fel vid sparning: " + error.message);
+    } else {
+      setRuttVagbeskrivning(data.routes[0]);
+      await laddaAktivRutt();
+      showPopup("👍 Rutt beräknad och sparad!", "success", 3000);
+      setStatus("✅ Rutt beräknad.");
+      stangRuttPopup();
+    }
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
+    setStatus("❌ Kunde inte kontakta Google Maps API.");
+  }
+}
+
+// Ladda aktiv rutt från databasen
+async function laddaAktivRutt() {
+  const { data, error } = await supabase
+    .from("aktiv_rutt")
+    .select("*, adresser(namn, lat, lng)")
+    .order("ordning", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    setStatus("❌ Kunde inte ladda rutt.");
+  } else {
+    setRuttAdresser(data || []);
+  }
+}
+
+// Bocka av adress när jobb sparas
+async function bockAvAdressIRutt(adressId) {
+  const { error } = await supabase
+    .from("aktiv_rutt")
+    .update({ avklarad: true })
+    .eq("adress_id", adressId)
+    .eq("avklarad", false);
+
+  if (!error) {
+    await laddaAktivRutt();
+  }
+}
+
+// Rensa hela rutten
+async function rensaRutt() {
+  const { error } = await supabase.from("aktiv_rutt").delete().neq("id", 0);
+  if (error) {
+    showPopup("👎 Kunde inte rensa rutt.", "error", 3000);
+  } else {
+    setRuttAdresser([]);
+    setRuttVagbeskrivning(null);
+    showPopup("👍 Rutten rensad.", "success", 3000);
+  }
+}
+
+// Ladda rutt vid start
+useEffect(() => {
+  laddaAktivRutt();
+}, []);
+
+  
+// ====== RADERA-FUNKTIONER =======
   async function raderaRapporter() {
     if (!raderaÅr) {
       showPopup("👎 Ange år att radera.", "error", 3000);
@@ -2245,6 +2404,75 @@ function stoppaPass() {
         </section>
       );
     }
+
+    if (activeTab === "rutt") {
+  const nastaAdress = ruttAdresser.find((r) => !r.avklarad);
+
+  return (
+    <section style={sectionStyle}>
+      <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
+        Rutt (optimerad)
+      </h2>
+
+      {nastaAdress && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: 12,
+            backgroundColor: "#dbeafe",
+            color: "#1e40af",
+            marginBottom: 12,
+            fontSize: 15,
+            fontWeight: 600,
+          }}
+        >
+          🚗 Nästa: {nastaAdress.adresser?.namn}
+        </div>
+      )}
+
+      <button
+        onClick={oppnaRuttPopup}
+        style={{
+          ...primaryButton,
+          backgroundColor: "#10b981",
+        }}
+      >
+        Välj adresser & beräkna rutt
+      </button>
+
+      <button
+        onClick={rensaRutt}
+        style={{
+          ...secondaryButton,
+          marginTop: 8,
+        }}
+      >
+        Rensa rutt
+      </button>
+
+      {ruttAdresser.length > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <h3 style={{ fontSize: 16 }}>Din rutt:</h3>
+          <ol style={{ paddingLeft: 20, fontSize: 14 }}>
+            {ruttAdresser.map((r) => (
+              <li
+                key={r.id}
+                style={{
+                  textDecoration: r.avklarad ? "line-through" : "none",
+                  color: r.avklarad ? "#9ca3af" : "#111827",
+                  marginBottom: 6,
+                }}
+              >
+                {r.adresser?.namn} {r.avklarad && "✅"}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </section>
+  );
+}
+    
 if (activeTab === "info") {
       return (
         <section style={sectionStyle}>
@@ -2876,6 +3104,83 @@ return (
     </div>
   </div>
 )}
+
+      {visaRuttPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 140,
+      backgroundColor: "#ffffff",
+      border: "2px solid #10b981",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      maxHeight: "80vh",
+      overflowY: "auto",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#065f46" }}>
+      Välj adresser för rutt
+    </h3>
+    <p style={{ fontSize: 13, color: "#6b7280" }}>
+      Markera de adresser du vill köra. Google optimerar ordningen.
+    </p>
+
+    {valjbaraRuttAdresser.map((a) => (
+      <label
+        key={a.id}
+        style={{
+          display: "block",
+          marginBottom: 8,
+          fontSize: 14,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={a.vald}
+          onChange={(e) => toggleRuttAdress(a.id, e.target.checked)}
+          style={{ marginRight: 8 }}
+        />
+        {a.namn}
+      </label>
+    ))}
+
+    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+      <button
+        onClick={beraknaRutt}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#10b981",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Beräkna rutt
+      </button>
+      <button
+        onClick={stangRuttPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+      
 {visaManuellPopup && (
   <div
     style={{
@@ -3179,22 +3484,40 @@ return (
         }}
       >
         <button
-          onClick={() => setActiveTab("karta")}
-          style={{
-            flex: 1,
-            marginRight: 4,
-            padding: "10px 4px",
-            borderRadius: 999,
-            border: "1px solid #facc15",
-            fontSize: 13,
-            fontWeight: 600,
-            backgroundColor:
-              activeTab === "karta" ? "#facc15" : "#fef08a",
-            color: "#78350f",
-          }}
-        >
-          Karta
-        </button>
+  onClick={() => setActiveTab("rutt")}
+  style={{
+    flex: 1,
+    marginRight: 4,
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #10b981",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "rutt" ? "#10b981" : "#d1fae5",
+    color: activeTab === "rutt" ? "#ffffff" : "#065f46",
+  }}
+>
+  Rutt
+</button>
+<button
+  onClick={() => setActiveTab("karta")}
+  style={{
+    flex: 1,
+    margin: "0 4px",
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #facc15",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "karta" ? "#facc15" : "#fef08a",
+    color: "#78350f",
+  }}
+>
+  Karta
+</button>
+        
         <button
           onClick={() => setActiveTab("rapport")}
           style={{
