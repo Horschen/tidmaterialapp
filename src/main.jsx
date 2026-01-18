@@ -3665,29 +3665,28 @@ return (
       </header>
 
       {popup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      // 🔼 Lägg den ovanför allt annat:
-      zIndex: 9999,
-      padding: "24px 32px",
-      borderRadius: 24,
-      border: `2px solid ${popupStyle.borderColor}`,
-      backgroundColor: popupStyle.backgroundColor,
-      color: popupStyle.color,
-      fontSize: 20,
-      fontWeight: 600,
-      textAlign: "center",
-      maxWidth: "80%",
-      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-    }}
-  >
-    {popup.text}
-  </div>
-)}
+        <div
+          style={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 9999,
+            padding: "24px 32px",
+            borderRadius: 24,
+            border: `2px solid ${popup.type === "error" ? "#b91c1c" : "#15803d"}`,
+            backgroundColor: popup.type === "error" ? "#dc2626" : "#16a34a",
+            color: "#ffffff",
+            fontSize: 20,
+            fontWeight: 600,
+            textAlign: "center",
+            maxWidth: "80%",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          {popup.text}
+        </div>
+      )}
 
       {deleteConfirm && (
         <div
@@ -3752,990 +3751,157 @@ return (
         </div>
       )}
 
-      {visaEditPopup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      zIndex: 150,
-      backgroundColor: "#ffffff",
-      border: "2px solid #2563eb",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-      width: "90%",
-      maxWidth: 420,
-      padding: 20,
-      fontFamily: "system-ui, -apple-system, sans-serif",
-    }}
-  >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
-      Editera rapport
-    </h3>
+      {renderContent()}
+    </div>
 
-    <select
-      value={valdaEditId || ""}
-      onChange={(e) => onChangeValdEditId(e.target.value)}
+    <nav
       style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: "#fffbea",
+        borderTop: "1px solid #e5e7eb",
+        padding: "8px 12px",
+        maxWidth: 520,
+        margin: "0 auto",
+        boxSizing: "border-box",
+        boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
       }}
     >
-      {editRapporter.map((r) => (
-        <option key={r.id} value={r.id}>
-          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
-        </option>
-      ))}
-    </select>
-
-    <div style={{ display: "grid", gap: 8 }}>
-      <label>
-        Datum:
-        <input
-          type="date"
-          value={editForm.datum}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, datum: e.target.value }))
-          }
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 6,
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("info")}
           style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        />
-      </label>
-
-      <label>
-        Arbetstid (minuter):
-        <input
-          type="number"
-          value={editForm.arbetstid_min}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, arbetstid_min: e.target.value }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        />
-      </label>
-
-      <label>
-        Arbetstyp:
-        <select
-          value={editForm.team_namn}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, team_namn: e.target.value }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
+            flex: 1,
+            marginRight: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor: activeTab === "info" ? "#facc15" : "#fef08a",
+            color: "#78350f",
           }}
         >
-          <option>För hand</option>
-          <option>Maskin</option>
-        </select>
-      </label>
-
-      <label>
-        Antal anställda:
-        <select
-          value={editForm.antal_anstallda}
-          onChange={(e) =>
-            setEditForm((f) => ({
-              ...f,
-              antal_anstallda: Number(e.target.value),
-            }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Grus (kg):
-        <select
-          value={editForm.sand_kg}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, sand_kg: Number(e.target.value) }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          <option value="0">0</option>
-          {[...Array(51)].map((_, i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Salt (kg):
-        <select
-          value={editForm.salt_kg}
-          onChange={(e) =>
-            setEditForm((f) => ({ ...f, salt_kg: Number(e.target.value) }))
-          }
-          style={{
-            width: "100%",
-            padding: "8px",
-            borderRadius: 8,
-            border: "1px solid #d1d5db",
-          }}
-        >
-          <option value="0">0</option>
-          {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-            <option key={v} value={v}>{v}</option>
-          ))}
-        </select>
-      </label>
-    </div>
-
-    <div
-      style={{
-        display: "flex",
-        gap: 8,
-        flexWrap: "wrap",
-        marginTop: 12,
-      }}
-    >
-      {[
-        ["syfteOversyn", "Översyn"],
-        ["syfteRojning", "Röjning"],
-        ["syfteSaltning", "Saltning"],
-        ["syfteGrusning", "Grusning"],
-      ].map(([key, label]) => (
-        <label key={key} style={{ fontSize: 14 }}>
-          <input
-            type="checkbox"
-            checked={editForm[key]}
-            onChange={(e) =>
-              setEditForm((f) => ({ ...f, [key]: e.target.checked }))
-            }
-            style={{ marginRight: 4 }}
-          />
-          {label}
-        </label>
-      ))}
-    </div>
-
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginTop: 16,
-      }}
-    >
-      <button
-        onClick={sparaEditRapport}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#16a34a",
-          color: "#fff",
-          fontWeight: 600,
-        }}
-      >
-        Spara
-      </button>
-      <button
-  onClick={() => setVisaEditPopup(false)}
-  style={{
-    padding: "10px 16px",
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#dc2626",   // 🔴 röd bakgrund
-    color: "#ffffff",
-    fontWeight: 600,
-  }}
->
-  Avbryt
-</button>
-    </div>
-  </div>
-)}
-
-      {visaRuttPopup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      zIndex: 140,
-      backgroundColor: "#ffffff",
-      border: "2px solid #10b981",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-      width: "90%",
-      maxWidth: 420,
-      padding: 20,
-      maxHeight: "80vh",
-      overflowY: "auto",
-    }}
-  >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#065f46" }}>
-      Välj adresser för För Hand-rutt
-    </h3>
-    <p style={{ fontSize: 13, color: "#6b7280" }}>
-      Markera de adresser du vill köra. Google optimerar ordningen.
-    </p>
-
-    {valjbaraRuttAdresser.map((a) => (
-      <label
-        key={a.id}
-        style={{
-          display: "block",
-          marginBottom: 8,
-          fontSize: 14,
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={a.vald}
-          onChange={(e) => toggleRuttAdress(a.id, e.target.checked)}
-          style={{ marginRight: 8 }}
-        />
-        {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
-      </label>
-    ))}
-
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-      <button
-        onClick={sparaPlaneradRutt}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#10b981",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        💾 Spara som planerad För Hand-rutt
-      </button>
-      <button
-        onClick={stangRuttPopup}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        Avbryt
-      </button>
-    </div>
-  </div>
-)}
-
-{visaMaskinRuttPopup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      zIndex: 140,
-      backgroundColor: "#ffffff",
-      border: "2px solid #f59e0b",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-      width: "90%",
-      maxWidth: 420,
-      padding: 20,
-      maxHeight: "80vh",
-      overflowY: "auto",
-    }}
-  >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#92400e" }}>
-      Välj adresser för Maskin-rutt
-    </h3>
-    <p style={{ fontSize: 13, color: "#6b7280" }}>
-      Markera de adresser du vill köra med maskin. Google optimerar ordningen.
-    </p>
-
-   {valjbaraMaskinRuttAdresser.map((a) => (
-  <label
-    key={a.id}
-    style={{
-      display: "block",
-      marginBottom: 8,
-      fontSize: 14,
-    }}
-  >
-    <input
-      type="checkbox"
-      checked={a.vald}
-      onChange={(e) => toggleMaskinRuttAdress(a.id, e.target.checked)}
-      style={{ marginRight: 8 }}
-    />
-    {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
-  </label>
-))}
-
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-      <button
-        onClick={sparaPlaneradMaskinRutt}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#f59e0b",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        💾 Spara som planerad Maskin-rutt
-      </button>
-      <button
-        onClick={stangMaskinRuttPopup}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        Avbryt
-      </button>
-    </div>
-  </div>
-)}
-
-{visaAutoRuttPopup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      zIndex: 150,
-      backgroundColor: "#ffffff",
-      border: "2px solid #3b82f6",
-      borderRadius: 12,
-      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
-      width: "90%",
-      maxWidth: 420,
-      padding: 20,
-    }}
-  >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1e40af" }}>
-      {autoRuttTyp === "hand-upp" && "Automatisk rutt: Uppifrån & Ner"}
-      {autoRuttTyp === "hand-ner" && "Automatisk rutt: Nerifrån & Upp"}
-      {autoRuttTyp === "maskin" && "Automatisk Maskin-rutt"}
-    </h3>
-
-    {/* STEG 1: Välj startadress */}
-    {!visaForetagVal && !autoRuttStartAdress && (
-      <>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
-          Välj vilken adress du startar från:
-        </p>
-        <select
-          value={autoRuttStartAdress}
-          onChange={(e) => setAutoRuttStartAdress(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            fontSize: 16,
-            borderRadius: 10,
-            border: "1px solid #d1d5db",
-            backgroundColor: "#f9fafb",
-            marginBottom: 16,
-          }}
-        >
-          <option value="">-- Välj startadress --</option>
-          {adresser
-            .sort((a, b) => {
-              const prioA = a.prio || 9999;
-              const prioB = b.prio || 9999;
-              return prioA - prioB;
-            })
-            .map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
-              </option>
-            ))}
-        </select>
-
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <button
-            onClick={() => {
-              if (!autoRuttStartAdress) {
-                showPopup("👎 Välj en startadress.", "error", 3000);
-                return;
-              }
-              if (autoRuttTyp === "maskin") {
-                beraknaAutoRutt();
-              } else {
-                setVisaForetagVal(true);
-              }
-            }}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#3b82f6",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            Nästa →
-          </button>
-          <button
-            onClick={stangAutoRuttPopup}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#dc2626",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            Avbryt
-          </button>
-        </div>
-      </>
-    )}
-
-    {/* STEG 2: JA/NEJ för företag (endast För Hand) */}
-    {visaForetagVal && !autoRuttForetagId && autoRuttForetagId !== "NEJ" && (
-      <>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
-          Vill du lägga till ett företag i rutten?
-        </p>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <button
-            onClick={() => setAutoRuttForetagId("VÄLJ")}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#16a34a",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            ✅ Ja
-          </button>
-          <button
-            onClick={() => {
-              setAutoRuttForetagId("NEJ");
-              beraknaAutoRutt();
-            }}
-            style={{
-              flex: 1,
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#dc2626",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            ❌ Nej
-          </button>
-        </div>
+          Info
+        </button>
 
         <button
-          onClick={stangAutoRuttPopup}
+          onClick={() => setActiveTab("startstop")}
           style={{
-            width: "100%",
-            padding: "10px 16px",
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 6px",
             borderRadius: 999,
-            border: "none",
-            backgroundColor: "#9ca3af",
-            color: "#ffffff",
+            border: "1px solid #facc15",
+            fontSize: 14,
             fontWeight: 600,
+            backgroundColor: activeTab === "startstop" ? "#facc15" : "#fef08a",
+            color: "#78350f",
           }}
         >
-          Avbryt
+          Start/Stop
         </button>
-      </>
-    )}
 
-    {/* STEG 3: Välj företag från dropdown */}
-    {autoRuttForetagId === "VÄLJ" && (
-      <>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
-          Välj vilket företag:
-        </p>
-        <select
-          value={autoRuttForetagId === "VÄLJ" ? "" : autoRuttForetagId}
-          onChange={(e) => setAutoRuttForetagId(e.target.value)}
+        <button
+          onClick={() => setActiveTab("registrera")}
           style={{
-            width: "100%",
-            padding: "10px 12px",
-            fontSize: 16,
-            borderRadius: 10,
-            border: "1px solid #d1d5db",
-            backgroundColor: "#f9fafb",
-            marginBottom: 16,
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor: activeTab === "registrera" ? "#facc15" : "#fef08a",
+            color: "#78350f",
           }}
         >
-          <option value="">-- Välj företag --</option>
-          {adresser
-            .filter((a) => a.bostad_foretag === "Företag")
-            .sort((a, b) => {
-              const prioA = a.prio || 9999;
-              const prioB = b.prio || 9999;
-              return prioA - prioB;
-            })
-            .map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.prio && a.prio !== 999 ? `${a.prio}. ` : ""}{a.namn}
-              </option>
-            ))}
-        </select>
+          Registrera
+        </button>
+      </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <button
-            onClick={() => {
-              if (!autoRuttForetagId || autoRuttForetagId === "VÄLJ") {
-                showPopup("👎 Välj ett företag eller gå tillbaka.", "error", 3000);
-                return;
-              }
-              beraknaAutoRutt();
-            }}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#16a34a",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            ✅ Skapa rutt
-          </button>
-          <button
-            onClick={stangAutoRuttPopup}
-            style={{
-              padding: "10px 16px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#dc2626",
-              color: "#ffffff",
-              fontWeight: 600,
-            }}
-          >
-            Avbryt
-          </button>
-        </div>
-      </>
-    )}
-  </div>
-)}
-
-{visaManuellPopup && (
-  <div
-    style={{
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      backgroundColor: "#ffffff",
-      border: "2px solid #facc15",
-      borderRadius: 12,
-      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
-      padding: 24,
-      zIndex: 120,
-      width: "90%",
-      maxWidth: 420,
-      fontFamily: "system-ui, -apple-system, sans-serif",
-    }}
-  >
-    <h3 style={{ marginTop: 0, fontSize: 18, color: "#854d0e" }}>
-      Manuell registrering
-    </h3>
-
-    <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
-    <select
-      value={manuellAdressId}
-      onChange={(e) => setManuellAdressId(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      <option value="">-- Välj adress --</option>
-      {adresser.map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.namn}
-        </option>
-      ))}
-    </select>
-
-    <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
-    <select
-      value={manuellTeam}
-      onChange={(e) => setManuellTeam(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      <option>För hand</option>
-      <option>Maskin</option>
-    </select>
-
-    <label style={{ display: "block", marginBottom: 6 }}>Antal anställda</label>
-    <select
-      value={manuellAntalAnstallda}
-      onChange={(e) => setManuellAntalAnstallda(Number(e.target.value))}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      {[1, 2, 3, 4, 5, 6].map((n) => (
-        <option key={n} value={n}>
-          {n}
-        </option>
-      ))}
-    </select>
-
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-      {[
-        ["manSyfteOversyn", "Översyn"],
-        ["manSyfteRojning", "Röjning"],
-        ["manSyfteSaltning", "Saltning"],
-        ["manSyfteGrusning", "Grusning"],
-      ].map(([key, label]) => (
-        <label key={key} style={{ fontSize: 14 }}>
-          <input
-            type="checkbox"
-            checked={eval(key)}
-            onChange={(e) => {
-              switch (key) {
-                case "manSyfteOversyn":
-                  setManSyfteOversyn(e.target.checked);
-                  break;
-                case "manSyfteRojning":
-                  setManSyfteRojning(e.target.checked);
-                  break;
-                case "manSyfteSaltning":
-                  setManSyfteSaltning(e.target.checked);
-                  break;
-                case "manSyfteGrusning":
-                  setManSyfteGrusning(e.target.checked);
-                  break;
-              }
-            }}
-            style={{ marginRight: 4 }}
-          />
-          {label}
-        </label>
-      ))}
-    </div>
-
-    <label>Datum:</label>
-    <input
-      type="date"
-      value={manuellDatum}
-      onChange={(e) => setManuellDatum(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-      }}
-    />
-
-    <label>Arbetstid (minuter)</label>
-    <input
-      type="number"
-      value={manuellTidMin}
-      onChange={(e) => setManuellTidMin(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-      }}
-    />
-
-    <label>Grus (kg)</label>
-    <select
-      value={manuellSand}
-      onChange={(e) => setManuellSand(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-      }}
-    >
-      <option value="0">0</option>
-      {[...Array(51)].map((_, i) => (
-        <option key={i} value={i}>
-          {i}
-        </option>
-      ))}
-    </select>
-
-    <label>Salt (kg)</label>
-    <select
-      value={manuellSalt}
-      onChange={(e) => setManuellSalt(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 16,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-      }}
-    >
-      <option value="0">0</option>
-      {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-        <option key={v} value={v}>
-          {v}
-        </option>
-      ))}
-    </select>
-
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <button
-        onClick={sparaManuellRapport}
+      <div
         style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#16a34a",
-          color: "#ffffff",
-          fontWeight: 600,
+          display: "flex",
+          justifyContent: "space-between",
         }}
       >
-        Spara manuellt
-      </button>
-      <button
-        onClick={closeManuellPopup}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        Avbryt
-      </button>
-    </div>
+        <button
+          onClick={() => setActiveTab("rutt")}
+          style={{
+            flex: 1,
+            marginRight: 4,
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #10b981",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor: activeTab === "rutt" ? "#10b981" : "#d1fae5",
+            color: activeTab === "rutt" ? "#ffffff" : "#065f46",
+          }}
+        >
+          Rutt
+        </button>
+        <button
+          onClick={() => setActiveTab("karta")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor: activeTab === "karta" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Karta
+        </button>
+
+        <button
+          onClick={() => setActiveTab("rapport")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor: activeTab === "rapport" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
+          Veckorapport
+        </button>
+        <button
+          onClick={openRaderaTab}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #ef4444",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor: activeTab === "radera" ? "#ef4444" : "#fecaca",
+            color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+          }}
+        >
+          Radera
+        </button>
+      </div>
+    </nav>
   </div>
-)}
-
-{renderContent()}
-</div>
-
-{/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
-<nav
-  style={{
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fffbea",
-    borderTop: "1px solid #e5e7eb",
-    padding: "8px 12px",
-    maxWidth: 520,
-    margin: "0 auto",
-    boxSizing: "border-box",
-    boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
-  }}
->
-  {/* Rad 1: Info + Start/Stop + Registrera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      marginBottom: 6,
-    }}
-  >
-    <button
-      onClick={() => setActiveTab("info")}
-      style={{
-        flex: 1,
-        marginRight: 4,
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "info" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-      }}
-    >
-      Info
-    </button>
-
-    <button
-      onClick={() => setActiveTab("startstop")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "startstop" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-      }}
-    >
-      Start/Stop
-    </button>
-
-    <button
-      onClick={() => setActiveTab("registrera")}
-      style={{
-        flex: 1,
-        marginLeft: 4,
-        padding: "10px 6px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 14,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "registrera" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-      }}
-    >
-      Registrera
-    </button>
-  </div>
-
-  {/* Rad 2: Rutt + Karta + Veckorapport + Radera */}
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-    }}
-  >
-    <button
-      onClick={() => setActiveTab("rutt")}
-      style={{
-        flex: 1,
-        marginRight: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #10b981",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "rutt" ? "#10b981" : "#d1fae5",
-        color: activeTab === "rutt" ? "#ffffff" : "#065f46",
-      }}
-    >
-      Rutt
-    </button>
-    <button
-      onClick={() => setActiveTab("karta")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "karta" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-      }}
-    >
-      Karta
-    </button>
-    
-    <button
-      onClick={() => setActiveTab("rapport")}
-      style={{
-        flex: 1,
-        margin: "0 4px",
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #facc15",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "rapport" ? "#facc15" : "#fef08a",
-        color: "#78350f",
-      }}
-    >
-      Veckorapport
-    </button>
-    <button
-      onClick={openRaderaTab}
-      style={{
-        flex: 1,
-        marginLeft: 4,
-        padding: "10px 4px",
-        borderRadius: 999,
-        border: "1px solid #ef4444",
-        fontSize: 13,
-        fontWeight: 600,
-        backgroundColor:
-          activeTab === "radera" ? "#ef4444" : "#fecaca",
-        color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
-      }}
-    >
-      Radera
-    </button>
-  </div>
-</nav>
-</div>
-</div>
 );
 }
 
