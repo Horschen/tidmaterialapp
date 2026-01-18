@@ -1638,7 +1638,7 @@ async function beraknaRutt() {
     return;
   }
 
-  setStatus("Beräknar rutt...");
+  setRuttStatus("Beräknar rutt...");
 
   // Rensa gammal rutt i databasen
   await supabase.from("aktiv_rutt").delete().neq("id", 0);
@@ -1652,7 +1652,9 @@ async function beraknaRutt() {
     .map((a) => `${a.lat},${a.lng}`)
     .join("|");
 
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&waypoints=optimize:true|${waypoints}&key=${GOOGLE_MAPS_API_KEY}`;
+  const url = `/api/route?origin=${origin}&destination=${destination}${
+    waypoints ? `&waypoints=${waypoints}` : ''
+  }`;
 
   try {
     const res = await fetch(url);
@@ -1660,7 +1662,7 @@ async function beraknaRutt() {
 
     if (data.status !== "OK") {
       showPopup("👎 Kunde inte beräkna rutt. Kontrollera API-nyckel.", "error", 3000);
-      setStatus("❌ Google Maps API-fel: " + data.status);
+      setRuttStatus("❌ Google Maps API-fel: " + data.status);
       return;
     }
 
@@ -1682,18 +1684,18 @@ async function beraknaRutt() {
 
     if (error) {
       showPopup("👎 Kunde inte spara rutt.", "error", 3000);
-      setStatus("❌ Fel vid sparning: " + error.message);
+      setRuttStatus("❌ Fel vid sparning: " + error.message);
     } else {
       setRuttVagbeskrivning(data.routes[0]);
       await laddaAktivRutt();
       showPopup("👍 Rutt beräknad och sparad!", "success", 3000);
-      setStatus("✅ Rutt beräknad.");
+      setRuttStatus("✅ Rutt beräknad.");
       stangRuttPopup();
     }
   } catch (err) {
     console.error(err);
     showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
-    setStatus("❌ Kunde inte kontakta Google Maps API.");
+    setRuttStatus("❌ Kunde inte kontakta Google Maps API.");
   }
 }
 
