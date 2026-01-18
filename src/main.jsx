@@ -2666,6 +2666,7 @@ async function rensaRutt() {
 
     if (activeTab === "rutt") {
   const nastaAdress = ruttAdresser.find((r) => !r.avklarad);
+  const harVantandeRutt = vantandeRuttAdresser.length > 0;
   const totalAdresser = ruttAdresser.length;
   const avklaradeAntal = ruttAdresser.filter((r) => r.avklarad).length;
 
@@ -2732,8 +2733,58 @@ async function rensaRutt() {
           backgroundColor: "#10b981",
         }}
       >
-        Välj adresser & beräkna rutt
+        Välj adresser & planera rutt
       </button>
+
+      {harVantandeRutt && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: "12px 16px",
+            borderRadius: 12,
+            backgroundColor: "#fef3c7",
+            color: "#92400e",
+            fontSize: 14,
+          }}
+        >
+          <strong>📋 Planerad rutt väntar</strong>
+          <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+            {vantandeRuttAdresser.length} adresser valda. Aktivera vid pass-start för optimal rutt från din position.
+          </p>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button
+              onClick={aktiveraVantandeRutt}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#10b981",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              ✅ Aktivera rutt nu
+            </button>
+            <button
+              onClick={raderaVantandeRutt}
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "none",
+                backgroundColor: "#dc2626",
+                color: "#ffffff",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              🗑️ Radera
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={laddaAdresser}
@@ -2847,7 +2898,7 @@ async function rensaRutt() {
         </div>
       )}
 
-      {ruttAdresser.length === 0 && (
+      {ruttAdresser.length === 0 && !harVantandeRutt && (
         <p
           style={{
             marginTop: 16,
@@ -2857,7 +2908,7 @@ async function rensaRutt() {
             fontStyle: "italic",
           }}
         >
-          Ingen rutt vald. Tryck "Välj adresser & beräkna rutt" för att börja.
+          Ingen rutt vald. Tryck "Välj adresser & planera rutt" för att börja.
         </p>
       )}
     </section>
