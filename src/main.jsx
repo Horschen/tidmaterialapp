@@ -1726,14 +1726,21 @@ async function laddaAktivRutt() {
   
   const { data, error } = await supabase
     .from("aktiv_rutt")
-    .select("*, adresser(namn, lat, lng)")
+    .select(`
+      *,
+      adresser (
+        namn,
+        lat,
+        lng
+      )
+    `)
     .order("ordning", { ascending: true });
 
   console.log("📥 Supabase-svar:", { data, error }); // DEBUG
 
   if (error) {
     console.error("❌ Fel vid laddning av rutt:", error);
-    setRuttStatus("❌ Kunde inte ladda rutt.");
+    setRuttStatus("❌ Kunde inte ladda rutt: " + error.message);
   } else {
     console.log("✅ Uppdaterar ruttAdresser med:", data);
     setRuttAdresser(data || []);
