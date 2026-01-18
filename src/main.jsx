@@ -2461,6 +2461,8 @@ async function rensaRutt() {
 
     if (activeTab === "rutt") {
   const nastaAdress = ruttAdresser.find((r) => !r.avklarad);
+  const totalAdresser = ruttAdresser.length;
+  const avklaradeAntal = ruttAdresser.filter((r) => r.avklarad).length;
 
   return (
     <section style={sectionStyle}>
@@ -2486,6 +2488,22 @@ async function rensaRutt() {
         </p>
       )}
 
+      {totalAdresser > 0 && (
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: 12,
+            backgroundColor: "#fef3c7",
+            color: "#92400e",
+            marginBottom: 12,
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
+        </div>
+      )}
+
       {nastaAdress && (
         <div
           style={{
@@ -2498,7 +2516,7 @@ async function rensaRutt() {
             fontWeight: 600,
           }}
         >
-          🚗 Nästa: {nastaAdress.adresser?.namn}
+          🚗 Nästa stopp: {nastaAdress.adresser?.namn}
         </div>
       )}
 
@@ -2522,6 +2540,27 @@ async function rensaRutt() {
         Uppdatera adresser
       </button>
 
+      {ruttAdresser.length > 0 && (
+        <button
+          onClick={() => {
+            // Öppna hela rutten i Google Maps
+            const coords = ruttAdresser
+              .map((r) => `${r.adresser.lat},${r.adresser.lng}`)
+              .join("/");
+            const url = `https://www.google.com/maps/dir/${coords}`;
+            window.open(url, "_blank");
+          }}
+          style={{
+            ...secondaryButton,
+            marginTop: 8,
+            backgroundColor: "#3b82f6",
+            color: "#ffffff",
+          }}
+        >
+          🗺️ Öppna rutt i Google Maps
+        </button>
+      )}
+
       <button
         onClick={rensaRutt}
         style={{
@@ -2534,22 +2573,87 @@ async function rensaRutt() {
 
       {ruttAdresser.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <h3 style={{ fontSize: 16 }}>Din rutt:</h3>
-          <ol style={{ paddingLeft: 20, fontSize: 14 }}>
-            {ruttAdresser.map((r) => (
-              <li
+          <h3 style={{ fontSize: 16, marginBottom: 8 }}>Din rutt:</h3>
+          <div
+            style={{
+              backgroundColor: "#f9fafb",
+              borderRadius: 12,
+              padding: 12,
+            }}
+          >
+            {ruttAdresser.map((r, idx) => (
+              <div
                 key={r.id}
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "10px 12px",
+                  marginBottom: 8,
+                  borderRadius: 8,
+                  backgroundColor: r.avklarad ? "#d1fae5" : "#ffffff",
+                  border: r.avklarad
+                    ? "2px solid #10b981"
+                    : "1px solid #e5e7eb",
                   textDecoration: r.avklarad ? "line-through" : "none",
-                  color: r.avklarad ? "#9ca3af" : "#111827",
-                  marginBottom: 6,
+                  color: r.avklarad ? "#065f46" : "#111827",
                 }}
               >
-                {r.adresser?.namn} {r.avklarad && "✅"}
-              </li>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    backgroundColor: r.avklarad ? "#10b981" : "#3b82f6",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    fontSize: 14,
+                    marginRight: 12,
+                    flexShrink: 0,
+                  }}
+                >
+                  {idx + 1}
+                </div>
+                <div style={{ flex: 1, fontSize: 14 }}>
+                  <strong>{r.adresser?.namn}</strong>
+                  {r.avklarad && (
+                    <span style={{ marginLeft: 8, fontSize: 16 }}>✅</span>
+                  )}
+                </div>
+                {!r.avklarad && nastaAdress?.id === r.id && (
+                  <div
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      backgroundColor: "#dbeafe",
+                      color: "#1e40af",
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    NÄSTA
+                  </div>
+                )}
+              </div>
             ))}
-          </ol>
+          </div>
         </div>
+      )}
+
+      {ruttAdresser.length === 0 && (
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: 14,
+            color: "#6b7280",
+            textAlign: "center",
+            fontStyle: "italic",
+          }}
+        >
+          Ingen rutt vald. Tryck "Välj adresser & beräkna rutt" för att börja.
+        </p>
       )}
     </section>
   );
