@@ -2717,23 +2717,36 @@ async function aktiveraVantandeRutt() {
               padding: 12,
             }}
           >
-            {ruttAdresser.map((r, idx) => (
-              <div
-                key={r.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "10px 12px",
-                  marginBottom: 8,
-                  borderRadius: 8,
-                  backgroundColor: r.avklarad ? "#d1fae5" : "#ffffff",
-                  border: r.avklarad
-                    ? "2px solid #10b981"
-                    : "1px solid #e5e7eb",
-                  textDecoration: r.avklarad ? "line-through" : "none",
-                  color: r.avklarad ? "#065f46" : "#111827",
-                }}
-              >
+            {ruttAdresser.map((r, idx) => {
+  const harGPS = r.adresser?.lat && r.adresser?.lng;
+  
+  return (
+    <div
+      key={r.id}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "10px 12px",
+        marginBottom: 8,
+        borderRadius: 8,
+        backgroundColor: r.avklarad 
+          ? "#d1fae5" 
+          : !harGPS 
+          ? "#fee2e2" 
+          : "#ffffff",
+        border: r.avklarad
+          ? "2px solid #10b981"
+          : !harGPS
+          ? "2px solid #dc2626"
+          : "1px solid #e5e7eb",
+        textDecoration: r.avklarad ? "line-through" : "none",
+        color: r.avklarad 
+          ? "#065f46" 
+          : !harGPS 
+          ? "#7f1d1d" 
+          : "#111827",
+      }}
+    >
                 <div
                   style={{
                     width: 32,
