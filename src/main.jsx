@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_MAPS_API_KEY } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -798,11 +798,15 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
 
       const nuIso = new Date().toISOString();
       setSenasteRapportTid(nuIso);
+      
+// Bocka av adress i aktiv rutt
+      await bockAvAdressIRutt(valda);
+      
       setPaus(null);
       setPausSekUnderIntervall(0);
     }
   }
-
+  
 // Bocka av adress i aktiv rutt
 await bockAvAdressIRutt(valda);
   
