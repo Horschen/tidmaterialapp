@@ -808,14 +808,11 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
     }
   }
   
-// Bocka av adress i aktiv rutt
-await bockAvAdressIRutt(valda);
-  
   // ======= Spara manuell rapport (popup) =======
   async function sparaManuellRapport() {
     if (!validateManuellFields()) return;
 
-    const metod = manuellTeam === "För hand" ? "hand" : "maskin";
+    const metod = manuellTeam === "För hand" ? "hand" : "maskin";
     const syfteText = buildManuellSyfteString();
 
     const tidMin = parseInt(manuellTidMin, 10);
