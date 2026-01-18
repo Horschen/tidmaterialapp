@@ -1684,7 +1684,7 @@ async function aktiveraVantandeRutt() {
 
       // Optimera rutt med Google Directions API
       const origin = `${userLat},${userLng}`;
-      const destination = `${adresserData[0].lat},${adresserData[0].lng}`; // Första adressen som mål (Google optimerar sen)
+      const destination = `${adresserData[0].lat},${adresserData[0].lng}`;
       
       const waypoints = adresserData
         .map((a) => `${a.lat},${a.lng}`)
@@ -1743,8 +1743,44 @@ async function aktiveraVantandeRutt() {
     },
     (error) => {
       console.error("❌ GPS-fel:", error);
-      showPopup("👎 Kunde inte hämta din position. Tillåt GPS-åtkomst.", "error", 4000);
-      setRuttStatus("❌ GPS-åtkomst nekad.");
+      
+      // Visa detaljerad felhantering baserat på feltyp
+      let felmeddelande = "";
+      let instruktioner = "";
+      
+      if (error.code === 1) {
+        // PERMISSION_DENIED
+        felmeddelande = "📍 GPS-åtkomst nekad";
+        instruktioner = `
+För att aktivera rutten behöver du tillåta GPS-åtkomst:
+
+📱 **iPhone:**
+1. Öppna Inställningar
+2. Scrolla ner och välj Safari
+3. Tryck på "Plats"
+4. Välj "Tillåt" eller "Fråga"
+5. Kom tillbaka hit och tryck "Aktivera rutt nu" igen
+
+🌐 **Eller:**
+- Ladda om sidan
+- När Safari frågar om platstånd, tryck "Tillåt"
+        `.trim();
+      } else if (error.code === 2) {
+        // POSITION_UNAVAILABLE
+        felmeddelande = "📍 GPS-position ej tillgänglig";
+        instruktioner = "Kontrollera att du har GPS påslaget och är utomhus.";
+      } else if (error.code === 3) {
+        // TIMEOUT
+        felmeddelande = "📍 GPS-timeout";
+        instruktioner = "Det tog för lång tid att hämta position. Försök igen.";
+      }
+      
+      setRuttStatus(`❌ ${felmeddelande}`);
+      
+      // Visa instruktioner i en alert (tyvärr enda sättet på iOS)
+      alert(`${felmeddelande}\n\n${instruktioner}`);
+      
+      showPopup("👎 Kunde inte hämta din position.", "error", 4000);
     },
     {
       enableHighAccuracy: true,
