@@ -476,6 +476,20 @@ const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
 const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
 const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
   
+  // State för Maskin-rutt
+const [vantandeMaskinRuttAdresser, setVantandeMaskinRuttAdresser] = useState([]);
+const [visaAktiveraMaskinRuttKnapp, setVisaAktiveraMaskinRuttKnapp] = useState(false);
+const [visaMaskinRuttPopup, setVisaMaskinRuttPopup] = useState(false);
+const [valjbaraMaskinRuttAdresser, setValjbaraMaskinRuttAdresser] = useState([]);
+
+// State för automatiska rutter
+const [visaAutoRuttPopup, setVisaAutoRuttPopup] = useState(false);
+const [autoRuttTyp, setAutoRuttTyp] = useState(""); // "hand-upp", "hand-ner", "maskin"
+const [autoRuttStartAdress, setAutoRuttStartAdress] = useState("");
+const [autoRuttForetagId, setAutoRuttForetagId] = useState("");
+const [visaForetagVal, setVisaForetagVal] = useState(false);
+  
+  
   // Popup-notis
   const [popup, setPopup] = useState(null);
   function showPopup(text, type = "success", durationMs = 4000) {
@@ -611,7 +625,7 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("id, namn, gps_url, maskin_mojlig, lat, lng");
+    .select("id, namn, lat, lng, prio, bostad_foretag, gps_url, maskin_mojlig");
   if (error) {
     setRuttStatus("❌ Fel vid laddning av adresser: " + error.message);
   } else {
@@ -689,6 +703,7 @@ useEffect(() => {
   if (isAuthenticated) {
     laddaAktivRutt();
     laddaVantandeRutt();
+    laddaVantandeMaskinRutt();
   }
 }, [isAuthenticated]);
   
@@ -1598,6 +1613,206 @@ const secondaryButton = {
 
 // ======= RUTT-FUNKTIONER =======
 
+  // ======= MASKIN-RUTT FUNKTIONER =======
+
+// Ladda väntande maskin-rutt
+async function laddaVantandeMaskinRutt() {
+  const { data, error } = await supabase
+    .from("vantande_maskin_rutt")
+    .select("*");
+
+  if (error) {
+    console.error("❌ Fel vid laddning av väntande maskin-rutt:", error);
+  } else {
+    console.log("📋 Väntande maskin-rutt laddad:", data);
+    setVantandeMaskinRuttAdresser(data || []);
+    setVisaAktiveraMaskinRuttKnapp(data && data.length > 0);
+  }
+}
+
+// Öppna popup för maskin-rutt
+function oppnaMaskinRuttPopup() {
+  const sorterade = [...adresser].sort((a, b) => {
+    const prioA = a.prio || 9999;
+    const prioB = b.prio || 9999;
+    return prioA - prioB;
+  });
+  setValjbaraMaskinRuttAdresser(
+    sorterade.map((a) => ({ ...a, vald: false, ordning: 0 }))
+  );
+  setVisaMaskinRuttPopup(true);
+}
+
+// Stäng maskin-popup
+function stangMaskinRuttPopup() {
+  setVisaMaskinRuttPopup(false);
+  setValjbaraMaskinRuttAdresser([]);
+}
+
+// Toggla adress i maskin-popup
+function toggleMaskinRuttAdress(adressId, checked) {
+  setValjbaraMaskinRuttAdresser((prev) =>
+    prev.map((a) =>
+      a.id === adressId ? { ...a, vald: checked } : a
+    )
+  );
+}
+
+// Spara planerad maskin-rutt
+async function sparaPlaneradMaskinRutt() {
+  const valda = valjbaraMaskinRuttAdresser.filter((a) => a.vald);
+  
+  if (valda.length < 2) {
+    showPopup("👎 Välj minst 2 adresser för planerad maskin-rutt.", "error", 3000);
+    return;
+  }
+
+  setRuttStatus("Sparar planerad maskin-rutt...");
+
+  // Rensa gammal väntande maskin-rutt
+  await supabase.from("vantande_maskin_rutt").delete().neq("id", 0);
+
+  // Spara valda adresser
+  const rader = valda.map((a) => ({
+    adress_id: a.id,
+  }));
+
+  const { error } = await supabase.from("vantande_maskin_rutt").insert(rader);
+
+  if (error) {
+    showPopup("👎 Kunde inte spara planerad maskin-rutt.", "error", 3000);
+    setRuttStatus("❌ Fel vid sparning: " + error.message);
+  } else {
+    showPopup("👍 Planerad maskin-rutt sparad!", "success", 4000);
+    setRuttStatus("✅ Planerad maskin-rutt sparad.");
+    await laddaVantandeMaskinRutt();
+    stangMaskinRuttPopup();
+  }
+}
+
+// Radera väntande maskin-rutt
+async function raderaVantandeMaskinRutt() {
+  const { error } = await supabase.from("vantande_maskin_rutt").delete().neq("id", 0);
+  if (error) {
+    showPopup("👎 Kunde inte radera väntande maskin-rutt.", "error", 3000);
+  } else {
+    setVantandeMaskinRuttAdresser([]);
+    setVisaAktiveraMaskinRuttKnapp(false);
+    showPopup("👍 Väntande maskin-rutt raderad.", "success", 3000);
+  }
+}
+
+// ======= AUTOMATISKA RUTTER =======
+
+// Starta automatisk rutt-wizard
+function startaAutoRutt(typ) {
+  setAutoRuttTyp(typ);
+  setAutoRuttStartAdress("");
+  setAutoRuttForetagId("");
+  setVisaForetagVal(false);
+  setVisaAutoRuttPopup(true);
+}
+
+// Stäng auto-rutt popup
+function stangAutoRuttPopup() {
+  setVisaAutoRuttPopup(false);
+  setAutoRuttTyp("");
+  setAutoRuttStartAdress("");
+  setAutoRuttForetagId("");
+  setVisaForetagVal(false);
+}
+
+// Nästa steg i auto-rutt wizard
+function nastaStegAutoRutt() {
+  if (!autoRuttStartAdress) {
+    showPopup("👎 Välj en startadress.", "error", 3000);
+    return;
+  }
+
+  if (autoRuttTyp === "hand-upp" || autoRuttTyp === "hand-ner") {
+    // Visa företagsval
+    setVisaForetagVal(true);
+  } else {
+    // Maskin – beräkna direkt
+    beraknaAutoRutt();
+  }
+}
+
+// Beräkna automatisk rutt
+async function beraknaAutoRutt() {
+  setRuttStatus("Beräknar automatisk rutt...");
+  setVisaAutoRuttPopup(false);
+
+  let filtreradeAdresser = [];
+
+  if (autoRuttTyp === "hand-upp" || autoRuttTyp === "hand-ner") {
+    // För Hand: Bostäder + eventuellt företag
+    filtreradeAdresser = adresser.filter(
+      (a) => a.bostad_foretag === "Bostad"
+    );
+
+    if (autoRuttForetagId) {
+      const foretag = adresser.find((a) => a.id === Number(autoRuttForetagId));
+      if (foretag) {
+        filtreradeAdresser.push(foretag);
+      }
+    }
+
+    // Sortera efter prio
+    filtreradeAdresser.sort((a, b) => {
+      const prioA = a.prio || 9999;
+      const prioB = b.prio || 9999;
+      if (autoRuttTyp === "hand-upp") {
+        return prioA - prioB; // Uppifrån & Ner
+      } else {
+        return prioB - prioA; // Nerifrån & Upp
+      }
+    });
+  } else if (autoRuttTyp === "maskin") {
+    // Maskin: Alla företag
+    filtreradeAdresser = adresser.filter(
+      (a) => a.bostad_foretag === "Företag"
+    );
+  }
+
+  if (filtreradeAdresser.length === 0) {
+    showPopup("👎 Inga adresser matchade kriterierna.", "error", 3000);
+    setRuttStatus("");
+    return;
+  }
+
+  // Rensa gammal väntande rutt
+  const tabell = autoRuttTyp === "maskin" ? "vantande_maskin_rutt" : "vantande_rutt";
+  await supabase.from(tabell).delete().neq("id", 0);
+
+  // Spara adresser
+  const rader = filtreradeAdresser.map((a) => ({
+    adress_id: a.id,
+  }));
+
+  const { error } = await supabase.from(tabell).insert(rader);
+
+  if (error) {
+    showPopup("👎 Kunde inte spara automatisk rutt.", "error", 3000);
+    setRuttStatus("❌ Fel vid sparning.");
+  } else {
+    showPopup("👍 Automatisk rutt skapad!", "success", 4000);
+    setRuttStatus("✅ Automatisk rutt sparad.");
+    
+    if (autoRuttTyp === "maskin") {
+      await laddaVantandeMaskinRutt();
+    } else {
+      await laddaVantandeRutt();
+    }
+  }
+
+  // Rensa state
+  setAutoRuttTyp("");
+  setAutoRuttStartAdress("");
+  setAutoRuttForetagId("");
+  setVisaForetagVal(false);
+}
+
 // Ladda aktiv rutt från databasen (utan nested relation)
 async function laddaAktivRutt() {
   console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
@@ -1656,18 +1871,17 @@ async function laddaVantandeRutt() {
   }
 }
 
-// Öppna popup för att välja adresser till rutt
+// Öppna popup för att välja adresser till rutt (För Hand)
 function oppnaRuttPopup() {
+  const sorterade = [...adresser].sort((a, b) => {
+    const prioA = a.prio || 9999;
+    const prioB = b.prio || 9999;
+    return prioA - prioB;
+  });
   setValjbaraRuttAdresser(
-    adresser.map((a) => ({ ...a, vald: false, ordning: 0 }))
+    sorterade.map((a) => ({ ...a, vald: false, ordning: 0 }))
   );
   setVisaRuttPopup(true);
-}
-
-// Stäng popup
-function stangRuttPopup() {
-  setVisaRuttPopup(false);
-  setValjbaraRuttAdresser([]);
 }
 
 // Toggla adress i popup
@@ -2710,15 +2924,106 @@ function avbrytRadering() {
         </div>
       )}
 
-      <button
-        onClick={oppnaRuttPopup}
-        style={{
-          ...primaryButton,
-          backgroundColor: "#10b981",
-        }}
-      >
-        Välj adresser & planera rutt
-      </button>
+      {/* För Hand - Manuell */}
+<button
+  onClick={oppnaRuttPopup}
+  style={{
+    ...primaryButton,
+    backgroundColor: "#10b981",
+  }}
+>
+  Välj adresser & planera rutt - För Hand
+</button>
+
+{/* För Hand - Automatiska rutter */}
+<div
+  style={{
+    marginTop: 12,
+    padding: "12px 16px",
+    borderRadius: 12,
+    backgroundColor: "#f0fdf4",
+    border: "1px solid #86efac",
+  }}
+>
+  <strong style={{ fontSize: 14, color: "#166534" }}>
+    Automatiska rutter - För Hand:
+  </strong>
+  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+    <button
+      onClick={() => startaAutoRutt("hand-upp")}
+      style={{
+        flex: 1,
+        padding: "8px 12px",
+        borderRadius: 999,
+        border: "none",
+        backgroundColor: "#22c55e",
+        color: "#ffffff",
+        fontWeight: 600,
+        fontSize: 13,
+      }}
+    >
+      ⬆️ Uppifrån & Ner
+    </button>
+    <button
+      onClick={() => startaAutoRutt("hand-ner")}
+      style={{
+        flex: 1,
+        padding: "8px 12px",
+        borderRadius: 999,
+        border: "none",
+        backgroundColor: "#22c55e",
+        color: "#ffffff",
+        fontWeight: 600,
+        fontSize: 13,
+      }}
+    >
+      ⬇️ Nerifrån & Upp
+    </button>
+  </div>
+</div>
+
+{/* För Maskin - Manuell */}
+<button
+  onClick={oppnaMaskinRuttPopup}
+  style={{
+    ...primaryButton,
+    backgroundColor: "#f59e0b",
+    marginTop: 12,
+  }}
+>
+  Välj adresser & planera rutt - För Maskin
+</button>
+
+{/* För Maskin - Automatisk rutt */}
+<div
+  style={{
+    marginTop: 12,
+    padding: "12px 16px",
+    borderRadius: 12,
+    backgroundColor: "#fffbeb",
+    border: "1px solid #fcd34d",
+  }}
+>
+  <strong style={{ fontSize: 14, color: "#92400e" }}>
+    Automatisk rutt - För Maskin:
+  </strong>
+  <button
+    onClick={() => startaAutoRutt("maskin")}
+    style={{
+      width: "100%",
+      marginTop: 8,
+      padding: "8px 12px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#f59e0b",
+      color: "#ffffff",
+      fontWeight: 600,
+      fontSize: 13,
+    }}
+  >
+    🏢 Alla Företag (optimerad)
+  </button>
+</div>
 
       {harVantandeRutt && (
         <div
@@ -2769,6 +3074,59 @@ function avbrytRadering() {
           </div>
         </div>
       )}
+
+      {visaAktiveraMaskinRuttKnapp && (
+  <div
+    style={{
+      marginTop: 12,
+      padding: "12px 16px",
+      borderRadius: 12,
+      backgroundColor: "#fff7ed",
+      color: "#9a3412",
+      fontSize: 14,
+    }}
+  >
+    <strong>🚜 Planerad Maskin-rutt väntar</strong>
+    <p style={{ margin: "4px 0 0", fontSize: 13 }}>
+      {vantandeMaskinRuttAdresser.length} adresser valda. Aktivera vid pass-start.
+    </p>
+    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+      <button
+        onClick={aktiveraVantandeRutt}
+        style={{
+          flex: 1,
+          padding: "8px 12px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#f59e0b",
+          color: "#ffffff",
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        ✅ Aktivera maskin-rutt nu
+      </button>
+      <button
+        onClick={raderaVantandeMaskinRutt}
+        style={{
+          flex: 1,
+          padding: "8px 12px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+          fontSize: 13,
+        }}
+      >
+        🗑️ Radera
+      </button>
+    </div>
+  </div>
+)}
+
+
+      
 
       <button
         onClick={laddaAdresser}
@@ -3702,6 +4060,233 @@ return (
 </div>
   </div>
 )}
+
+{visaMaskinRuttPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 140,
+      backgroundColor: "#ffffff",
+      border: "2px solid #f59e0b",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      maxHeight: "80vh",
+      overflowY: "auto",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#92400e" }}>
+      Välj adresser för Maskin-rutt
+    </h3>
+    <p style={{ fontSize: 13, color: "#6b7280" }}>
+      Markera de adresser du vill köra med maskin. Google optimerar ordningen.
+    </p>
+
+    {valjbaraMaskinRuttAdresser.map((a) => (
+      <label
+        key={a.id}
+        style={{
+          display: "block",
+          marginBottom: 8,
+          fontSize: 14,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={a.vald}
+          onChange={(e) => toggleMaskinRuttAdress(a.id, e.target.checked)}
+          style={{ marginRight: 8 }}
+        />
+        {a.namn}
+      </label>
+    ))}
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+      <button
+        onClick={sparaPlaneradMaskinRutt}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#f59e0b",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        💾 Spara som planerad Maskin-rutt
+      </button>
+      <button
+        onClick={stangMaskinRuttPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+
+{visaAutoRuttPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 150,
+      backgroundColor: "#ffffff",
+      border: "2px solid #3b82f6",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1e40af" }}>
+      {autoRuttTyp === "hand-upp" && "Automatisk rutt: Uppifrån & Ner"}
+      {autoRuttTyp === "hand-ner" && "Automatisk rutt: Nerifrån & Upp"}
+      {autoRuttTyp === "maskin" && "Automatisk Maskin-rutt"}
+    </h3>
+
+    {!visaForetagVal ? (
+      <>
+        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
+          Välj vilken adress du startar från:
+        </p>
+        <select
+          value={autoRuttStartAdress}
+          onChange={(e) => setAutoRuttStartAdress(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            fontSize: 16,
+            borderRadius: 10,
+            border: "1px solid #d1d5db",
+            backgroundColor: "#f9fafb",
+            marginBottom: 16,
+          }}
+        >
+          <option value="">-- Välj startadress --</option>
+          {adresser
+            .sort((a, b) => {
+              const prioA = a.prio || 9999;
+              const prioB = b.prio || 9999;
+              return prioA - prioB;
+            })
+            .map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.prio ? `${a.prio}. ` : ""}{a.namn}
+              </option>
+            ))}
+        </select>
+
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <button
+            onClick={nastaStegAutoRutt}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#3b82f6",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            Nästa →
+          </button>
+          <button
+            onClick={stangAutoRuttPopup}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#dc2626",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            Avbryt
+          </button>
+        </div>
+      </>
+    ) : (
+      <>
+        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 12 }}>
+          Vill du lägga till ett företag i rutten?
+        </p>
+        <select
+          value={autoRuttForetagId}
+          onChange={(e) => setAutoRuttForetagId(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "10px 12px",
+            fontSize: 16,
+            borderRadius: 10,
+            border: "1px solid #d1d5db",
+            backgroundColor: "#f9fafb",
+            marginBottom: 16,
+          }}
+        >
+          <option value="">-- Inget företag --</option>
+          {adresser
+            .filter((a) => a.bostad_foretag === "Företag")
+            .sort((a, b) => {
+              const prioA = a.prio || 9999;
+              const prioB = b.prio || 9999;
+              return prioA - prioB;
+            })
+            .map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.prio ? `${a.prio}. ` : ""}{a.namn}
+              </option>
+            ))}
+        </select>
+
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <button
+            onClick={beraknaAutoRutt}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            ✅ Skapa rutt
+          </button>
+          <button
+            onClick={stangAutoRuttPopup}
+            style={{
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#dc2626",
+              color: "#ffffff",
+              fontWeight: 600,
+            }}
+          >
+            Avbryt
+          </button>
+        </div>
+      </>
+    )}
+  </div>
+)}
+      
       
 {visaManuellPopup && (
   <div
