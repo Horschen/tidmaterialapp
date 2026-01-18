@@ -4574,8 +4574,139 @@ return (
     </div>
   </div>
 )}
-      
-      {renderContent()}
+
+<header
+  style={{
+    marginBottom: 8,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <div style={{ flex: 1 }}>
+    <h1
+      style={{
+        fontSize: 20,
+        marginBottom: 2,
+        textAlign: "left",
+      }}
+    >
+      Tid & Material – SnöJour
+    </h1>
+    <p
+      style={{
+        fontSize: 12,
+        color: "#6b7280",
+        margin: 0,
+      }}
+    >
+      Mobilvy – användarvänlig för iPhone
+    </p>
+  </div>
+  <button
+    onClick={delaApp}
+    style={{
+      flexShrink: 0,
+      padding: "6px 10px",
+      borderRadius: 999,
+      border: "1px solid #d1d5db",
+      backgroundColor: "#ffffff",
+      fontSize: 12,
+    }}
+  >
+    Dela
+  </button>
+</header>
+
+{popup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 9999,
+      padding: "24px 32px",
+      borderRadius: 24,
+      border: `2px solid ${popup.type === "error" ? "#b91c1c" : "#15803d"}`,
+      backgroundColor: popup.type === "error" ? "#dc2626" : "#16a34a",
+      color: "#ffffff",
+      fontSize: 20,
+      fontWeight: 600,
+      textAlign: "center",
+      maxWidth: "80%",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    }}
+  >
+    {popup.text}
+  </div>
+)}
+
+{deleteConfirm && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 110,
+      padding: "24px 32px",
+      borderRadius: 24,
+      border: "2px solid #b91c1c",
+      backgroundColor: "#fee2e2",
+      color: "#7f1d1d",
+      fontSize: 16,
+      fontWeight: 600,
+      textAlign: "center",
+      maxWidth: "80%",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    }}
+  >
+    <div style={{ marginBottom: 12 }}>
+      Är du säker på att du vill radera data??
+    </div>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: 12,
+        marginTop: 4,
+      }}
+    >
+      <button
+        onClick={bekräftaRadering}
+        style={{
+          padding: "8px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#b91c1c",
+          color: "#fff",
+          fontSize: 14,
+          fontWeight: 600,
+        }}
+      >
+        Ja
+      </button>
+      <button
+        onClick={avbrytRadering}
+        style={{
+          padding: "8px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#111827",
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        Nej
+      </button>
+    </div>
+  </div>
+)}
+
+{renderContent()}
     </div>
 
     {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
