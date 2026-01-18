@@ -1622,6 +1622,8 @@ function toggleRuttAdress(adressId, checked) {
 async function beraknaRutt() {
   const valda = valjbaraRuttAdresser.filter((a) => a.vald);
   
+  console.log("🔍 Valda adresser:", valda); // DEBUG
+  
   if (valda.length < 2) {
     showPopup("👎 Välj minst 2 adresser för att beräkna rutt.", "error", 3000);
     return;
@@ -1641,6 +1643,7 @@ async function beraknaRutt() {
   setRuttStatus("Beräknar rutt...");
 
   // Rensa gammal rutt i databasen
+  console.log("🗑️ Rensar gammal rutt..."); // DEBUG
   await supabase.from("aktiv_rutt").delete().neq("id", 0);
 
   // Optimera rutt med Google Directions API (Waypoint Optimization)
@@ -1656,9 +1659,13 @@ async function beraknaRutt() {
     waypoints ? `&waypoints=${waypoints}` : ''
   }`;
 
+  console.log("📡 Anropar API:", url); // DEBUG
+
   try {
     const res = await fetch(url);
     const data = await res.json();
+
+    console.log("📦 API-svar:", data); // DEBUG
 
     if (data.status !== "OK") {
       showPopup("👎 Kunde inte beräkna rutt. Kontrollera API-nyckel.", "error", 3000);
@@ -1673,6 +1680,8 @@ async function beraknaRutt() {
       valda[valda.length - 1],
     ];
 
+    console.log("✅ Sorterade adresser:", sorterade); // DEBUG
+
     // Spara till aktiv_rutt
     const ruttRader = sorterade.map((a, idx) => ({
       adress_id: a.id,
@@ -1680,20 +1689,32 @@ async function beraknaRutt() {
       avklarad: false,
     }));
 
-    const { error } = await supabase.from("aktiv_rutt").insert(ruttRader);
+    console.log("💾 Sparar till databas:", ruttRader); // DEBUG
+
+    const { error, data: insertedData } = await supabase
+      .from("aktiv_rutt")
+      .insert(ruttRader)
+      .select(); // 👈 VIKTIGT: Lägg till .select()
+
+    console.log("📥 Databas-svar:", { error, insertedData }); // DEBUG
 
     if (error) {
       showPopup("👎 Kunde inte spara rutt.", "error", 3000);
       setRuttStatus("❌ Fel vid sparning: " + error.message);
     } else {
       setRuttVagbeskrivning(data.routes[0]);
+      
+      console.log("🔄 Laddar aktiv rutt..."); // DEBUG
       await laddaAktivRutt();
+      
+      console.log("✅ ruttAdresser efter laddning:", ruttAdresser); // DEBUG
+      
       showPopup("👍 Rutt beräknad och sparad!", "success", 3000);
       setRuttStatus("✅ Rutt beräknad.");
       stangRuttPopup();
     }
   } catch (err) {
-    console.error(err);
+    console.error("❌ Fel vid ruttberäkning:", err); // DEBUG
     showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
     setRuttStatus("❌ Kunde inte kontakta Google Maps API.");
   }
@@ -1701,15 +1722,20 @@ async function beraknaRutt() {
 
 // Ladda aktiv rutt från databasen
 async function laddaAktivRutt() {
+  console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
+  
   const { data, error } = await supabase
     .from("aktiv_rutt")
     .select("*, adresser(namn, lat, lng)")
     .order("ordning", { ascending: true });
 
+  console.log("📥 Supabase-svar:", { data, error }); // DEBUG
+
   if (error) {
-    console.error(error);
+    console.error("❌ Fel vid laddning av rutt:", error);
     setRuttStatus("❌ Kunde inte ladda rutt.");
   } else {
+    console.log("✅ Uppdaterar ruttAdresser med:", data);
     setRuttAdresser(data || []);
     setRuttStatus(""); // Rensa felmeddelande
   }
