@@ -765,62 +765,61 @@ useEffect(() => {
   }
 
   // ======= Validera fält för manuell registrering =======
-  function validateManuellFields() {
-    if (!manuellAdressId) {
-      showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
-      setStatus("Välj en adress för manuell registrering.");
-      return false;
-    }
+function validateManuellFields() {
+  if (!manuellAdressId) {
+    showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
+    setStatus("Välj en adress för manuell registrering.");
+    return false;
+  }
 
-    const syfteText = buildManuellSyfteString();
-    if (!syfteText) {
-      showPopup("👎 Välj minst ett syfte (manuell).", "error", 3000);
-      setStatus("Välj minst ett syfte (manuell registrering).");
-      return false;
-    }
+  const syfteText = buildManuellSyfteString();
+  if (!syfteText) {
+    showPopup("👎 Välj minst ett syfte (manuell).", "error", 3000);
+    setStatus("Välj minst ett syfte (manuell registrering).");
+    return false;
+  }
 
-    const sandInt = parseInt(manuellSand, 10) || 0;
-    const saltInt = parseInt(manuellSalt, 10) || 0;
+  const sandInt = parseInt(manuellSand, 10) || 0;
+  const saltInt = parseInt(manuellSalt, 10) || 0;
 
-    if (manSyfteSaltning && saltInt === 0) {
-      showPopup(
-        "👎 Ange Salt (kg) när du väljer Saltning (manuell).",
-        "error",
-        3000
-      );
-      setStatus("Ange Salt (kg) om du väljer syfte Saltning (manuell).");
-      return false;
-    }
+  if (manSyfteSaltning && saltInt === 0) {
+    showPopup(
+      "👎 Ange Salt (kg) när du väljer Saltning (manuell).",
+      "error",
+      3000
+    );
+    setStatus("Ange Salt (kg) om du väljer syfte Saltning (manuell).");
+    return false;
+  }
 
-    if (manSyfteGrusning && sandInt === 0) {
-      showPopup(
-        "👎 Ange Grus (kg) när du väljer Grusning (manuell).",
-        "error",
-        3000
-      );
-      setStatus("Ange Grus (kg) om du väljer syfte Grusning (manuell).");
-      return false;
-    }
+  if (manSyfteGrusning && sandInt === 0) {
+    showPopup(
+      "👎 Ange Grus (kg) när du väljer Grusning (manuell).",
+      "error",
+      3000
+    );
+    setStatus("Ange Grus (kg) om du väljer syfte Grusning (manuell).");
+    return false;
+  }
 
-    if (!manuellDatum) {
-      showPopup("👎 Ange datum för manuell registrering.", "error", 3000);
-      setStatus("Ange datum för manuell registrering.");
-      return false;
-    }
+  if (!manuellDatum) {
+    showPopup("👎 Ange datum för manuell registrering.", "error", 3000);
+    setStatus("Ange datum för manuell registrering.");
+    return false;
+  }
 
-     return true;
-  }   // ← avslutar validateManuellFields
+  return true;
+}   // ✅ avslutar validateManuellFields
 
-  // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
-  async function sparaRapport() {
+// ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
+async function sparaRapport() {
   if (!validateBeforeSaveFields()) return;
 
   const metod = team === "För hand" ? "hand" : "maskin";
   const syfteText = buildSyfteString();
-
   let arbetstidMin = 0;
 
-  // — Beräkna arbetstid beroende på om passet är aktivt eller inte —
+  // — Beräkna arbetstid —
   if (aktivtPass) {
     const nu = new Date();
     const startTid =
@@ -835,47 +834,34 @@ useEffect(() => {
 
     const minHeltal = Math.floor(sekEfterPausPerson / 60);
     const restSek = sekEfterPausPerson % 60;
-    let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
+    const diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
 
     if (diffMin <= 0) {
-      showPopup(
-        "👎 För kort tid (eller bara paus) sedan senaste rapport.",
-        "error",
-        3000
-      );
-      setStatus(
-        "För kort intervall för auto-tid (eller bara paus), försök igen om en stund."
-      );
+      showPopup("👎 För kort tid (eller bara paus).", "error", 3000);
+      setStatus("För kort intervall för auto-tid.");
       return;
     }
-
     arbetstidMin = diffMin;
   } else {
-    const manuell = parseInt(arbetstid, 10);
-    if (!manuell || manuell <= 0) {
-      showPopup(
-        "👎 Ange arbetstid (minuter) eller starta passet.",
-        "error",
-        3000
-      );
-      setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
+    const manu = parseInt(arbetstid, 10);
+    if (!manu || manu <= 0) {
+      showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
+      setStatus("Ange arbetstid (minuter).");
       return;
     }
-    arbetstidMin = manuell * (antalAnstallda || 1);
+    arbetstidMin = manu * (antalAnstallda || 1);
   }
 
-  // — Sätt både spar-tid (nu) och verklig jobbtid —
-  const nuIso = new Date().toISOString(); // när posten sparas
-  const jobbtidIso = aktivtPass
-    ? nuIso // auto-pass använder realtid
-    : new Date().toISOString(); // manuellt läge använder nuvarande, kan ändras senare i edit
+  // — Tidsstämplar —
+  const nuIso = new Date().toISOString();
+  const jobbtidIso = aktivtPass ? nuIso : new Date().toISOString();
 
-  setStatus("Sparar…");
+  setStatus("Sparar...");
 
   const { error } = await supabase.from("rapporter").insert([
     {
-      datum: nuIso,            // tidstämpel för insättningen
-      jobb_tid: jobbtidIso,    // verklig jobbtid (nytt fält i tabellen)
+      datum: nuIso,
+      jobb_tid: jobbtidIso,
       adress_id: valda,
       arbetstid_min: arbetstidMin,
       team_namn: team,
@@ -891,33 +877,26 @@ useEffect(() => {
   if (error) {
     setStatus("❌ " + error.message);
     showPopup("👎 Fel vid sparning", "error", 3000);
-  } else {
-    setStatus("Rapport sparad");
-    showPopup("👍 Rapport sparad", "success", 4000);
-
-    setArbetstid("");
-    setValda("");
-    setSand(0);
-    setSalt(0);
-    setAntalAnstallda(1);
-
-    setSenasteRapportTid(nuIso);
-
-    // bocka av i pågående rutt (om används)
-    await bockAvAdressIRutt(valda);
-
-    setPaus(null);
-    setPausSekUnderIntervall(0);
+    return;
   }
-}
-      
-      // Bocka av adress i aktiv rutt
-      await bockAvAdressIRutt(valda);
-      
-      setPaus(null);
-      setPausSekUnderIntervall(0);
-    }
-  }
+
+  // — Lyckad sparning —
+  setStatus("Rapport sparad");
+  showPopup("👍 Rapport sparad", "success", 4000);
+
+  setArbetstid("");
+  setValda("");
+  setSand(0);
+  setSalt(0);
+  setAntalAnstallda(1);
+  setSenasteRapportTid(nuIso);
+
+  // Nu är await inne i async-funktionen
+  await bockAvAdressIRutt(valda);
+
+  setPaus(null);
+  setPausSekUnderIntervall(0);
+}   // ✅ avslutar sparaRapport
   
   // ======= Spara manuell rapport (popup) =======
 async function sparaManuellRapport() {
