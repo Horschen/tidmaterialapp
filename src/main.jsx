@@ -466,6 +466,7 @@ function App() {
   const [manSyfteSaltning, setManSyfteSaltning] = useState(false);
   const [manSyfteGrusning, setManSyfteGrusning] = useState(false);
   const [visaManuellPopup, setVisaManuellPopup] = useState(false);
+  const [manuellTid, setManuellTid] = useState("");
 
   function buildManuellSyfteString() {
     const delar = [];
@@ -947,7 +948,8 @@ async function sparaManuellRapport() {
   let datumIso, jobbIso;
   try {
     datumIso = new Date().toISOString(); // nuvarande sparögonblick
-    jobbIso = new Date(manuellDatum + "T12:00:00Z").toISOString(); // verklig arbetstid som användaren valt (kan editeras senare)
+    // skapa korrekt jobbtid med vald tid eller 12:00 som fallback
+const tidDel = manuellTid ? `${manuellTid}:00` : "12:00:00"; // verklig arbetstid som användaren valt (kan editeras senare)
   } catch (_) {
     showPopup("👎 Ogiltigt datum för manuell registrering.", "error", 3000);
     setStatus("Ogiltigt datum för manuell registrering.");
