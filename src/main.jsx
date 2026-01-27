@@ -2381,194 +2381,184 @@ function avbrytRadering() {
       );
     }
 
-    if (activeTab === "karta") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
+    // === KARTA-FLIK ===
+if (activeTab === "karta") {
+  return (
+    <section style={sectionStyle}>
+      <h2
+        style={{
+          fontSize: 18,
+          marginTop: 0,
+          marginBottom: 12,
+        }}
+      >
+        Karta
+      </h2>
+
+      <label style={labelStyle}>Välj adress (karta)</label>
+      <select
+        value={kartaAdressId}
+        onChange={(e) => setKartaAdressId(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="">-- Välj adress --</option>
+        {sortAdresser(adresser).map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.namn}
+          </option>
+        ))}
+      </select>
+
+      <button
+        onClick={oppnaKartaForKartAdress}
+        disabled={!kartaAdressId}
+        style={{
+          ...primaryButton,
+          opacity: kartaAdressId ? 1 : 0.5,
+          marginTop: 16,
+        }}
+      >
+        Öppna karta för vald adress
+      </button>
+
+      {/* === Hantera PDF‑karta för vald adress === */}
+      {kartaAdressId && (
+        <div style={{ marginTop: 20 }}>
+          <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+            PDF‑ eller bildkarta för vald adress
+          </h4>
+
+          {/* Uppladdningsknapp */}
+          <input
+            type="file"
+            accept="application/pdf,image/*"
+            onChange={async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              setStatus(`📤 Laddar upp "${file.name}" …`);
+
+              try {
+                // unik filväg i Supabase‑bucket
+                const path = `maps/${kartaAdressId}_${file.name}`;
+                const { error: uploadError } = await supabase.storage
+                  .from("adresskartor")
+                  .upload(path, file, { upsert: true });
+                if (uploadError) throw uploadError;
+
+                // publik URL
+                const { data } = supabase.storage
+                  .from("adresskartor")
+                  .getPublicUrl(path);
+                const publicUrl = data.publicUrl;
+
+                const { error: updateError } = await supabase
+                  .from("adresser")
+                  .update({ file_url: publicUrl })
+                  .eq("id", kartaAdressId);
+                if (updateError) throw updateError;
+
+                showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+                setStatus("✅ Kartan uppladdad!");
+              } catch (err) {
+                console.error(err);
+                showPopup("👎 Fel vid uppladdning.", "error", 3000);
+                setStatus("❌ Fel: " + err.message);
+              }
             }}
-          >
-            Karta
-          </h2>
+            style={{ marginTop: 6 }}
+          />
 
-          <label style={labelStyle}>Välj adress (karta)</label>
-          <select
-            value={kartaAdressId}
-            onChange={(e) => setKartaAdressId(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">-- Välj adress --</option>
-            {sortAdresser(adresser).map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.namn}
-    </option>
-  ))}
-  </select>
+          {/* Förhandsvisning och ev. Radera‑knapp */}
+          {adresser
+            .filter((a) => a.id === Number(kartaAdressId) && a.file_url)
+            .map((a) => (
+              <div key={a.id} style={{ marginTop: 20 }}>
+                <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                  Förhandsgranskning
+                </h4>
 
-          <button
-            onClick={oppnaKartaForKartAdress}
-            disabled={!kartaAdressId}
-            style={{
-              ...primaryButton,
-              opacity: kartaAdressId ? 1 : 0.5,
-              marginTop: 16,
-            }}
-          >
-            Öppna karta för vald adress
-          </button>
-        </section>
-      );
-    }
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: "#4b5563" }}>
+                    {a.file_url.split("/").pop()}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const file = a.file_url.split("/").pop();
+                        await supabase
+                          .storage
+                          .from("adresskartor")
+                          .remove([`maps/${kartaAdressId}_${file}`]);
+                        await supabase
+                          .from("adresser")
+                          .update({ file_url: null })
+                          .eq("id", a.id);
+                        showPopup("🗑️ Fil raderad.", "success", 3000);
+                      } catch (err) {
+                        console.error(err);
+                        showPopup("👎 Fel vid radering.", "error", 3000);
+                      }
+                    }}
+                    style={{
+                      padding: "4px 10px",
+                      border: "none",
+                      borderRadius: 6,
+                      backgroundColor: "#dc2626",
+                      color: "#fff",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Radera fil
+                  </button>
+                </div>
 
-    if (activeTab === "rapport") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Veckorapport
-          </h2>
-
-{/* === Hantera PDF‑karta för vald adress === */}
-{kartaAdressId && (
-  <div style={{ marginTop: 20 }}>
-    <h4 style={{ fontSize: 15, marginBottom: 6 }}>PDF‑karta för vald adress</h4>
-
-    {/* Uppladdningsknapp */}
-    <input
-      type="file"
-      accept="application/pdf,image/*"
-      onChange={async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setStatus(`📤 Laddar upp "${file.name}" ...`);
-        try {
-          // Unik filväg i Supabase Storage
-          const path = `maps/${kartaAdressId}_${file.name}`;
-          const { error: uploadError } = await supabase.storage
-            .from("adresskartor")
-            .upload(path, file, { upsert: true });
-
-          if (uploadError) throw uploadError;
-
-          // Hämta publik URL
-          const { data } = supabase.storage
-            .from("adresskartor")
-            .getPublicUrl(path);
-          const publicUrl = data.publicUrl;
-
-          // Uppdatera raden i tabellen
-          const { error: updateError } = await supabase
-            .from("adresser")
-            .update({ file_url: publicUrl })
-            .eq("id", kartaAdressId);
-
-          if (updateError) throw updateError;
-
-          showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
-          setStatus("✅ Kartan uppladdad!");
-        } catch (err) {
-          console.error(err);
-          showPopup("👎 Fel vid uppladdning.", "error", 3000);
-          setStatus("❌ Fel: " + err.message);
-        }
-      }}
-    />
-
-    {/* Förhandsvisning */}
-    {adresser
-      .filter((a) => a.id === Number(kartaAdressId) && a.file_url)
-      .map((a) => (
-        <div key={a.id} style={{ marginTop: 20 }}>
-          <h4 style={{ fontSize: 15, marginBottom: 6 }}>Förhandsgranskning</h4>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ fontSize: 13, color: "#4b5563" }}>
-              {a.file_url.split("/").pop()}
-            </span>
-            <button
-              onClick={async () => {
-                try {
-                  const filePath = a.file_url.split("/").pop(); // enkel borttagning
-                  await supabase
-                    .storage
-                    .from("adresskartor")
-                    .remove([`maps/${a.id}_${filePath}`]);
-                  await supabase
-                    .from("adresser")
-                    .update({ file_url: null })
-                    .eq("id", a.id);
-                  showPopup("🗑️ Fil raderad.", "success", 3000);
-                } catch (err) {
-                  console.error(err);
-                  showPopup("👎 Fel vid radering.", "error", 3000);
-                }
-              }}
-              style={{
-                padding: "4px 10px",
-                border: "none",
-                borderRadius: 6,
-                backgroundColor: "#dc2626",
-                color: "#fff",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              Radera fil
-            </button>
-          </div>
-
-          {a.file_url.endsWith(".pdf") ? (
-            <iframe
-              src={`${a.file_url}#view=FitH`}
-              title="Karta"
-              style={{
-                width: "100%",
-                height: "70vh",
-                border: "1px solid #d1d5db",
-                borderRadius: 8,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                maxHeight: "70vh",
-                overflow: "auto",
-                border: "1px solid #d1d5db",
-                borderRadius: 8,
-              }}
-            >
-              <img
-                src={a.file_url}
-                alt="Karta"
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  cursor: "zoom-in",
-                }}
-              />
-            </div>
-          )}
+                {a.file_url.endsWith(".pdf") ? (
+                  <iframe
+                    src={`${a.file_url}#view=FitH`}
+                    title="Karta"
+                    style={{
+                      width: "100%",
+                      height: "70vh",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      maxHeight: "70vh",
+                      overflow: "auto",
+                      border: "1px solid #d1d5db",
+                      borderRadius: 8,
+                    }}
+                  >
+                    <img
+                      src={a.file_url}
+                      alt="Karta"
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        cursor: "zoom-in",
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
-      ))}
-  </div>
-)}
+      )}
+    </section>
+  );
+}
           
           {/* Gula ovala rutor för total tider */}
           <div
