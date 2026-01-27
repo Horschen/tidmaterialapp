@@ -2425,35 +2425,42 @@ if (activeTab === "karta") {
             type="file"
             accept="application/pdf,image/*"
             onChange={async (e) => {
-              const file = e.target.files[0];
-              if (!file) return;
-              setStatus(`📤 Laddar upp "${file.name}" …`);
-              try {
-                const path = `maps/${kartaAdressId}_${file.name}`;
-                const { error: uploadError } = await supabase.storage
-                  .from("adresskartor")
-                  .upload(path, file, { upsert: true });
-                if (uploadError) throw uploadError;
+  const file = e.target.files[0];
+  if (!file) return;
 
-                const { data } = supabase.storage
-                  .from("adresskartor")
-                  .getPublicUrl(path);
-                const publicUrl = data.publicUrl;
+  try {
+    setStatus(`📤 Laddar upp "${file.name}" …`);
 
-                const { error: updateError } = await supabase
-                  .from("adresser")
-                  .update({ file_url: publicUrl })
-                  .eq("id", kartaAdressId);
-                if (updateError) throw updateError;
+    // 🧩 Skapa enkelt unikt namn per uppladdning
+    const ext = file.name.split(".").pop();
+    const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
+    const path = `maps/${safeName}`;
 
-                showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
-                setStatus("✅ Kartan uppladdad!");
-              } catch (err) {
-                console.error(err);
-                showPopup("👎 Fel vid uppladdning.", "error", 3000);
-                setStatus("❌ Fel: " + err.message);
-              }
-            }}
+    // 1️⃣ Ladda upp filen
+    const { error: uploadError } = await supabase.storage
+      .from("adresskartor")
+      .upload(path, file, { upsert: true });
+    if (uploadError) throw uploadError;
+
+    // 2️⃣ Bygg publik länk till filen
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
+
+    // 3️⃣ Spara länken till adressen
+    const { error: updateError } = await supabase
+      .from("adresser")
+      .update({ file_url: publicUrl })
+      .eq("id", kartaAdressId);
+    if (updateError) throw updateError;
+
+    showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+    setStatus("✅ Kartan uppladdad!");
+
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid uppladdning.", "error", 3000);
+    setStatus("❌ Fel: " + err.message);
+  }
+}}
             style={{ marginTop: 6 }}
           />
 
