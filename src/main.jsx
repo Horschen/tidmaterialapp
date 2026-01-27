@@ -694,13 +694,12 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering");
+    .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering")
+    .order("adresslista_sortering", { ascending: true });   // redan sorterat på servern
 
   if (error) {
-    console.error("❌ Fel vid laddning av adresser:", error);
-    setStatus("Fel vid laddning av adresser: " + error.message);
+    setStatus("❌ " + error.message);
   } else {
-    console.log("✅ Adresser:", JSON.stringify(data, null, 2)); // ← den här ska synas
     setAdresser(data || []);
   }
 }
@@ -2163,36 +2162,30 @@ function avbrytRadering() {
           </h2>
 
           <label style={labelStyle}>Adress (för rapport)</label>
-          <select
-            value={valda}
-            onChange={(e) => setValda(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">-- Välj adress --</option>
-            {[...adresser]
-              .sort((a, b) => {
-                const sortA =
-                  typeof a.adresslista_sortering === "number"
-                    ? a.adresslista_sortering
-                    : Number(a.adresslista_sortering) || Number(a.id) || 0;
-                const sortB =
-                  typeof b.adresslista_sortering === "number"
-                    ? b.adresslista_sortering
-                    : Number(b.adresslista_sortering) || Number(b.id) || 0;
-                return sortA - sortB; // ordning enligt kolumnen i Supabase
-              })
-              .map((a) => (
-                <option
-                  key={a.id}
-                  value={a.id}
-                  style={{
-                    backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
-                  }}
-                >
-                  {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-                </option>
-              ))}
-          </select>
+<select
+  value={valda}
+  onChange={(e) => setValda(e.target.value)}
+  style={selectStyle}
+>
+  <option value="">-- Välj adress --</option>
+  {[...adresser]
+    .sort(
+      (a, b) =>
+        (Number(a.adresslista_sortering) || Number(a.id)) -
+        (Number(b.adresslista_sortering) || Number(b.id))
+    )
+    .map((a) => (
+      <option
+        key={a.id}
+        value={a.id}
+        style={{
+          backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+        }}
+      >
+        {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+      </option>
+    ))}
+</select>
 
           <div
             style={{
