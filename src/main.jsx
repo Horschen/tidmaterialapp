@@ -3,13 +3,19 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_MAPS_API_KEY } from "./config.js";
 
-// ======== Hjälp: sortera adresser efter egen sorteringskolumn (eller ID som fallback) ========
+// ===== Hjälpfunktion: sortera adresser efter kolumnen adresslista_sortering =====
 function sortAdresser(adresser) {
   if (!Array.isArray(adresser)) return [];
   return [...adresser].sort((a, b) => {
-    const sortA = Number(a.adresslista_sortering) || Number(a.id) || 0;
-    const sortB = Number(b.adresslista_sortering) || Number(b.id) || 0;
-    return sortA - sortB; // stigande ordning
+    const sortA =
+      typeof a.adresslista_sortering === "number"
+        ? a.adresslista_sortering
+        : Number(a.adresslista_sortering) || Number(a.id) || 0;
+    const sortB =
+      typeof b.adresslista_sortering === "number"
+        ? b.adresslista_sortering
+        : Number(b.adresslista_sortering) || Number(b.id) || 0;
+    return sortA - sortB; // stigande ordning, samma som i Supabase
   });
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2157,14 +2163,18 @@ function avbrytRadering() {
           </h2>
 
           <label style={labelStyle}>Adress (för rapport)</label>
-          <select
-            value={valda}
-            onChange={(e) => setValda(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">-- Välj adress --</option>
-              {sortAdresser(adresser).map((a) => (
-    <option key={a.id} value={a.id}>
+<select
+  value={valda}
+  onChange={(e) => setValda(e.target.value)}
+  style={selectStyle}
+>
+  <option value="">-- Välj adress --</option>
+  {sortAdresser(adresser).map((a) => (
+    <option
+      key={a.id}
+      value={a.id}
+      style={{ backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white" }}
+    >
       {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
     </option>
   ))}
@@ -3889,22 +3899,22 @@ return (
     </h3>
 
     <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
-    <select
-      value={manuellAdressId}
-      onChange={(e) => setManuellAdressId(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      <option value="">-- Välj adress --</option>
-        {sortAdresser(adresser).map((a) => (
+<select
+  value={manuellAdressId}
+  onChange={(e) => setManuellAdressId(e.target.value)}
+  style={{
+    width: "100%",
+    marginBottom: 12,
+    padding: "8px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+  }}
+>
+  <option value="">-- Välj adress --</option>
+  {sortAdresser(adresser).map((a) => (
     <option key={a.id} value={a.id}>
-      {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+      {a.namn}
     </option>
   ))}
 </select>
