@@ -78,16 +78,17 @@ function VeckoOversikt({
 }) {
   const grupperad = {};
 
-  // ======= Sortering och grupper för jobbtid =======
+  // ======= Gruppera och sortera på verklig jobbtid (jobb_tid) =======
+const grupperad = {};
 
-// Sortera direkt på jobb_tid (verklig arbetstid)
+// 1️⃣ Sortera alla rapporter direkt på jobb_tid (fallback till datum om null)
 const sorteradeRapporter = [...data].sort((a, b) => {
-  const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : 0;
-  const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : 0;
-  return tA - tB; // äldsta först, vänd efter gruppning
+  const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : (a.datum ? Date.parse(a.datum) : 0);
+  const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : (b.datum ? Date.parse(b.datum) : 0);
+  return tB - tA; // nyaste först
 });
 
-// Gruppera rapporterna per adress
+// 2️⃣ Bygg gruppen per adress
 sorteradeRapporter.forEach((rad) => {
   const adressId = rad.adress_id ?? "okänd";
   const namn = rad.adresser?.namn || "Okänd adress";
@@ -125,17 +126,18 @@ sorteradeRapporter.forEach((rad) => {
       .forEach((s) => g.syften.add(s));
   }
 
-  // Håll koll på senaste jobbtid för varje adress
-  if (rad.jobb_tid) {
-    const d = new Date(rad.jobb_tid);
+  // sätt adressens senasteJobbTid
+  const jobbTid = rad.jobb_tid || rad.datum || null;
+  if (jobbTid) {
+    const d = new Date(jobbTid);
     if (!Number.isNaN(d.getTime())) {
       const prev = g.senasteJobbTid ? new Date(g.senasteJobbTid) : null;
-      if (!prev || d > prev) g.senasteJobbTid = rad.jobb_tid;
+      if (!prev || d > prev) g.senasteJobbTid = jobbTid;
     }
   }
 });
 
-// Mappa slutresultat för tabellen, sortera nyaste överst
+// 3️⃣ Bygg tabelldata + sortera igen efter senasteJobbTid
 const lista = Object.values(grupperad)
   .map((g) => ({
     adressId: g.adressId,
@@ -146,7 +148,7 @@ const lista = Object.values(grupperad)
     antal: g.antalJobb,
     anstallda: g.anstallda,
     syften: Array.from(g.syften).join(", "),
-    senasteDatumTid: g.senasteJobbTid,
+    senasteDatumTid: g.senasteJobbTid, // visas i kolumnen
     skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
     redigerad:
       g.senasteJobbTid &&
