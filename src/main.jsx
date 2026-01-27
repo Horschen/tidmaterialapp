@@ -391,7 +391,12 @@ function App() {
 
   // App-lösenord
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordPaused, setPasswordPaused] = useState(false);
+  
+  // 👉 kolla localStorage direkt vid start, innan appen ritar login-formuläret
+const initialPaused =
+  typeof localStorage !== "undefined" &&
+  localStorage.getItem("snöjour_password_paused") === "true";
+const [passwordPaused, setPasswordPaused] = useState(initialPaused);
   
   // 👉 Läs in gamla "pausat läge" från localStorage vid start
 useEffect(() => {
