@@ -1729,155 +1729,127 @@ const secondaryButton = {
   marginTop: 8,
 };
 
-// ======= RUTT-FUNKTIONER =======
+// ======= RUTT‑FUNKTIONER =======
 
 // Ladda aktiv rutt från databasen (utan nested relation)
 async function laddaAktivRutt() {
-  console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
-  
-  // Hämta rutt-data
+  console.log("🔄 laddaAktivRutt() körs...");
   const { data: ruttData, error: ruttError } = await supabase
     .from("aktiv_rutt")
     .select("*")
     .order("ordning", { ascending: true });
 
   if (ruttError) {
-    console.error("❌ Fel vid laddning av rutt:", ruttError);
-    setRuttStatus("❌ Kunde inte ladda rutt: " + ruttError.message);
+    console.error("❌ Fel vid laddning av rutt:", ruttError);
+    setRuttStatus("❌ Kunde inte ladda rutt " + ruttError.message);
     return;
   }
 
-  // Hämta alla adresser
   const { data: adresserData, error: adresserError } = await supabase
     .from("adresser")
     .select("id, namn, lat, lng");
 
   if (adresserError) {
-    console.error("❌ Fel vid laddning av adresser:", adresserError);
-    setRuttStatus("❌ Kunde inte ladda adresser: " + adresserError.message);
+    console.error("❌ Fel vid laddning av adresser:", adresserError);
+    setRuttStatus("❌ Kunde inte ladda adresser " + adresserError.message);
     return;
   }
 
-  // Merga data manuellt
   const adresserMap = {};
-  adresserData.forEach((a) => {
-    adresserMap[a.id] = a;
-  });
+  adresserData.forEach((a) => (adresserMap[a.id] = a));
 
-  const ruttMedAdresser = ruttData.map((r) => ({
+  const ruttMedAdresser = (ruttData || []).map((r) => ({
     ...r,
     adresser: adresserMap[r.adress_id] || null,
   }));
 
-  console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
+  console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
   setRuttAdresser(ruttMedAdresser);
-  setRuttStatus(""); // Rensa felmeddelande
+  setRuttStatus("");
 }
 
-// ======= Ladda väntande rutt =======
+// ======= Ladda väntande rutt =======
 async function laddaVantandeRutt() {
-  const { data, error } = await supabase
-    .from("vantande_rutt")
-    .select("*");
-
+  const { data, error } = await supabase.from("vantande_rutt").select("*");
   if (error) {
-    console.error("❌ Fel vid laddning av väntande rutt:", error);
+    console.error("❌ Fel vid laddning av väntande rutt:", error);
   } else {
-    console.log("📋 Väntande rutt laddad:", data);
+    console.log("📋 Väntande rutt laddad:", data);
     setVantandeRuttAdresser(data || []);
     setVisaAktiveraRuttKnapp(data && data.length > 0);
   }
 }
 
-// Öppna popup för att välja adresser till rutt
+// Öppna/stäng popup
 function oppnaRuttPopup() {
-  setValjbaraRuttAdresser(
-    adresser.map((a) => ({ ...a, vald: false, ordning: 0 }))
-  );
+  setValjbaraRuttAdresser(adresser.map((a) => ({ ...a, vald: false, ordning: 0 })));
   setVisaRuttPopup(true);
 }
-
-// Stäng popup
 function stangRuttPopup() {
   setVisaRuttPopup(false);
   setValjbaraRuttAdresser([]);
 }
-
-// Toggla adress i popup
 function toggleRuttAdress(adressId, checked) {
   setValjbaraRuttAdresser((prev) =>
-    prev.map((a) =>
-      a.id === adressId ? { ...a, vald: checked } : a
-    )
+    prev.map((a) => (a.id === adressId ? { ...a, vald: checked } : a))
   );
 }
 
-// Hjälpfunktion: beräkna via Google Maps och spara till Supabase
-  async function beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS) {
-    const url = `/api/route?origin=${origin}&destination=${destination}${
-      waypoints ? `&waypoints=${waypoints}` : ""
-    }`;
+// ======= Hjälp: beräkna via Google Maps och spara =======
+async function beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS) {
+  const url = `/api/route?origin=${origin}&destination=${destination}${
+    waypoints ? `&waypoints=${waypoints}` : ""
+  }`;
 
-    try {
-      console.log("➡️ route‑URL:", url);
-      const res = await fetch(url);
-      const data = await res.json();
+  try {
+    console.log("➡️ route‑URL:", url);
+    const res = await fetch(url);
+    const data = await res.json();
 
-      if (data.status !== "OK") {
-        showPopup("👎 Kunde inte beräkna rutt.", "error", 3000);
-        setRuttStatus("❌ Google Maps API‑fel: " + data.status);
-        return;
-      }
-
-      const optimizedOrder = data.routes[0].waypoint_order || [];
-      const sorted = optimizedOrder.map((i) => medGPS[i]);
-
-      // Adresser utan GPS läggs sist
-      const finalRutt = [...sorted, ...utanGPS];
-
-      // Ta bort gammal aktiv rutt
-      await supabase.from("aktiv_rutt").delete().neq("id", 0);
-
-      // Spara ny rutt
-      const rows = finalRutt.map((a, idx) => ({
-        adress_id: a.id,
-        ordning: idx + 1,
-        avklarad: false,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("aktiv_rutt")
-        .insert(rows);
-
-      if (insertError) {
-        showPopup("👎 Kunde inte spara aktiv rutt.", "error", 3000);
-        setRuttStatus("❌ Fel vid lagring.");
-      } else {
-        await supabase.from("vantande_rutt").delete().neq("id", 0);
-        setRuttVagbeskrivning(data.routes[0]);
-        await laddaAktivRutt();
-        await laddaVantandeRutt();
-
-        showPopup("👍 Rutt aktiverad och sparad!", "success", 4000);
-        setRuttStatus("✅ Rutt aktiverad.");
-      }
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
-      setRuttStatus("❌ Kunde inte kontakta Google Maps API.");
+    if (data.status !== "OK") {
+      showPopup("👎 Kunde inte beräkna rutt.", "error", 3000);
+      setRuttStatus("❌ Google Maps API‑fel: " + data.status);
+      return;
     }
-  }
 
-// ======= Aktivera väntande rutt (använd GPS-position eller startadress med "Start") =======
+    const optimizedOrder = data.routes[0].waypoint_order || [];
+    const sorted = optimizedOrder.map((i) => medGPS[i]);
+    const finalRutt = [...sorted, ...utanGPS];
+
+    await supabase.from("aktiv_rutt").delete().neq("id", 0);
+    const rows = finalRutt.map((a, idx) => ({
+      adress_id: a.id,
+      ordning: idx + 1,
+      avklarad: false,
+    }));
+
+    const { error: insertError } = await supabase.from("aktiv_rutt").insert(rows);
+    if (insertError) {
+      showPopup("👎 Kunde inte spara aktiv rutt.", "error", 3000);
+      setRuttStatus("❌ Fel vid lagring.");
+    } else {
+      await supabase.from("vantande_rutt").delete().neq("id", 0);
+      setRuttVagbeskrivning(data.routes[0]);
+      await laddaAktivRutt();
+      await laddaVantandeRutt();
+      showPopup("👍 Rutt aktiverad och sparad!", "success", 4000);
+      setRuttStatus("✅ Rutt aktiverad.");
+    }
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
+    setRuttStatus("❌ Kunde inte kontakta Google Maps API.");
+  }
+}
+
+// ======= Aktivera väntande rutt =======
 async function aktiveraVantandeRutt() {
   if (vantandeRuttAdresser.length === 0) {
-    showPopup("👎 Ingen väntande rutt finns.", "error", 3000);
+    showPopup("👎 Ingen väntande rutt finns.", "error", 3000);
     return;
   }
 
-  setRuttStatus("Hämtar adresser...");
-
-  // Hämta adressdata för väntande rutt
+  setRuttStatus("Hämtar adresser...");
   const adressIds = vantandeRuttAdresser.map((r) => r.adress_id);
   const { data: adresserData, error: adresserError } = await supabase
     .from("adresser")
@@ -1885,27 +1857,20 @@ async function aktiveraVantandeRutt() {
     .in("id", adressIds);
 
   if (adresserError || !adresserData || adresserData.length === 0) {
-    showPopup("👎 Kunde inte hämta adresser.", "error", 3000);
-    setRuttStatus("❌ Fel vid hämtning av adresser.");
+    showPopup("👎 Kunde inte hämta adresser.", "error", 3000);
+    setRuttStatus("❌ Fel vid hämtning av adresser.");
     return;
   }
 
-  // 🗺️ Dela upp adresser i GPS och icke-GPS
   const medGPS = adresserData.filter((a) => a.lat && a.lng);
   const utanGPS = adresserData.filter((a) => !a.lat || !a.lng);
-
-  // 🏁 Ny: kontrollera om det finns en "Start..."-adress
-  const startAdresser = medGPS.filter((a) =>
-    a.namn.toLowerCase().startsWith("start")
-  );
+  const startAdresser = medGPS.filter((a) => a.namn.toLowerCase().startsWith("start"));
 
   let origin, destination, waypoints;
 
   if (startAdresser.length > 0) {
-    // 🟢 Om en startadress finns, använd den som början på rutten
     const start = startAdresser[0];
     origin = `${start.lat},${start.lng}`;
-    // övriga adresser (utom start)
     const andra = medGPS.filter((a) => a.id !== start.id);
     if (andra.length > 0) {
       destination = `${andra[andra.length - 1].lat},${andra[andra.length - 1].lng}`;
@@ -1914,98 +1879,74 @@ async function aktiveraVantandeRutt() {
       destination = origin;
       waypoints = "";
     }
-    setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
+    setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
   } else if (navigator.geolocation) {
+    setRuttStatus("Beräknar rutt från din position...");
+    try {
+      const pos = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 5000,
+        })
+      );
+      const userLat = pos.coords.latitude;
+      const userLng = pos.coords.longitude;
+      origin = `${userLat},${userLng}`;
+      destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
+      waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+    } catch (_) {
+      origin = `${medGPS[0].lat},${medGPS[0].lng}`;
+      destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
+      waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+      setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
+    }
+  } else {
+    origin = `${medGPS[0].lat},${medGPS[0].lng}`;
+    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
+    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+    setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
+  }
 
+  await beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS);
+}
 
-  setRuttStatus("Sparar planerad rutt...");
+// ======= Spara planerad rutt =======
+async function sparaPlaneradRutt() {
+  const valda = (valjbaraRuttAdresser || []).filter((a) => a.vald);
+  if (valda.length < 2) {
+    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
+    return;
+  }
 
-  // 🧹 ta bort tidigare väntande rutt
+  setRuttStatus("Sparar planerad rutt...");
   await supabase.from("vantande_rutt").delete().neq("id", 0);
-
-  // bygg rader att spara
-  const rader = valda.map((a) => ({
-    adress_id: a.id,
-  }));
-
+  const rader = valda.map((a) => ({ adress_id: a.id }));
   const { error } = await supabase.from("vantande_rutt").insert(rader);
 
   if (error) {
-    showPopup("👎 Kunde inte spara planerad rutt.", "error", 3000);
-    setRuttStatus("❌ Fel vid sparning: " + error.message);
+    showPopup("👎 Kunde inte spara planerad rutt.", "error", 3000);
+    setRuttStatus("❌ Fel vid sparning: " + error.message);
   } else {
-    showPopup("👍 Planerad rutt sparad! Aktivera vid pass-start.", "success", 4000);
-    setRuttStatus("✅ Planerad rutt sparad.");
+    showPopup("👍 Planerad rutt sparad! Aktivera vid pass‑start.", "success", 4000);
+    setRuttStatus("✅ Planerad rutt sparad.");
     await laddaVantandeRutt();
     stangRuttPopup();
   }
 }
 
-    
-    } else if (navigator.geolocation) {
-  // 📍 Använd användarens GPS som start om ingen "Start..." finns
-  setRuttStatus("Beräknar rutt från din position...");
-  try {
-    const pos = await new Promise((resolve, reject) =>
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-      })
-    );
-    const userLat = pos.coords.latitude;
-    const userLng = pos.coords.longitude;
-    origin = `${userLat},${userLng}`;
-    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
-    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-  } catch (_) {
-    // GPS nekad, fallback direkt till första adress med GPS
-    origin = `${medGPS[0].lat},${medGPS[0].lng}`;
-    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
-    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
-  }
-} else {
-  // 🚙 Om enheten saknar GPS helt
-  origin = `${medGPS[0].lat},${medGPS[0].lng}`;
-  destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
-  waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-  setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
-}
-
-      
-    // 🚙 Om enheten saknar GPS helt
-    origin = `${medGPS[0].lat},${medGPS[0].lng}`;
-    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
-    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
-  }
-
-  // 📦 Nu kan du köra vidare med befintlig logik för att beräkna och spara rutten
-  await beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS);
-}
-
-// ======= Spara planerad rutt (innan pass) =======
-async function sparaPlaneradRutt() {
-  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
-
-  if (valda.length < 2) {
-    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
-    return;
-  }
-
-// ======= Radera väntande rutt =======
+// ======= Radera väntande rutt =======
 async function raderaVantandeRutt() {
   const { error } = await supabase.from("vantande_rutt").delete().neq("id", 0);
   if (error) {
-    showPopup("👎 Kunde inte radera väntande rutt.", "error", 3000);
+    showPopup("👎 Kunde inte radera väntande rutt.", "error", 3000);
   } else {
     setVantandeRuttAdresser([]);
     setVisaAktiveraRuttKnapp(false);
-    showPopup("👍 Väntande rutt raderad.", "success", 3000);
+    showPopup("👍 Väntande rutt raderad.", "success", 3000);
   }
 }
 
-// Bocka av adress när jobb sparas
+// Bocka av adress när jobb sparas
 async function bockAvAdressIRutt(adressId) {
   const { error } = await supabase
     .from("aktiv_rutt")
@@ -2013,94 +1954,19 @@ async function bockAvAdressIRutt(adressId) {
     .eq("adress_id", adressId)
     .eq("avklarad", false);
 
-  if (!error) {
-    await laddaAktivRutt();
-  }
+  if (!error) await laddaAktivRutt();
 }
 
-// Rensa hela rutten
+// Rensa hela rutten
 async function rensaRutt() {
   const { error } = await supabase.from("aktiv_rutt").delete().neq("id", 0);
   if (error) {
-    showPopup("👎 Kunde inte rensa rutt.", "error", 3000);
+    showPopup("👎 Kunde inte rensa rutt.", "error", 3000);
   } else {
     setRuttAdresser([]);
     setRuttVagbeskrivning(null);
-    showPopup("👍 Rutten rensad.", "success", 3000);
+    showPopup("👍 Rutten rensad.", "success", 3000);
   }
-}
-
-// ====== RADERA-FUNKTIONER =======
-async function raderaRapporter() {
-  if (!raderaÅr) {
-    showPopup("👎 Ange år att radera.", "error", 3000);
-    return;
-  }
-
-  const årNum = Number(raderaÅr);
-  if (Number.isNaN(årNum) || årNum < 2000 || årNum > 2100) {
-    showPopup("👎 Ogiltigt årtal.", "error", 3000);
-    return;
-  }
-
-  let fromDate;
-  let toDate;
-  let beskrivning;
-
-  if (!raderaMånad) {
-    fromDate = `${årNum}-01-01`;
-    toDate = `${årNum}-12-31`;
-    beskrivning = `alla rapporter år ${årNum} (ej skyddade)`;
-  } else {
-    const månNum = Number(raderaMånad);
-    if (Number.isNaN(månNum) || månNum < 1 || månNum > 12) {
-      showPopup("👎 Ogiltig månad.", "error", 3000);
-      return;
-    }
-    const start = new Date(Date.UTC(årNum, månNum - 1, 1));
-    const end = new Date(Date.UTC(årNum, månNum, 0));
-    fromDate = start.toISOString().slice(0, 10);
-    toDate = end.toISOString().slice(0, 10);
-    beskrivning = `alla rapporter ${årNum}-${månNum
-      .toString()
-      .padStart(2, "0")} (ej skyddade)`;
-  }
-
-  setDeleteConfirm({ fromDate, toDate, beskrivning });
-}
-
-async function bekräftaRadering() {
-  if (!deleteConfirm) return;
-  const { fromDate, toDate, beskrivning } = deleteConfirm;
-
-  setDeleteConfirm(null);
-  setRaderaPågår(true);
-
-  const { error, count } = await supabase
-    .from("rapporter")
-    .delete({ count: "exact" })
-    .gte("datum", fromDate)
-    .lte("datum", toDate)
-    .neq("skyddad", true);
-
-  setRaderaPågår(false);
-
-  if (error) {
-    console.error(error);
-    showPopup("👎 Fel vid radering.", "error", 3000);
-    setStatus("❌ Fel vid radering: " + error.message);
-  } else {
-    const antal = count ?? 0;
-    showPopup(`👍 Raderade ${antal} rapporter.`, "success", 4000);
-    setStatus(`Raderade ${antal} rapporter (${beskrivning}).`);
-    if (visaOversikt) {
-      hamtaRapporter();
-    }
-  }
-}
-
-function avbrytRadering() {
-  setDeleteConfirm(null);
 }
 
   // ====== INNEHÅLL PER FLIK =======
