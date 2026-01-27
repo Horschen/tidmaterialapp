@@ -967,9 +967,7 @@ async function sparaManuellRapport() {
     datumIso = combined.toISOString();     // hela tiden som ISO
     jobbIso  = datumIso;                   // samma tid används för jobb_tid
   } catch (e) {
-    showPopup("👎 Ogiltigt datum eller tid för manuell registrering.", "error", 3000);
-    setStatus("Ogiltigt datum/tid för manuell registrering.");
-    return;
+    
   }
 
   setStatus("Sparar manuell rapport…");
