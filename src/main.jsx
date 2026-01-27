@@ -181,7 +181,14 @@ function VeckoOversikt({
   Veckoöversikt
 </h2>
 
-<div style={{ display: "flex", gap: 8 }}>
+<div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    alignItems: "center",
+  }}
+>
   {/* 🔄 Uppdatera-knapp  */}
   <button
     onClick={() => window.location.reload()}
@@ -213,36 +220,36 @@ function VeckoOversikt({
   >
     Manuell registrering
   </button>
+
+  {/* ✉️ / 💾 */}
+  <button
+    onClick={onSkickaEmail}
+    style={{
+      padding: "8px 12px",
+      fontSize: 14,
+      borderRadius: 8,
+      border: "none",
+      background: "#2563eb",
+      color: "#fff",
+    }}
+  >
+    Skicka (e‑post)
+  </button>
+
+  <button
+    onClick={onExportCSV}
+    style={{
+      padding: "8px 12px",
+      fontSize: 14,
+      borderRadius: 8,
+      border: "none",
+      background: "#16a34a",
+      color: "#fff",
+    }}
+  >
+    Ladda ner (CSV)
+  </button>
 </div>
-
-{/* ✉️ / 💾 */}
-<button
-  onClick={onSkickaEmail}
-  style={{
-    padding: "8px 12px",
-    fontSize: 14,
-    borderRadius: 8,
-    border: "none",
-    background: "#2563eb",
-    color: "#fff",
-  }}
->
-  Skicka (e‑post)
-</button>
-
-<button
-  onClick={onExportCSV}
-  style={{
-    padding: "8px 12px",
-    fontSize: 14,
-    borderRadius: 8,
-    border: "none",
-    background: "#16a34a",
-    color: "#fff",
-  }}
->
-  Ladda ner (CSV)
-</button>
 
       <div
         style={{
