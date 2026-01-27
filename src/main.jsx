@@ -1956,14 +1956,22 @@ async function aktiveraVantandeRutt() {
       origin = `${userLat},${userLng}`;
       destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
       waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    } catch (_) {
-      // GPS nekad, fallback direkt till första adress med GPS
-      origin = `${medGPS[0].lat},${medGPS[0].lng}`;
-      destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
-      waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-      setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
-    }
-  } else {
+} catch (_) {
+    // GPS nekad, fallback direkt till första adress
+    origin = `${medGPS[0].lat},${medGPS[0].lng}`;
+    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
+    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+    setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
+  }  // ← bara en stängning här (catch‑blocket)
+  else {
+    // 🚙 Om enheten saknar GPS helt
+    origin = `${medGPS[0].lat},${medGPS[0].lng}`;
+    destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
+    waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+    setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
+  }
+
+      
     // 🚙 Om enheten saknar GPS helt
     origin = `${medGPS[0].lat},${medGPS[0].lng}`;
     destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
