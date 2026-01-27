@@ -342,10 +342,9 @@ return (
         </tbody>
       </table>
     </div>
-    </div>
+      </div>
 );
-}   // ✅ stänger VeckoOversikt
-);
+}   // ✅ stänger VeckoOversikt rätt
 
 
 // ======= Huvudappen =======
