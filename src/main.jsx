@@ -373,8 +373,6 @@ function VeckoOversikt({
     </div>
   );
 }   // ✅ stänger VeckoOversikt korrekt
-      
-
 // ======= Huvudappen =======
 function App() {
   const [activeTab, setActiveTab] = useState("registrera");
