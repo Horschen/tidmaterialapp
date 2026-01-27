@@ -956,19 +956,31 @@ async function sparaManuellRapport() {
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
     // Bygg datum + jobb_tid från användarens val
-  let datumIso, jobbIso;
-  try {
-    const datePart = manuellDatum; // format "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00"; // format "HH:mm"
+let datumIso, jobbIso;
+try {
+  const datePart = manuellDatum;                // "YYYY-MM-DD"
+  const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
 
-    const combined = new Date(`${datePart}T${timePart}`);
-    if (isNaN(combined)) throw new Error("Invalid date/time");
+  // 🟢 skapa daterad tid i riktig lokal svensk tid (inte UTC!)
+  const [hours, minutes] = timePart.split(":").map(Number);
+  const [year, month, day] = datePart.split("-").map(Number);
+  // new Date(year, monthIndex, day, hours, minutes) → lokal tid
+  const combined = new Date(year, month - 1, day, hours, minutes);
 
-    datumIso = combined.toISOString();     // hela tiden som ISO
-    jobbIso  = datumIso;                   // samma tid används för jobb_tid
-  } catch (e) {
-    
-  }
+  if (isNaN(combined)) throw new Error("Invalid date/time");
+
+  // spara båda som ISO‑strängar för databasen
+  datumIso = combined.toISOString();
+  jobbIso  = datumIso;
+} catch (e) {
+  showPopup(
+    "👎 Ogiltigt datum eller tid för manuell registrering.",
+    "error",
+    3000
+  );
+  setStatus("Ogiltigt datum/tid för manuell registrering.");
+  return;
+}
 
   setStatus("Sparar manuell rapport…");
 
