@@ -372,8 +372,8 @@ function VeckoOversikt({
       </div>
     </div>
   );
-}  // ✅ stänger VeckoOversikt korrekt
-
+}   // ✅ stänger VeckoOversikt korrekt
+      
 
 // ======= Huvudappen =======
 function App() {
