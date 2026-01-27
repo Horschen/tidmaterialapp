@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_MAPS_API_KEY } from "./config.js";
 
-// ======== Hjälp: sortera adresser efter ID (samma ordning som i Supabase) ========
-function sortAdresserById(adresser) {
+// ======== Hjälp: sortera adresser efter egen sorteringskolumn (eller ID som fallback) ========
+function sortAdresser(adresser) {
   if (!Array.isArray(adresser)) return [];
   return [...adresser].sort((a, b) => {
-    const idA = Number(a.id || a.adress_id) || 0;
-    const idB = Number(b.id || b.adress_id) || 0;
-    return idA - idB; // stigande ordning
+    const sortA = Number(a.adresslista_sortering) || Number(a.id) || 0;
+    const sortB = Number(b.adresslista_sortering) || Number(b.id) || 0;
+    return sortA - sortB; // stigande ordning
   });
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -2161,11 +2161,12 @@ function avbrytRadering() {
             style={selectStyle}
           >
             <option value="">-- Välj adress --</option>
-            {sortAdresserById(adresser).map((a) => (
-  <option key={a.id} value={a.id}>
-    {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-  </option>
-))}
+              {sortAdresser(adresser).map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+    </option>
+  ))}
+</select>
           </select>
 
           <div
@@ -3900,11 +3901,12 @@ return (
       }}
     >
       <option value="">-- Välj adress --</option>
-      {sortAdresserById(adresser).map((a) => (
-  <option key={a.id} value={a.id}>
-    {a.namn}
-  </option>
-))}
+        {sortAdresser(adresser).map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+    </option>
+  ))}
+</select>
     </select>
 
     <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
