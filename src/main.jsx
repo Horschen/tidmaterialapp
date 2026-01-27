@@ -694,7 +694,7 @@ async function laddaAdresser() {
     console.error("❌ Fel vid laddning av adresser:", error);
     setStatus("Fel vid laddning av adresser: " + error.message);
   } else {
-    console.log("✅ Adresser:", data?.slice(0, 5)); // ← den här ska synas
+    console.log("✅ Adresser:", JSON.stringify(data, null, 2)); // ← den här ska synas
     setAdresser(data || []);
   }
 }
