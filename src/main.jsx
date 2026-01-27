@@ -389,22 +389,16 @@ function VeckoOversikt({
 function App() {
   const [activeTab, setActiveTab] = useState("registrera");
 
+  // 🟢 Läs sparat pausläge direkt innan något ritas
+  const initialPaused =
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("snöjour_password_paused") === "true";
+  const [passwordPaused, setPasswordPaused] = useState(initialPaused);
+
   // App-lösenord
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(initialPaused);
+  const [loginPassword, setLoginPassword] = useState("");
   
-  // 👉 kolla localStorage direkt vid start, innan appen ritar login-formuläret
-const initialPaused =
-  typeof localStorage !== "undefined" &&
-  localStorage.getItem("snöjour_password_paused") === "true";
-const [passwordPaused, setPasswordPaused] = useState(initialPaused);
-  
-  // 👉 Läs in gamla "pausat läge" från localStorage vid start
-useEffect(() => {
-  const savedPause = localStorage.getItem("snöjour_password_paused");
-  if (savedPause === "true") {
-    setPasswordPaused(true);
-  }
-}, []);
 
 // 👉 Skriv in "pausat" värdet varje gång det ändras
 useEffect(() => {
