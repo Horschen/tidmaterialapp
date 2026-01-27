@@ -2422,47 +2422,50 @@ if (activeTab === "karta") {
 
           {/* Uppladdningsknapp */}
           <input
-            type="file"
-            accept="application/pdf,image/*"
-            onChange={async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  type="file"
+  accept="application/pdf,image/*"
+  onChange={async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  try {
-    setStatus(`📤 Laddar upp "${file.name}" …`);
+    try {
+      setStatus(`📤 Laddar upp "${file.name}" …`);
 
-    // 🧩 Skapa enkelt unikt namn per uppladdning
-    const ext = file.name.split(".").pop();
-    const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
-    const path = `maps/${safeName}`;
+      // Skapa unikt filnamn
+      const ext = file.name.split(".").pop();
+      const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
+      const path = `maps/${safeName}`;
 
-    // 1️⃣ Ladda upp filen
-    const { error: uploadError } = await supabase.storage
-      .from("adresskartor")
-      .upload(path, file, { upsert: true });
-    if (uploadError) throw uploadError;
+      // 1️⃣ Ladda upp filen till Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("adresskartor")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
 
-    // 2️⃣ Bygg publik länk till filen
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
+      // 2️⃣ Bygg publik URL
+      const publicUrl =
+        `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
 
-    // 3️⃣ Spara länken till adressen
-    const { error: updateError } = await supabase
-      .from("adresser")
-      .update({ file_url: publicUrl })
-      .eq("id", kartaAdressId);
-    if (updateError) throw updateError;
+      // 3️⃣ Spara URL i tabellen "adresser"
+      const { error: updateError } = await supabase
+        .from("adresser")
+        .update({ file_url: publicUrl })
+        .eq("id", kartaAdressId);
+      if (updateError) throw updateError;
 
-    showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
-    setStatus("✅ Kartan uppladdad!");
+      // 🔄 4️⃣ Hämta om adresser så att a.file_url finns i React‑state
+      await laddaAdresser();
 
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid uppladdning.", "error", 3000);
-    setStatus("❌ Fel: " + err.message);
-  }
-}}
-            style={{ marginTop: 6 }}
-          />
+      showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+      setStatus("✅ Kartan uppladdad!");
+    } catch (err) {
+      console.error(err);
+      showPopup("👎 Fel vid uppladdning.", "error", 3000);
+      setStatus("❌ Fel: " + err.message);
+    }
+  }}
+  style={{ marginTop: 6 }}
+/>
 
             {/* Förhandsvisning + Radera‑knapp */}
  {adresser
@@ -2485,35 +2488,44 @@ if (activeTab === "karta") {
                     {a.file_url.split("/").pop()}
                   </span>
                   <button
-                    onClick={async () => {
-                      try {
-                        const file = a.file_url.split("/").pop();
-                        await supabase
-                          .storage
-                          .from("adresskartor")
-                          .remove([`maps/${kartaAdressId}_${file}`]);
-                        await supabase
-                          .from("adresser")
-                          .update({ file_url: null })
-                          .eq("id", a.id);
-                        showPopup("🗑️ Fil raderad.", "success", 3000);
-                      } catch (err) {
-                        console.error(err);
-                        showPopup("👎 Fel vid radering.", "error", 3000);
-                      }
-                    }}
-                    style={{
-                      padding: "4px 10px",
-                      border: "none",
-                      borderRadius: 6,
-                      backgroundColor: "#dc2626",
-                      color: "#fff",
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Radera fil
-                  </button>
+  onClick={async () => {
+    try {
+      // a.file_url ser ut ungefär som:
+      // https://.../storage/v1/object/public/adresskartor/maps/12_123456789.png
+      // Vi vill få ut "maps/12_123456789.png"
+      const relativePath = a.file_url.split("/adresskartor/")[1];
+
+      await supabase
+        .storage
+        .from("adresskartor")
+        .remove([relativePath]);
+
+      await supabase
+        .from("adresser")
+        .update({ file_url: null })
+        .eq("id", a.id);
+
+      // Uppdatera adresser i state så att preview försvinner direkt
+      await laddaAdresser();
+
+      showPopup("🗑️ Fil raderad.", "success", 3000);
+    } catch (err) {
+      console.error(err);
+      showPopup("👎 Fel vid radering.", "error", 3000);
+    }
+  }}
+  style={{
+    padding: "4px 10px",
+    border: "none",
+    borderRadius: 6,
+    backgroundColor: "#dc2626",
+    color: "#fff",
+    fontSize: 12,
+    cursor: "pointer",
+  }}
+>
+  Radera fil
+</button>
                 </div>
 
                 {a.file_url.endsWith(".pdf") ? (
