@@ -177,47 +177,69 @@ return (
       }}
     >
       <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
-        Veckoöversikt
-      </h2>
-      <button
-        onClick={onOpenManuell}
-        style={{
-          padding: "8px 12px",
-          fontSize: 14,
-          borderRadius: 8,
-          border: "none",
-          background: "#facc15",
-          color: "#854d0e",
-        }}
-      >
-        Manuell registrering
-      </button>
-      <button
-        onClick={onSkickaEmail}
-        style={{
-          padding: "8px 12px",
-          fontSize: 14,
-          borderRadius: 8,
-          border: "none",
-          background: "#2563eb",
-          color: "#fff",
-        }}
-      >
-        Skicka (e‑post)
-      </button>
-      <button
-        onClick={onExportCSV}
-        style={{
-          padding: "8px 12px",
-          fontSize: 14,
-          borderRadius: 8,
-          border: "none",
-          background: "#16a34a",
-          color: "#fff",
-        }}
-      >
-        Ladda ner (CSV)
-      </button>
+  Veckoöversikt
+</h2>
+
+<div style={{ display: "flex", gap: 8 }}>
+  <button
+    onClick={onOpenManuell}
+    style={{
+      padding: "8px 12px",
+      fontSize: 14,
+      borderRadius: 8,
+      border: "none",
+      background: "#facc15",
+      color: "#854d0e",
+      fontWeight: 600,
+    }}
+  >
+    Manuell registrering
+  </button>
+
+  {/* 🔄 Uppdatera data */}
+  <button
+    onClick={() => window.location.reload()}
+    title="Uppdatera data"
+    style={{
+      padding: "8px 10px",
+      borderRadius: 8,
+      border: "1px solid #d1d5db",
+      background: "#ffffff",
+      fontSize: 16,
+      cursor: "pointer",
+    }}
+  >
+    🔄
+  </button>
+</div>
+
+<button
+  onClick={onSkickaEmail}
+  style={{
+    padding: "8px 12px",
+    fontSize: 14,
+    borderRadius: 8,
+    border: "none",
+    background: "#2563eb",
+    color: "#fff",
+  }}
+>
+  Skicka (e‑post)
+</button>
+
+<button
+  onClick={onExportCSV}
+  style={{
+    padding: "8px 12px",
+    fontSize: 14,
+    borderRadius: 8,
+    border: "none",
+    background: "#16a34a",
+    color: "#fff",
+  }}
+>
+  Ladda ner (CSV)
+</button>
     </div>
 
     <div
