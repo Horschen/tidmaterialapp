@@ -64,7 +64,6 @@ function formatSekTillHhMm(sek) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ======= Veckoöversikt =======
 function VeckoOversikt({
   data,
   onSkickaEmail,
@@ -76,10 +75,9 @@ function VeckoOversikt({
   onToggleSkyddad,
   onOpenEdit,
 }) {
-  const grupperad = {};
 
   // ======= Gruppera och sortera på verklig jobbtid (jobb_tid) =======
-const grupperad = {};
+  const grupperad = {};
 
 // 1️⃣ Sortera alla rapporter direkt på jobb_tid (fallback till datum om null)
 const sorteradeRapporter = [...data].sort((a, b) => {
