@@ -75,11 +75,10 @@ function VeckoOversikt({
   onToggleSkyddad,
   onOpenEdit,
 }) {
-
   // === 1️⃣ Sortera rådata direkt på jobb_tid (UTC) ===
   const sorterade = [...(data || [])].sort((a, b) => {
-    const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : (a.datum ? Date.parse(a.datum) : 0);
-    const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : (b.datum ? Date.parse(b.datum) : 0);
+    const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : a.datum ? Date.parse(a.datum) : 0;
+    const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : b.datum ? Date.parse(b.datum) : 0;
     return tB - tA; // nyast först
   });
 
@@ -122,19 +121,19 @@ function VeckoOversikt({
         .forEach((s) => g.syften.add(s));
     }
 
-    // Håll senaste jobb_tid per adress (enligt databasen)
+    // Håll senaste jobb_tid per adress
     const jobbTid = r.jobb_tid || r.datum || null;
     if (
-  jobbTid &&
-  (!g.senasteJobbTid ||
-    Math.floor(new Date(jobbTid).getTime() / 1000) >
-      Math.floor(new Date(g.senasteJobbTid).getTime() / 1000))
-) {
-  g.senasteJobbTid = jobbTid;
-}
+      jobbTid &&
+      (!g.senasteJobbTid ||
+        Math.floor(new Date(jobbTid).getTime() / 1000) >
+          Math.floor(new Date(g.senasteJobbTid).getTime() / 1000))
+    ) {
+      g.senasteJobbTid = jobbTid;
+    }
   });
 
-  // === 3️⃣ Gör om till lista och sortera per adress efter senaste jobb_tid ===
+  // === 3️⃣ Gör om till lista och sortera igen efter senaste jobb_tid ===
   const lista = Object.values(grupperad)
     .map((g) => ({
       adressId: g.adressId,
@@ -151,13 +150,12 @@ function VeckoOversikt({
         g.senasteJobbTid &&
         new Date(g.senasteJobbTid) > new Date(Date.now() - 10 * 60 * 1000),
     }))
-   .sort((a, b) => {
-  const toMs = (v) =>
-    v ? Math.floor(new Date(v).getTime() / 1000) * 1000 : 0; // avrunda till närmaste sekund
-  const tA = toMs(a.senasteDatumTid);
-  const tB = toMs(b.senasteDatumTid);
-  return tB - tA; // nyaste överst
-});
+    .sort((a, b) => {
+      const toMs = (v) => (v ? Math.floor(new Date(v).getTime() / 1000) * 1000 : 0);
+      const tA = toMs(a.senasteDatumTid);
+      const tB = toMs(b.senasteDatumTid);
+      return tB - tA;
+    });
 
   const metodText =
     filterMetod === "hand"
@@ -169,6 +167,7 @@ function VeckoOversikt({
   // === 4️⃣ Rendera tabellen ===
   return (
     <div style={{ marginTop: 16 }}>
+      {/* === KNAPPRAD === */}
       <div
         style={{
           display: "flex",
@@ -178,79 +177,74 @@ function VeckoOversikt({
         }}
       >
         <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
-  Veckoöversikt
-</h2>
+          Veckoöversikt
+        </h2>
 
-<div
-  style={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-    alignItems: "center",
-  }}
->
-  {/* 🔄 Uppdatera-knapp  */}
-  <button
-    onClick={() => window.location.reload()}
-    title="Uppdatera data"
-    style={{
-      padding: "8px 10px",
-      borderRadius: 8,
-      border: "1px solid #d1d5db",
-      background: "#ffffff",
-      fontSize: 16,
-      cursor: "pointer",
-    }}
-  >
-    🔄
-  </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {/* 🔄 Uppdatera data */}
+          <button
+            onClick={() => window.location.reload()}
+            title="Uppdatera data"
+            style={{
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid #d1d5db",
+              background: "#ffffff",
+              fontSize: 16,
+              cursor: "pointer",
+            }}
+          >
+            🔄
+          </button>
 
-  {/* 📋 Manuell registrering */}
-  <button
-    onClick={onOpenManuell}
-    style={{
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 8,
-      border: "none",
-      background: "#facc15",
-      color: "#854d0e",
-      fontWeight: 600,
-    }}
-  >
-    Manuell registrering
-  </button>
+          {/* 📋 Manuell registrering */}
+          <button
+            onClick={onOpenManuell}
+            style={{
+              padding: "8px 12px",
+              fontSize: 14,
+              borderRadius: 8,
+              border: "none",
+              background: "#facc15",
+              color: "#854d0e",
+              fontWeight: 600,
+            }}
+          >
+            Manuell registrering
+          </button>
 
-  {/* ✉️ / 💾 */}
-  <button
-    onClick={onSkickaEmail}
-    style={{
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 8,
-      border: "none",
-      background: "#2563eb",
-      color: "#fff",
-    }}
-  >
-    Skicka (e‑post)
-  </button>
+          {/* ✉️ / 💾 */}
+          <button
+            onClick={onSkickaEmail}
+            style={{
+              padding: "8px 12px",
+              fontSize: 14,
+              borderRadius: 8,
+              border: "none",
+              background: "#2563eb",
+              color: "#fff",
+            }}
+          >
+            Skicka (e‑post)
+          </button>
 
-  <button
-    onClick={onExportCSV}
-    style={{
-      padding: "8px 12px",
-      fontSize: 14,
-      borderRadius: 8,
-      border: "none",
-      background: "#16a34a",
-      color: "#fff",
-    }}
-  >
-    Ladda ner (CSV)
-  </button>
-</div>
+          <button
+            onClick={onExportCSV}
+            style={{
+              padding: "8px 12px",
+              fontSize: 14,
+              borderRadius: 8,
+              border: "none",
+              background: "#16a34a",
+              color: "#fff",
+            }}
+          >
+            Ladda ner (CSV)
+          </button>
+        </div>
+      </div>
 
+      {/* === TABELL HEADER === */}
       <div
         style={{
           marginTop: 6,
@@ -261,6 +255,7 @@ function VeckoOversikt({
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
+      {/* === TABELL === */}
       <div style={{ overflowX: "auto", marginTop: 10 }}>
         <table
           cellPadding={14}
@@ -326,7 +321,7 @@ function VeckoOversikt({
                         fontWeight: 600,
                       }}
                     >
-                      📝 ändrad
+                      📝 ändrad
                     </span>
                   )}
                 </td>
@@ -372,7 +367,7 @@ function VeckoOversikt({
       </div>
     </div>
   );
-}   // stänger VeckoOversikt
+} // ✅ Stänger VeckoOversikt innan App börjar
 
       
 // ======= Huvudappen =======
