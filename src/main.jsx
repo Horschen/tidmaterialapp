@@ -2383,6 +2383,9 @@ function avbrytRadering() {
 
     // === KARTA‑FLIK ===
 if (activeTab === "karta") {
+  console.log("DEBUG KARTA – kartaAdressId:", kartaAdressId);
+  console.log("DEBUG KARTA – adresser:", adresser);
+
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>Karta</h2>
@@ -2431,29 +2434,25 @@ if (activeTab === "karta") {
     try {
       setStatus(`📤 Laddar upp "${file.name}" …`);
 
-      // Skapa unikt filnamn
       const ext = file.name.split(".").pop();
       const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
       const path = `maps/${safeName}`;
 
-      // 1️⃣ Ladda upp filen till Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("adresskartor")
         .upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // 2️⃣ Bygg publik URL
       const publicUrl =
         `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
 
-      // 3️⃣ Spara URL i tabellen "adresser"
       const { error: updateError } = await supabase
         .from("adresser")
         .update({ file_url: publicUrl })
         .eq("id", kartaAdressId);
       if (updateError) throw updateError;
 
-      // 🔄 4️⃣ Hämta om adresser så att a.file_url finns i React‑state
+      // Viktigt: hämta om adresser efter uppladdning
       await laddaAdresser();
 
       showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
@@ -2467,106 +2466,86 @@ if (activeTab === "karta") {
   style={{ marginTop: 6 }}
 />
 
-            {/* Förhandsvisning + Radera‑knapp */}
- {adresser
-            .filter((a) => a.id === Number(kartaAdressId) && a.file_url)
-            .map((a) => (
-              <div key={a.id} style={{ marginTop: 20 }}>
-                <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                  Förhandsgranskning
-                </h4>
+            {/* Förhandsvisning */}
+{(() => {
+  // Hitta vald adress (utan Number-cast, vi tar både sträng och siffra)
+  const a = adresser.find(
+    (adr) =>
+      String(adr.id) === String(kartaAdressId) &&
+      adr.file_url
+  );
 
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                  }}
-                >
-                  <span style={{ fontSize: 13, color: "#4b5563" }}>
-                    {a.file_url.split("/").pop()}
-                  </span>
-                  <button
-  onClick={async () => {
-    try {
-      // a.file_url ser ut ungefär som:
-      // https://.../storage/v1/object/public/adresskartor/maps/12_123456789.png
-      // Vi vill få ut "maps/12_123456789.png"
-      const relativePath = a.file_url.split("/adresskartor/")[1];
+  console.log("DEBUG KARTA – vald adress för preview:", a);
 
-      await supabase
-        .storage
-        .from("adresskartor")
-        .remove([relativePath]);
+  if (!a) {
+    return (
+      <p
+        style={{
+          marginTop: 12,
+          fontSize: 13,
+          color: "#6b7280",
+          fontStyle: "italic",
+        }}
+      >
+        Ingen karta uppladdad för denna adress ännu.
+      </p>
+    );
+  }
 
-      await supabase
-        .from("adresser")
-        .update({ file_url: null })
-        .eq("id", a.id);
+  return (
+    <div style={{ marginTop: 20 }}>
+      <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+        Förhandsgranskning
+      </h4>
 
-      // Uppdatera adresser i state så att preview försvinner direkt
-      await laddaAdresser();
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontSize: 13, color: "#4b5563" }}>
+          {a.file_url.split("/").pop()}
+        </span>
+      </div>
 
-      showPopup("🗑️ Fil raderad.", "success", 3000);
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Fel vid radering.", "error", 3000);
-    }
-  }}
-  style={{
-    padding: "4px 10px",
-    border: "none",
-    borderRadius: 6,
-    backgroundColor: "#dc2626",
-    color: "#fff",
-    fontSize: 12,
-    cursor: "pointer",
-  }}
->
-  Radera fil
-</button>
-                </div>
-
-                {a.file_url.endsWith(".pdf") ? (
-                  <iframe
-                    src={`${a.file_url}#view=FitH`}
-                    title="Karta"
-                    style={{
-                      width: "100%",
-                      height: "70vh",
-                      border: "1px solid #d1d5db",
-                      borderRadius: 8,
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: "100%",
-                      maxHeight: "70vh",
-                      overflow: "auto",
-                      border: "1px solid #d1d5db",
-                      borderRadius: 8,
-                    }}
-                  >
-                    <img
-                      src={a.file_url}
-                      alt="Karta"
-                      style={{
-                        width: "100%",
-                        height: "auto",
-                        cursor: "zoom-in",
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+      {a.file_url.toLowerCase().endsWith(".pdf") ? (
+        <iframe
+          src={`${a.file_url}#view=FitH`}
+          title="Karta"
+          style={{
+            width: "100%",
+            height: "70vh",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            maxHeight: "70vh",
+            overflow: "auto",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+          }}
+        >
+          <img
+            src={a.file_url}
+            alt="Karta"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+            }}
+          />
         </div>
       )}
-    </section>
+    </div>
   );
-}
+})()}
 
 // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
