@@ -689,11 +689,12 @@ async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
     .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering");
+
   if (error) {
-    setRuttStatus("❌ Fel vid laddning av adresser: " + error.message);
+    setStatus("Fel vid laddning: " + error.message);
   } else {
+    console.log("✅ Adresser:", data?.slice(0,5));  // <-- lägg till detta
     setAdresser(data || []);
-    setRuttStatus("✅ Adresser uppdaterade.");
   }
 }
 
