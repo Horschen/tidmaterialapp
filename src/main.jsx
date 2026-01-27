@@ -2381,19 +2381,11 @@ function avbrytRadering() {
       );
     }
 
-    // === KARTA-FLIK ===
+    // === KARTA‑FLIK ===
 if (activeTab === "karta") {
   return (
     <section style={sectionStyle}>
-      <h2
-        style={{
-          fontSize: 18,
-          marginTop: 0,
-          marginBottom: 12,
-        }}
-      >
-        Karta
-      </h2>
+      <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>Karta</h2>
 
       <label style={labelStyle}>Välj adress (karta)</label>
       <select
@@ -2421,7 +2413,7 @@ if (activeTab === "karta") {
         Öppna karta för vald adress
       </button>
 
-      {/* === Hantera PDF‑karta för vald adress === */}
+      {/* === Hantera PDF/bild‑karta för vald adress === */}
       {kartaAdressId && (
         <div style={{ marginTop: 20 }}>
           <h4 style={{ fontSize: 15, marginBottom: 6 }}>
@@ -2436,16 +2428,13 @@ if (activeTab === "karta") {
               const file = e.target.files[0];
               if (!file) return;
               setStatus(`📤 Laddar upp "${file.name}" …`);
-
               try {
-                // unik filväg i Supabase‑bucket
                 const path = `maps/${kartaAdressId}_${file.name}`;
                 const { error: uploadError } = await supabase.storage
                   .from("adresskartor")
                   .upload(path, file, { upsert: true });
                 if (uploadError) throw uploadError;
 
-                // publik URL
                 const { data } = supabase.storage
                   .from("adresskartor")
                   .getPublicUrl(path);
@@ -2468,7 +2457,7 @@ if (activeTab === "karta") {
             style={{ marginTop: 6 }}
           />
 
-          {/* Förhandsvisning och ev. Radera‑knapp */}
+          {/* Förhandsvisning + Radera‑knapp */}
           {adresser
             .filter((a) => a.id === Number(kartaAdressId) && a.file_url)
             .map((a) => (
@@ -2516,7 +2505,7 @@ if (activeTab === "karta") {
                       cursor: "pointer",
                     }}
                   >
-                    Radera fil
+                    Radera fil
                   </button>
                 </div>
 
@@ -2559,7 +2548,15 @@ if (activeTab === "karta") {
     </section>
   );
 }
-          
+
+// === SLUT PÅ KARTA-FLIK ===
+    if (activeTab === "rapport") {
+  return (
+    <section style={sectionStyle}>
+      <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
+        Veckorapport
+      </h2>
+            
           {/* Gula ovala rutor för total tider */}
           <div
             style={{
