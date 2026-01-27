@@ -961,16 +961,20 @@ try {
   const datePart = manuellDatum;                // "YYYY-MM-DD"
   const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
 
-  // 🟢 skapa daterad tid i riktig lokal svensk tid (inte UTC!)
   const [hours, minutes] = timePart.split(":").map(Number);
   const [year, month, day] = datePart.split("-").map(Number);
-  // new Date(year, monthIndex, day, hours, minutes) → lokal tid
-  const combined = new Date(year, month - 1, day, hours, minutes);
 
-  if (isNaN(combined)) throw new Error("Invalid date/time");
+  // skapa datumet i lokal tid
+  const combinedLocal = new Date(year, month - 1, day, hours, minutes);
 
-  // spara båda som ISO‑strängar för databasen
-  datumIso = combined.toISOString();
+  if (isNaN(combinedLocal)) throw new Error("Invalid date/time");
+
+  // 🧠 justera så att tiden lagras som svensk tid (inte UTC-förskjuten)
+  const offsetMs = combinedLocal.getTimezoneOffset() * 60 * 1000;
+  const corrected = new Date(combinedLocal.getTime() - offsetMs);
+
+  // spara tiden som ISO utan konvertering till UTC
+  datumIso = corrected.toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
   jobbIso  = datumIso;
 } catch (e) {
   showPopup(
