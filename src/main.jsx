@@ -9,7 +9,7 @@ function sortAdresser(adresser) {
   return [...adresser].sort((a, b) => {
     const sortA = Number(a.adresslista_sortering) || Number(a.id) || 0;
     const sortB = Number(b.adresslista_sortering) || Number(b.id) || 0;
-    return sortA - sortB; // stigande ordning
+    return sortA - sortB; // stigande ordning
   });
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -688,7 +688,7 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("id, namn, gps_url, maskin_mojlig, lat, lng");
+    .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering");
   if (error) {
     setRuttStatus("❌ Fel vid laddning av adresser: " + error.message);
   } else {
@@ -2343,12 +2343,12 @@ function avbrytRadering() {
             style={selectStyle}
           >
             <option value="">-- Välj adress --</option>
-            {adresser.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-              </option>
-            ))}
-          </select>
+            {sortAdresser(adresser).map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.namn}
+    </option>
+  ))}
+  </select>
 
           <button
             onClick={oppnaKartaForKartAdress}
