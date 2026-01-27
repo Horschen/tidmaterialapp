@@ -3906,8 +3906,7 @@ return (
     </option>
   ))}
 </select>
-    </select>
-
+ 
     <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
     <select
       value={manuellTeam}
