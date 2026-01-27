@@ -126,19 +126,30 @@ function VeckoOversikt({
     }
   });
 
-  const lista = Object.values(grupperad).map((g) => ({
-    adressId: g.adressId,
-    namn: g.namn,
-    tid: g.tid,
-    grus: g.grus,
-    salt: g.salt,
-    antal: g.antalJobb,
-    anstallda: g.anstallda,
-    syften: Array.from(g.syften).join(", "),
-    senasteDatumTid: g.senasteDatumTid,
-    skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
-  }));
-
+    const lista = Object.values(grupperad)
+    .map((g) => ({
+      adressId: g.adressId,
+      namn: g.namn,
+      tid: g.tid,
+      grus: g.grus,
+      salt: g.salt,
+      antal: g.antalJobb,
+      anstallda: g.anstallda,
+      syften: Array.from(g.syften).join(", "),
+      senasteDatumTid: g.senasteDatumTid,
+      skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
+    }))
+    // === Sortera adresserna i tabellen ===
+    // Nyaste (mest aktuellt datum+tid) hamnar överst
+    .sort((a, b) => {
+      const timeA = a.senasteDatumTid
+        ? new Date(a.senasteDatumTid).getTime()
+        : 0;
+      const timeB = b.senasteDatumTid
+        ? new Date(b.senasteDatumTid).getTime()
+        : 0;
+      return timeB - timeA;
+    });
   const metodText =
     filterMetod === "hand"
       ? "Endast För hand"
@@ -310,14 +321,6 @@ function VeckoOversikt({
     </div>
   );
 }
-
-// === Sortera adresserna i tabellen ===
-// Nyaste (mest aktuellt datum+tid) hamnar överst
-lista.sort((a, b) => {
-  const timeA = a.senasteDatumTid ? new Date(a.senasteDatumTid).getTime() : 0;
-  const timeB = b.senasteDatumTid ? new Date(b.senasteDatumTid).getTime() : 0;
-  return timeB - timeA; // störst (senaste) först
-});
 
 
 // ======= Huvudappen =======
