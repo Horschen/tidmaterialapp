@@ -342,7 +342,9 @@ return (
         </tbody>
       </table>
     </div>
-  </div>
+    </div>
+);
+}   // ✅ stänger VeckoOversikt
 );
 
 
