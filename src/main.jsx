@@ -146,16 +146,21 @@ const lista = Object.values(grupperad)
       new Date(g.senasteDatumTid) >
         new Date(Date.now() - 10 * 60 * 1000),
   }))
-  // Sortera alltid på verklig rapport‑datum (exakt tid i UTC)
-  .sort((a, b) => {
-    const timeA = a.senasteDatumTid
-      ? Date.parse(a.senasteDatumTid)
-      : 0;
-    const timeB = b.senasteDatumTid
-      ? Date.parse(b.senasteDatumTid)
-      : 0;
-    return timeB - timeA; // nyaste överst
-  });
+  
+// Sortera alltid på verkligt rapportdatum (fältet 'datum' från rapporterna)
+.sort((a, b) => {
+  const timeA = (() => {
+    const rA = data.find((r) => r.adress_id === a.adressId);
+    return rA ? Date.parse(rA.datum) : 0;
+  })();
+
+  const timeB = (() => {
+    const rB = data.find((r) => r.adress_id === b.adressId);
+    return rB ? Date.parse(rB.datum) : 0;
+  })();
+
+  return timeB - timeA; // nyast överst
+});
 
 const metodText =
   filterMetod === "hand"
