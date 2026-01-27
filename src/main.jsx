@@ -2621,6 +2621,25 @@ function avbrytRadering() {
    if (activeTab === "startstop") {
   return (
     <section style={sectionStyle}>
+      {/* 🔔 visar om lösenordet är avaktiverat */}
+      {passwordPaused && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 14px",
+            borderRadius: 8,
+            backgroundColor: "#fef3c7", // ljusgul
+            border: "1px solid #fcd34d",
+            color: "#92400e",
+            fontWeight: 600,
+            textAlign: "center",
+            fontSize: 14,
+          }}
+        >
+          🔓 Lösenord tillfälligt avaktiverat
+        </div>
+      )}
+
       <h2
         style={{
           fontSize: 18,
@@ -2684,6 +2703,7 @@ function avbrytRadering() {
         </div>
       )}
 
+      {/* Vanliga pass‑knappar */}
       <button
         style={{
           ...primaryButton,
@@ -2722,7 +2742,7 @@ function avbrytRadering() {
         Stop Paus
       </button>
 
-      {/* 🔐 Pausa / Starta lösenord */}
+      {/* 🔐 Pausa / starta lösenord */}
       <div
         style={{
           marginTop: 16,
