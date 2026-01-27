@@ -139,188 +139,225 @@ function VeckoOversikt({
       senasteDatumTid: g.senasteDatumTid,
       skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
     }))
+  
     // === Sortera adresserna i tabellen ===
-    // Nyaste (mest aktuellt datum+tid) hamnar överst
-    .sort((a, b) => {
-      const timeA = a.senasteDatumTid
-        ? new Date(a.senasteDatumTid).getTime()
-        : 0;
-      const timeB = b.senasteDatumTid
-        ? new Date(b.senasteDatumTid).getTime()
-        : 0;
-      return timeB - timeA;
-    });
-  const metodText =
-    filterMetod === "hand"
-      ? "Endast För hand"
-      : filterMetod === "maskin"
-      ? "Endast Maskin"
-      : "Alla jobb";
+// Sortera, markera och visa tabellen
+const lista = Object.values(grupperad)
+  .map((g) => ({
+    adressId: g.adressId,
+    namn: g.namn,
+    tid: g.tid,
+    grus: g.grus,
+    salt: g.salt,
+    antal: g.antalJobb,
+    anstallda: g.anstallda,
+    syften: Array.from(g.syften).join(", "),
+    senasteDatumTid: g.senasteDatumTid,
+    skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
+    // Lägg till "redigerad" om jobbet är yngre än 10 minuter
+    redigerad:
+      g.senasteDatumTid &&
+      new Date(g.senasteDatumTid) >
+        new Date(Date.now() - 10 * 60 * 1000),
+  }))
+  // Sortera alltid på verklig rapport‑datum (exakt tid i UTC)
+  .sort((a, b) => {
+    const timeA = a.senasteDatumTid
+      ? Date.parse(a.senasteDatumTid)
+      : 0;
+    const timeB = b.senasteDatumTid
+      ? Date.parse(b.senasteDatumTid)
+      : 0;
+    return timeB - timeA; // nyaste överst
+  });
 
-  return (
-    <div style={{ marginTop: 16 }}>
-      <div
+const metodText =
+  filterMetod === "hand"
+    ? "Endast För hand"
+    : filterMetod === "maskin"
+    ? "Endast Maskin"
+    : "Alla jobb";
+
+return (
+  <div style={{ marginTop: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 8,
+        alignItems: "center",
+      }}
+    >
+      <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
+        Veckoöversikt
+      </h2>
+      <button
+        onClick={onOpenManuell}
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          alignItems: "center",
+          padding: "8px 12px",
+          fontSize: 14,
+          borderRadius: 8,
+          border: "none",
+          background: "#facc15",
+          color: "#854d0e",
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 20, marginRight: "auto" }}>
-          Veckoöversikt
-        </h2>
-        <button
-          onClick={onOpenManuell}
-          style={{
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 8,
-            border: "none",
-            background: "#facc15",
-            color: "#854d0e",
-          }}
-        >
-          Manuell registrering
-        </button>
-        <button
-          onClick={onSkickaEmail}
-          style={{
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 8,
-            border: "none",
-            background: "#2563eb",
-            color: "#fff",
-          }}
-        >
-          Skicka (e‑post)
-        </button>
-        <button
-          onClick={onExportCSV}
-          style={{
-            padding: "8px 12px",
-            fontSize: 14,
-            borderRadius: 8,
-            border: "none",
-            background: "#16a34a",
-            color: "#fff",
-          }}
-        >
-          Ladda ner (CSV)
-        </button>
-      </div>
-
-      <div
+        Manuell registrering
+      </button>
+      <button
+        onClick={onSkickaEmail}
         style={{
-          marginTop: 6,
-          fontSize: 12,
-          color: "#4b5563",
+          padding: "8px 12px",
+          fontSize: 14,
+          borderRadius: 8,
+          border: "none",
+          background: "#2563eb",
+          color: "#fff",
         }}
       >
-        Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
-      </div>
-
-      <div
+        Skicka (e‑post)
+      </button>
+      <button
+        onClick={onExportCSV}
         style={{
-          overflowX: "auto",
-          marginTop: 10,
+          padding: "8px 12px",
+          fontSize: 14,
+          borderRadius: 8,
+          border: "none",
+          background: "#16a34a",
+          color: "#fff",
         }}
       >
-        <table
-          cellPadding={14}
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            minWidth: 1100,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            fontSize: 15,
-          }}
-        >
-          <thead>
+        Ladda ner (CSV)
+      </button>
+    </div>
+
+    <div
+      style={{
+        marginTop: 6,
+        fontSize: 12,
+        color: "#4b5563",
+      }}
+    >
+      Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
+    </div>
+
+    <div
+      style={{
+        overflowX: "auto",
+        marginTop: 10,
+      }}
+    >
+      <table
+        cellPadding={14}
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          minWidth: 1100,
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontSize: 15,
+        }}
+      >
+        <thead>
+          <tr
+            style={{
+              background: "#f3f4f6",
+              borderBottom: "1px solid #e5e7eb",
+            }}
+          >
+            <th></th>
+            <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
+            <th style={{ textAlign: "left" }}>Adress</th>
+            <th>Antal jobb</th>
+            <th>Antal anställda</th>
+            <th>Totalt (hh:mm)</th>
+            <th>Grus (kg)</th>
+            <th>Salt (kg)</th>
+            <th>Syften</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {lista.map((r, idx) => (
             <tr
+              key={r.adressId}
               style={{
-                background: "#f3f4f6",
+                backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                 borderBottom: "1px solid #e5e7eb",
+                height: 44,
               }}
             >
-              <th></th>
-              <th style={{ textAlign: "left" }}>Senaste datum/tid</th>
-              <th style={{ textAlign: "left" }}>Adress</th>
-              <th>Antal jobb</th>
-              <th>Antal anställda</th>
-              <th>Totalt (hh:mm)</th>
-              <th>Grus (kg)</th>
-              <th>Salt (kg)</th>
-              <th>Syften</th>
-              <th></th>
+              <td style={{ textAlign: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={r.skyddad}
+                  onChange={(e) =>
+                    onToggleSkyddad &&
+                    onToggleSkyddad(r.adressId, e.target.checked)
+                  }
+                />
+              </td>
+              <td>{formatDatumTid(r.senasteDatumTid)}</td>
+              <td>
+                {r.namn}
+                {r.redigerad && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      padding: "2px 6px",
+                      borderRadius: 6,
+                      backgroundColor: "#e0f2fe",
+                      color: "#0369a1",
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    📝 ändrad
+                  </span>
+                )}
+              </td>
+              <td style={{ textAlign: "center" }}>{r.antal}</td>
+              <td style={{ textAlign: "center" }}>{r.anstallda}</td>
+              <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
+              <td style={{ textAlign: "right" }}>{r.grus}</td>
+              <td style={{ textAlign: "right" }}>{r.salt}</td>
+              <td style={{ textAlign: "left" }}>{r.syften}</td>
+              <td style={{ textAlign: "center" }}>
+                <button
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 999,
+                    border: "1px solid #d1d5db",
+                    background: "#ffffff",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
+                >
+                  Editera
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {lista.map((r, idx) => (
-              <tr
-                key={r.adressId}
+          ))}
+          {lista.length === 0 && (
+            <tr>
+              <td
+                colSpan={10}
                 style={{
-                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
-                  height: 44,
+                  textAlign: "center",
+                  fontStyle: "italic",
+                  padding: 16,
                 }}
               >
-                <td style={{ textAlign: "center" }}>
-                  <input
-                    type="checkbox"
-                    checked={r.skyddad}
-                    onChange={(e) =>
-                      onToggleSkyddad &&
-                      onToggleSkyddad(r.adressId, e.target.checked)
-                    }
-                  />
-                </td>
-                <td>{formatDatumTid(r.senasteDatumTid)}</td>
-                <td>{r.namn}</td>
-                <td style={{ textAlign: "center" }}>{r.antal}</td>
-                <td style={{ textAlign: "center" }}>{r.anstallda}</td>
-                <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
-                <td style={{ textAlign: "right" }}>{r.grus}</td>
-                <td style={{ textAlign: "right" }}>{r.salt}</td>
-                <td style={{ textAlign: "left" }}>{r.syften}</td>
-                <td style={{ textAlign: "center" }}>
-                  <button
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      border: "1px solid #d1d5db",
-                      background: "#ffffff",
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                    onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
-                  >
-                    Editera
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {lista.length === 0 && (
-              <tr>
-                <td
-                  colSpan={10}
-                  style={{
-                    textAlign: "center",
-                    fontStyle: "italic",
-                    padding: 16,
-                  }}
-                >
-                  Inga jobb hittades för vald vecka/år och filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                Inga jobb hittades för vald vecka/år och filter.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
-  );
-}
+  </div>
+);
 
 
 // ======= Huvudappen =======
