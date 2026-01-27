@@ -125,21 +125,7 @@ function VeckoOversikt({
       }
     }
   });
-
-    const lista = Object.values(grupperad)
-    .map((g) => ({
-      adressId: g.adressId,
-      namn: g.namn,
-      tid: g.tid,
-      grus: g.grus,
-      salt: g.salt,
-      antal: g.antalJobb,
-      anstallda: g.anstallda,
-      syften: Array.from(g.syften).join(", "),
-      senasteDatumTid: g.senasteDatumTid,
-      skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
-    }))
-  
+ 
     // === Sortera adresserna i tabellen ===
 // Sortera, markera och visa tabellen
 const lista = Object.values(grupperad)
