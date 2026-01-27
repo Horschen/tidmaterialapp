@@ -1864,30 +1864,27 @@ async function aktiveraVantandeRutt() {
 
   const medGPS = adresserData.filter((a) => a.lat && a.lng);
   const utanGPS = adresserData.filter((a) => !a.lat || !a.lng);
+  // 🏁 Startlogik – se till att allt alltid följer med
+  const medGPS = adresserData.filter((a) => a.lat && a.lng);
+  const utanGPS = adresserData.filter((a) => !a.lat || !a.lng);
   const startAdresser = adresserData.filter((a) =>
     a.namn?.toLowerCase().startsWith("start")
   );
 
   let origin, destination, waypoints;
 
+  // 1️⃣ Finns "Start..."-adress – sätt den först
   if (startAdresser.length > 0) {
     const start = startAdresser[0];
-    if (start.lat && start.lng) {
-      origin = `${start.lat},${start.lng}`;
-    } else if (medGPS.length > 0) {
-      origin = `${medGPS[0].lat},${medGPS[0].lng}`;
-    }
+    origin = `${start.lat},${start.lng}`;
     const andra = medGPS.filter((a) => a.id !== start.id);
-    if (andra.length > 0) {
-      destination = `${andra[andra.length - 1].lat},${andra[andra.length - 1].lng}`;
-      waypoints = andra.slice(0, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    } else {
-      destination = origin;
-      waypoints = "";
-    }
-    setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
-  } else if (navigator.geolocation) {
-    setRuttStatus("Beräknar rutt från din position...");
+    destination = `${andra[andra.length - 1].lat},${andra[andra.length - 1].lng}`;
+    waypoints = andra.slice(0, -1).map((a) => `${a.lat},${a.lng}`).join("|");
+    setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
+  }
+  // 2️⃣ Ingen "Start..."-adress men GPS finns i enheten
+  else if (navigator.geolocation) {
+    setRuttStatus("📍 Hämtar din position som start...");
     try {
       const pos = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -1895,26 +1892,26 @@ async function aktiveraVantandeRutt() {
           timeout: 5000,
         })
       );
-      const userLat = pos.coords.latitude;
-      const userLng = pos.coords.longitude;
-      origin = `${userLat},${userLng}`;
+      origin = `${pos.coords.latitude},${pos.coords.longitude}`;
       destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
       waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    } catch (_) {
+    } catch {
       origin = `${medGPS[0].lat},${medGPS[0].lng}`;
       destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
       waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-      setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
+      setRuttStatus("⚠️ GPS nekad – rutten startar vid första adress.");
     }
-  } else {
+  }
+  // 3️⃣ Ingen GPS alls
+  else {
     origin = `${medGPS[0].lat},${medGPS[0].lng}`;
     destination = `${medGPS[medGPS.length - 1].lat},${medGPS[medGPS.length - 1].lng}`;
     waypoints = medGPS.slice(1, -1).map((a) => `${a.lat},${a.lng}`).join("|");
-    setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
+    setRuttStatus("🚙 Rutten startar vid första adress (ingen GPS i enheten).");
   }
 
+  // 🧩 Skicka allt till Google, men inkludera även adresser helt utan GPS sist
   await beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS);
-}
 
 // ======= Spara planerad rutt =======
 async function sparaPlaneradRutt() {
