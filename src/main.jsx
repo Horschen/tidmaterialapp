@@ -1916,6 +1916,40 @@ async function aktiveraVantandeRutt() {
     }
     setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
   } else if (navigator.geolocation) {
+
+// ======= Spara planerad rutt (innan pass) =======
+async function sparaPlaneradRutt() {
+  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
+
+  if (valda.length < 2) {
+    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
+    return;
+  }
+
+  setRuttStatus("Sparar planerad rutt...");
+
+  // 🧹 ta bort tidigare väntande rutt
+  await supabase.from("vantande_rutt").delete().neq("id", 0);
+
+  // bygg rader att spara
+  const rader = valda.map((a) => ({
+    adress_id: a.id,
+  }));
+
+  const { error } = await supabase.from("vantande_rutt").insert(rader);
+
+  if (error) {
+    showPopup("👎 Kunde inte spara planerad rutt.", "error", 3000);
+    setRuttStatus("❌ Fel vid sparning: " + error.message);
+  } else {
+    showPopup("👍 Planerad rutt sparad! Aktivera vid pass-start.", "success", 4000);
+    setRuttStatus("✅ Planerad rutt sparad.");
+    await laddaVantandeRutt();
+    stangRuttPopup();
+  }
+}
+
+    
     // 📍 Använd användarens GPS som start om ingen "Start..." finns
     setRuttStatus("Beräknar rutt från din position...");
     try {
