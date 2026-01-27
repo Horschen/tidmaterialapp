@@ -1099,18 +1099,21 @@ function stoppaPass() {
     );
 
     setValdaEditId(första.id);
-    setEditForm({
-      datum: första.datum ? första.datum.slice(0, 10) : "",
-      arbetstid_min: första.arbetstid_min || "",
-      sand_kg: första.sand_kg ?? 0,
-      salt_kg: första.salt_kg ?? 0,
-      syfteOversyn: syfteSet.has("Översyn"),
-      syfteRojning: syfteSet.has("Röjning"),
-      syfteSaltning: syfteSet.has("Saltning"),
-      syfteGrusning: syfteSet.has("Grusning"),
-      antal_anstallda: första.antal_anstallda || 1,
-      team_namn: första.team_namn || "För hand",
-    });
+   setEditForm({
+  datum: första.datum ? första.datum.slice(0, 10) : "",
+  tid: första.datum
+    ? new Date(första.datum).toISOString().slice(11, 16)
+    : "",
+  arbetstid_min: första.arbetstid_min || "",
+  sand_kg: första.sand_kg ?? 0,
+  salt_kg: första.salt_kg ?? 0,
+  syfteOversyn: syfteSet.has("Översyn"),
+  syfteRojning: syfteSet.has("Röjning"),
+  syfteSaltning: syfteSet.has("Saltning"),
+  syfteGrusning: syfteSet.has("Grusning"),
+  antal_anstallda: första.antal_anstallda || 1,
+  team_namn: första.team_namn || "För hand",
+});
 
     setVisaEditPopup(true);
   }
@@ -1180,25 +1183,29 @@ function stoppaPass() {
     const teamNamn = editForm.team_namn || "För hand";
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
-    // ---- Datumhantering: behåll original exakt om ej ändrat ----
+    // ---- Datum/tid-hantering ----
 let datumIso;
 try {
   const original = editRapporter.find((r) => r.id === valdaEditId);
-  const originalFull = original?.datum; // Hela ISO-strängen från databasen
-  const nyttDatumFält = editForm.datum?.trim();
+  const originalFull = original?.datum;
+  const nyttDatum = editForm.datum?.trim();
+  const nyTid = editForm.tid?.trim();
 
-  // Om användaren inte ändrat datumet, använd originalsträngen rakt av
-  if (!nyttDatumFält || nyttDatumFält === originalFull?.slice(0, 10)) {
+  if (!nyttDatum) {
     datumIso = originalFull;
-  } else {
+  } else if (nyTid) {
+    // Om användaren angivit både datum och tid
+    datumIso = new Date(`${nyttDatum}T${nyTid}:00Z`).toISOString();
+  } else if (originalFull) {
     // Behåll originalets klockslag
-    const isoTid = originalFull
-      ? originalFull.split("T")[1]
-      : "12:00:00+00";
-    datumIso = `${nyttDatumFält}T${isoTid}`;
+    const tidDel = originalFull.split("T")[1];
+    datumIso = `${nyttDatum}T${tidDel}`;
+  } else {
+    // Fallback – använd 12:00
+    datumIso = new Date(`${nyttDatum}T12:00:00Z`).toISOString();
   }
 } catch {
-  showPopup("👎 Ogiltigt datum.", "error", 3000);
+  showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
   return;
 }
 
@@ -3482,6 +3489,23 @@ return (
         />
       </label>
 
+<label>
+  Tid:
+  <input
+    type="time"
+    value={editForm.tid || ""}
+    onChange={(e) =>
+      setEditForm((f) => ({ ...f, tid: e.target.value }))
+    }
+    style={{
+      width: "100%",
+      padding: "8px",
+      borderRadius: 8,
+      border: "1px solid #d1d5db",
+    }}
+  />
+</label>
+      
       <label>
         Arbetstid (minuter):
         <input
