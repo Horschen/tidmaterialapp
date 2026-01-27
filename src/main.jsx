@@ -3169,6 +3169,33 @@ if (activeTab === "info") {
             Behöver du lägga till en rapport i efterhand väljer du knappen
             <strong> Manuell registrering</strong> i "Veckorapport"‑fliken – den fungerar
             precis som registreringsvyn men utan aktiv timer.
+            <h4 style={{ marginTop: 16 }}>👷‍♂️ Teamets arbetsgång (enkelt förklarat)</h4>
+<p style={{ fontSize: 14, lineHeight: 1.6 }}>
+  <strong>Så här fungerar ett arbetspass när flera i laget jobbar samtidigt:</strong><br /><br />
+  
+  1️⃣ <strong>Lagledaren</strong> (en person i laget) trycker <strong>Starta passet</strong>.<br />
+  👉 Det startar klockan för hela arbetsperioden.
+  <br /><br />
+  
+  2️⃣ <strong>Samma person</strong> registrerar <strong>första adressen</strong>.<br />
+  👉 Appen använder den tiden som grund när den räknar fram första jobbets minuter.
+  <br /><br />
+  
+  3️⃣ <strong>Alla i laget</strong> kan därefter lägga in sina egna adresser utan att starta eget pass.<br />
+  👉 Varje rapport hamnar automatiskt rätt i databasen och summeras korrekt i veckorapporten.
+  <br /><br />
+  
+  4️⃣ Om laget tar <strong>paus (t.ex. frukost)</strong>: lagledaren trycker <strong>Start Paus</strong> och sedan <strong>Stop Paus</strong> när ni är igång igen.<br />
+  👉 Annars tror appen att ni fortsatt jobba under pausen – tiden till nästa adress skulle då bli för lång.
+  <br /><br />
+  
+  5️⃣ När dagen är klar: samma person trycker <strong>Stoppa passet</strong>.<br />
+  👉 Timern nollställs och appen är redo för nästa arbetsdag.
+  <br /><br />
+  
+  <em>Enkelt uttryckt:</em> Det räcker att <strong>en person</strong> i laget startar/stoppar passet och styr pauserna – resten registrerar bara adresser.  
+  Då håller appen tiderna rätt och veckan summeras perfekt 🌟
+</p>
           </p>
 <p style={{ fontSize: 14, lineHeight: 1.6 }}>
   💡 <strong>Flera team samtidigt:</strong><br />
