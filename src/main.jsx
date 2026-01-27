@@ -1204,26 +1204,19 @@ function stoppaPass() {
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
     // ---- Datum/tid-hantering ----
-let datumIso;
+let jobbTidIso;
 try {
-  const original = editRapporter.find((r) => r.id === valdaEditId);
-  const originalFull = original?.datum;
-  const nyttDatum = editForm.datum?.trim();
-  const nyTid = editForm.tid?.trim();
-
+  const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
+  const nyTid = editForm.tid?.trim();        // hh:mm
   if (!nyttDatum) {
-    datumIso = originalFull;
-  } else if (nyTid) {
-    // Om användaren angivit både datum och tid
-    datumIso = new Date(`${nyttDatum}T${nyTid}:00Z`).toISOString();
-  } else if (originalFull) {
-    // Behåll originalets klockslag
-    const tidDel = originalFull.split("T")[1];
-    datumIso = `${nyttDatum}T${tidDel}`;
-  } else {
-    // Fallback – använd 12:00
-    datumIso = new Date(`${nyttDatum}T12:00:00Z`).toISOString();
+    showPopup("👎 Ange datum.", "error", 3000);
+    return;
   }
+
+  // kombinera datum + tid (om tid saknas, använd 12:00)
+  const tidDel = nyTid ? `${nyTid}:00` : "12:00:00";
+  jobbTidIso = new Date(`${nyttDatum}T${tidDel}Z`).toISOString();
+
 } catch {
   showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
   return;
@@ -1232,18 +1225,19 @@ try {
     setStatus("Uppdaterar rapport…");
 
     const { error } = await supabase
-      .from("rapporter")
-      .update({
-        datum: datumIso,
-        arbetstid_min: arbetstidMin,
-        sand_kg: sandKg,
-        salt_kg: saltKg,
-        syfte: syfteText,
-        antal_anstallda: antal,
-        team_namn: teamNamn,
-        arbetssatt: arbetssatt,
-      })
-      .eq("id", valdaEditId);
+  .from("rapporter")
+  .update({
+    jobb_tid: jobbTidIso,  // 🟢 verklig jobbtid sparas
+    datum: jobbTidIso,     // kan ligga kvar för kompatibilitet
+    arbetstid_min: arbetstidMin,
+    sand_kg: sandKg,
+    salt_kg: saltKg,
+    syfte: syfteText,
+    antal_anstallda: antal,
+    team_namn: teamNamn,
+    arbetssatt: arbetssatt,
+  })
+  .eq("id", valdaEditId);
 
     if (error) {
       console.error(error);
