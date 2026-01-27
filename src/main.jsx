@@ -377,6 +377,7 @@ function App() {
 
   // App-lösenord
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordPaused, setPasswordPaused] = useState(false);
   const [loginPassword, setLoginPassword] = useState("");
 
   const [rapporter, setRapporter] = useState([]);
@@ -554,16 +555,23 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 
   // ======= App-lösenord =======
   function checkAppPassword(e) {
-    e.preventDefault();
-    const correct = getCurrentYearPassword();
-    if (loginPassword === correct) {
-      setIsAuthenticated(true);
-      setLoginPassword("");
-      setStatus("");
-    } else {
-      setStatus("❌ Fel lösenord.");
-    }
+  e.preventDefault();
+  if (passwordPaused) {
+    setIsAuthenticated(true);
+    setLoginPassword("");
+    setStatus("🔓 Lösenord spärr tillfälligt pausad.");
+    return;
   }
+
+  const correct = getCurrentYearPassword();
+  if (loginPassword === correct) {
+    setIsAuthenticated(true);
+    setLoginPassword("");
+    setStatus("");
+  } else {
+    setStatus("❌ Fel lösenord.");
+  }
+}
 
   // ======= Dela-funktion =======
   async function delaApp() {
@@ -2610,112 +2618,155 @@ function avbrytRadering() {
       );
     }
 
-    if (activeTab === "startstop") {
-      return (
-        <section style={sectionStyle}>
-          <h2
-            style={{
-              fontSize: 18,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Start / Stop pass
-          </h2>
+   if (activeTab === "startstop") {
+  return (
+    <section style={sectionStyle}>
+      <h2
+        style={{
+          fontSize: 18,
+          marginTop: 0,
+          marginBottom: 12,
+        }}
+      >
+        Start / Stop pass
+      </h2>
 
-          {aktivtPass ? (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#eef2ff",
-                color: "#1d4ed8",
-                fontSize: 14,
-              }}
-            >
-              Pågående pass (
-              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMm(passTotalSek)}</strong>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#4b5563",
-                  marginTop: 4,
-                }}
-              >
-                Senaste adressintervall:{" "}
-                <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-              </div>
-            </div>
-          ) : (
-            <p
-              style={{
-                fontSize: 14,
-                marginBottom: 12,
-                color: "#4b5563",
-              }}
-            >
-              Inget pass är aktivt just nu.
-            </p>
-          )}
+      {aktivtPass ? (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "8px 12px",
+            borderRadius: 12,
+            backgroundColor: "#eef2ff",
+            color: "#1d4ed8",
+            fontSize: 14,
+          }}
+        >
+          Pågående pass (
+          {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+          <strong>{formatSekTillHhMm(passTotalSek)}</strong>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#4b5563",
+              marginTop: 4,
+            }}
+          >
+            Senaste adressintervall:{" "}
+            <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+          </div>
+        </div>
+      ) : (
+        <p
+          style={{
+            fontSize: 14,
+            marginBottom: 12,
+            color: "#4b5563",
+          }}
+        >
+          Inget pass är aktivt just nu.
+        </p>
+      )}
 
-          {paus && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#f97316",
-                color: "#ffffff",
-                fontSize: 14,
-              }}
-            >
-              Paus igång –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
-            </div>
-          )}
+      {paus && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "8px 12px",
+            borderRadius: 12,
+            backgroundColor: "#f97316",
+            color: "#ffffff",
+            fontSize: 14,
+          }}
+        >
+          Paus igång –{" "}
+          <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+        </div>
+      )}
 
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#16a34a",
-            }}
-            onClick={startaPass}
-          >
-            Starta passet
-          </button>
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#dc2626",
-            }}
-            onClick={stoppaPass}
-          >
-            Stoppa passet
-          </button>
+      <button
+        style={{
+          ...primaryButton,
+          backgroundColor: "#16a34a",
+        }}
+        onClick={startaPass}
+      >
+        Starta passet
+      </button>
+      <button
+        style={{
+          ...primaryButton,
+          backgroundColor: "#dc2626",
+        }}
+        onClick={stoppaPass}
+      >
+        Stoppa passet
+      </button>
 
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#ea580c",
-            }}
-            onClick={startPaus}
-          >
-            Start Paus
-          </button>
-          <button
-            style={{
-              ...primaryButton,
-              backgroundColor: "#f97316",
-            }}
-            onClick={stopPaus}
-          >
-            Stop Paus
-          </button>
-        </section>
-      );
-    }
+      <button
+        style={{
+          ...primaryButton,
+          backgroundColor: "#ea580c",
+        }}
+        onClick={startPaus}
+      >
+        Start Paus
+      </button>
+      <button
+        style={{
+          ...primaryButton,
+          backgroundColor: "#f97316",
+        }}
+        onClick={stopPaus}
+      >
+        Stop Paus
+      </button>
+
+      {/* 🔐 Pausa / Starta lösenord */}
+      <div
+        style={{
+          marginTop: 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <button
+          onClick={() => {
+            setPasswordPaused(true);
+            showPopup(
+              "🔓 Lösenord pausat – inloggning tillfälligt avaktiverad",
+              "success",
+              4000
+            );
+            setStatus("Lösenordet är tillfälligt pausat 🔓");
+          }}
+          style={{
+            ...primaryButton,
+            backgroundColor: "#facc15",
+            color: "#854d0e",
+          }}
+        >
+          Pausa Lösenord
+        </button>
+
+        <button
+          onClick={() => {
+            setPasswordPaused(false);
+            showPopup("🔒 Lösenord aktiverat igen", "success", 4000);
+            setStatus("Lösenordet är aktiverat 🔒");
+          }}
+          style={{
+            ...primaryButton,
+            backgroundColor: "#16a34a",
+          }}
+        >
+          Starta Lösenord
+        </button>
+      </div>
+    </section>
+  );
+}
 
     if (activeTab === "rutt") {
   const nastaAdress = ruttAdresser.find((r) => !r.avklarad);
