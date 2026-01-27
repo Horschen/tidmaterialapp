@@ -2163,22 +2163,36 @@ function avbrytRadering() {
           </h2>
 
           <label style={labelStyle}>Adress (för rapport)</label>
-<select
-  value={valda}
-  onChange={(e) => setValda(e.target.value)}
-  style={selectStyle}
->
-  <option value="">-- Välj adress --</option>
-  {sortAdresser(adresser).map((a) => (
-    <option
-      key={a.id}
-      value={a.id}
-      style={{ backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white" }}
-    >
-      {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-    </option>
-  ))}
-</select>
+          <select
+            value={valda}
+            onChange={(e) => setValda(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {[...adresser]
+              .sort((a, b) => {
+                const sortA =
+                  typeof a.adresslista_sortering === "number"
+                    ? a.adresslista_sortering
+                    : Number(a.adresslista_sortering) || Number(a.id) || 0;
+                const sortB =
+                  typeof b.adresslista_sortering === "number"
+                    ? b.adresslista_sortering
+                    : Number(b.adresslista_sortering) || Number(b.id) || 0;
+                return sortA - sortB; // ordning enligt kolumnen i Supabase
+              })
+              .map((a) => (
+                <option
+                  key={a.id}
+                  value={a.id}
+                  style={{
+                    backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+                  }}
+                >
+                  {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+                </option>
+              ))}
+          </select>
 
           <div
             style={{
