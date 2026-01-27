@@ -78,61 +78,64 @@ function VeckoOversikt({
 }) {
   const grupperad = {};
 
-  // Sortera raderna direkt på verklig jobbtid
-  const sorteradeRapporter = [...data].sort((a, b) => {
-    const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : (a.datum ? Date.parse(a.datum) : 0);
-    const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : (b.datum ? Date.parse(b.datum) : 0);
-    return tB - tA;
-  });
+  // ======= Sortering och grupper för jobbtid =======
 
-  sorteradeRapporter.forEach((rad) => {
-    const adressId = rad.adress_id ?? "okänd";
-    const namn = rad.adresser?.namn || "Okänd adress";
+// Sortera direkt på jobb_tid (verklig arbetstid)
+const sorteradeRapporter = [...data].sort((a, b) => {
+  const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : 0;
+  const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : 0;
+  return tA - tB; // äldsta först, vänd efter gruppning
+});
 
-    if (!grupperad[adressId]) {
-      grupperad[adressId] = {
-        adressId,
-        namn,
-        tid: 0,
-        grus: 0,
-        salt: 0,
-        antalJobb: 0,
-        anstallda: 0,
-        syften: new Set(),
-        senasteDatumTid: rad.jobb_tid || rad.datum || null,
-        totalRader: 0,
-        skyddadRader: 0,
-      };
+// Gruppera rapporterna per adress
+sorteradeRapporter.forEach((rad) => {
+  const adressId = rad.adress_id ?? "okänd";
+  const namn = rad.adresser?.namn || "Okänd adress";
+
+  if (!grupperad[adressId]) {
+    grupperad[adressId] = {
+      adressId,
+      namn,
+      tid: 0,
+      grus: 0,
+      salt: 0,
+      antalJobb: 0,
+      anstallda: 0,
+      syften: new Set(),
+      senasteJobbTid: null,
+      totalRader: 0,
+      skyddadRader: 0,
+    };
+  }
+
+  const g = grupperad[adressId];
+  g.tid += rad.arbetstid_min || 0;
+  g.grus += rad.sand_kg || 0;
+  g.salt += rad.salt_kg || 0;
+  g.antalJobb++;
+  g.anstallda += rad.antal_anstallda || 0;
+  g.totalRader++;
+  if (rad.skyddad) g.skyddadRader++;
+
+  if (rad.syfte) {
+    rad.syfte
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((s) => g.syften.add(s));
+  }
+
+  // Håll koll på senaste jobbtid för varje adress
+  if (rad.jobb_tid) {
+    const d = new Date(rad.jobb_tid);
+    if (!Number.isNaN(d.getTime())) {
+      const prev = g.senasteJobbTid ? new Date(g.senasteJobbTid) : null;
+      if (!prev || d > prev) g.senasteJobbTid = rad.jobb_tid;
     }
+  }
+});
 
-    const g = grupperad[adressId];
-    g.tid += rad.arbetstid_min || 0;
-    g.grus += rad.sand_kg || 0;
-    g.salt += rad.salt_kg || 0;
-    g.antalJobb++;
-    g.anstallda += rad.antal_anstallda || 0;
-    g.totalRader++;
-    if (rad.skyddad) g.skyddadRader++;
-
-    if (rad.syfte) {
-      rad.syfte
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .forEach((s) => g.syften.add(s));
-    }
-
-    // hämta senaste jobbtid för denna adress (regel: g.jobb_tid)
-    if (rad.jobb_tid) {
-      const d = new Date(rad.jobb_tid);
-      if (!Number.isNaN(d.getTime())) {
-        const prev = g.senasteDatumTid ? new Date(g.senasteDatumTid) : null;
-        if (!prev || d > prev) g.senasteDatumTid = rad.jobb_tid;
-      }
-    }
-  });
-
- // Mappa slutresultat för tabellen och sortera strikt på verklig jobbtid (jobb_tid)
+// Mappa slutresultat för tabellen, sortera nyaste överst
 const lista = Object.values(grupperad)
   .map((g) => ({
     adressId: g.adressId,
@@ -143,20 +146,19 @@ const lista = Object.values(grupperad)
     antal: g.antalJobb,
     anstallda: g.anstallda,
     syften: Array.from(g.syften).join(", "),
-    senasteDatumTid: g.senasteDatumTid || null, // innehåller vårt jobb_tid‑värde från gruppering
+    senasteDatumTid: g.senasteJobbTid,
     skyddad: g.totalRader > 0 && g.skyddadRader === g.totalRader,
     redigerad:
-      g.senasteDatumTid &&
-      new Date(g.senasteDatumTid) >
+      g.senasteJobbTid &&
+      new Date(g.senasteJobbTid) >
         new Date(Date.now() - 10 * 60 * 1000),
   }))
   .sort((a, b) => {
-    // sortera endast på jobbtid (senasteDatumTid håller vårt jobb_tid)
     const tA = a.senasteDatumTid ? Date.parse(a.senasteDatumTid) : 0;
     const tB = b.senasteDatumTid ? Date.parse(b.senasteDatumTid) : 0;
-    return tB - tA; // nyaste jobb först
+    return tB - tA; // nyaste överst
   });
-
+  
 const metodText =
   filterMetod === "hand"
     ? "Endast För hand"
