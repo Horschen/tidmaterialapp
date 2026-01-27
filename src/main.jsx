@@ -1812,37 +1812,60 @@ function toggleRuttAdress(adressId, checked) {
   );
 }
 
-// ======= Spara planerad rutt (innan pass) =======
-async function sparaPlaneradRutt() {
-  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
-  
-  if (valda.length < 2) {
-    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
-    return;
+// Hjälpfunktion: beräkna via Google Maps och spara till Supabase
+  async function beraknaOchSparaRutt(origin, destination, waypoints) {
+    const url = `/api/route?origin=${origin}&destination=${destination}${
+      waypoints ? `&waypoints=${waypoints}` : ""
+    }`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.status !== "OK") {
+        showPopup("👎 Kunde inte beräkna rutt.", "error", 3000);
+        setRuttStatus("❌ Google Maps API‑fel: " + data.status);
+        return;
+      }
+
+      const optimizedOrder = data.routes[0].waypoint_order || [];
+      const sorted = optimizedOrder.map((i) => medGPS[i]);
+
+      // Adresser utan GPS läggs sist
+      const finalRutt = [...sorted, ...utanGPS];
+
+      // Ta bort gammal aktiv rutt
+      await supabase.from("aktiv_rutt").delete().neq("id", 0);
+
+      // Spara ny rutt
+      const rows = finalRutt.map((a, idx) => ({
+        adress_id: a.id,
+        ordning: idx + 1,
+        avklarad: false,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("aktiv_rutt")
+        .insert(rows);
+
+      if (insertError) {
+        showPopup("👎 Kunde inte spara aktiv rutt.", "error", 3000);
+        setRuttStatus("❌ Fel vid lagring.");
+      } else {
+        await supabase.from("vantande_rutt").delete().neq("id", 0);
+        setRuttVagbeskrivning(data.routes[0]);
+        await laddaAktivRutt();
+        await laddaVantandeRutt();
+
+        showPopup("👍 Rutt aktiverad och sparad!", "success", 4000);
+        setRuttStatus("✅ Rutt aktiverad.");
+      }
+    } catch (err) {
+      console.error(err);
+      showPopup("👎 Nätverksfel vid ruttberäkning.", "error", 3000);
+      setRuttStatus("❌ Kunde inte kontakta Google Maps API.");
+    }
   }
-
-  setRuttStatus("Sparar planerad rutt...");
-
-  // Rensa gammal väntande rutt
-  await supabase.from("vantande_rutt").delete().neq("id", 0);
-
-  // Spara valda adresser (ingen ordning än)
-  const rader = valda.map((a) => ({
-    adress_id: a.id,
-  }));
-
-  const { error } = await supabase.from("vantande_rutt").insert(rader);
-
-  if (error) {
-    showPopup("👎 Kunde inte spara planerad rutt.", "error", 3000);
-    setRuttStatus("❌ Fel vid sparning: " + error.message);
-  } else {
-    showPopup("👍 Planerad rutt sparad! Aktivera vid pass-start.", "success", 4000);
-    setRuttStatus("✅ Planerad rutt sparad.");
-    await laddaVantandeRutt();
-    stangRuttPopup();
-  }
-}
 
 // ======= Aktivera väntande rutt (använd GPS-position eller startadress med "Start") =======
 async function aktiveraVantandeRutt() {
