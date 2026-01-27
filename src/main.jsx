@@ -1813,7 +1813,7 @@ function toggleRuttAdress(adressId, checked) {
 }
 
 // Hjälpfunktion: beräkna via Google Maps och spara till Supabase
-  async function beraknaOchSparaRutt(origin, destination, waypoints) {
+  async function beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS) {
     const url = `/api/route?origin=${origin}&destination=${destination}${
       waypoints ? `&waypoints=${waypoints}` : ""
     }`;
@@ -1946,7 +1946,7 @@ async function aktiveraVantandeRutt() {
   }
 
   // 📦 Nu kan du köra vidare med befintlig logik för att beräkna och spara rutten
-  await beraknaOchSparaRutt(origin, destination, waypoints);
+  await beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS);
 }
 // ======= Radera väntande rutt =======
 async function raderaVantandeRutt() {
