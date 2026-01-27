@@ -32,19 +32,18 @@ function formatTid(minuter) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ======= Hjälp: format datum/tid (YYYY-MM-DD HH:MM) =======
+// ======= Hjälp: format datum/tid (UTC, exakt från databasen) =======
 function formatDatumTid(iso) {
   if (!iso) return "-";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "-";
-
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day} ${hh}:${mm}`;
+  try {
+    // Exempel: "2026-01-27T00:46:00+00:00" → "2026-01-27 00:46"
+    const [datePart, timePart] = iso.split("T");
+    if (!timePart) return datePart;
+    const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
+    return `${datePart} ${tid}`;
+  } catch {
+    return "-";
+  }
 }
 
 // ======= Hjälp: sekunder -> hh:mm:ss (för timers) =======
