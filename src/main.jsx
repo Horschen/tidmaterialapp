@@ -958,24 +958,17 @@ async function sparaManuellRapport() {
     // Bygg datum + jobb_tid från användarens val
   let datumIso, jobbIso;
   try {
-    // 🟢 använd datumet från formuläret i stället för "nu"
     const datePart = manuellDatum; // format "YYYY-MM-DD"
     const timePart = manuellTid ? manuellTid : "12:00"; // format "HH:mm"
 
-    // sätt ihop datum och tid i lokal tid (inte UTC)
     const combined = new Date(`${datePart}T${timePart}`);
     if (isNaN(combined)) throw new Error("Invalid date/time");
 
-    // spara både lokal tid och full ISO
     datumIso = combined.toISOString();     // hela tiden som ISO
-    jobbIso = datumIso;                    // samma tid används för jobb_tid
+    jobbIso  = datumIso;                   // samma tid används för jobb_tid
   } catch (e) {
     showPopup("👎 Ogiltigt datum eller tid för manuell registrering.", "error", 3000);
     setStatus("Ogiltigt datum/tid för manuell registrering.");
-    return;
-  }
-    showPopup("👎 Ogiltigt datum för manuell registrering.", "error", 3000);
-    setStatus("Ogiltigt datum för manuell registrering.");
     return;
   }
 
@@ -983,8 +976,8 @@ async function sparaManuellRapport() {
 
   const { error } = await supabase.from("rapporter").insert([
     {
-      datum: datumIso,          // postens skapande tid
-      jobb_tid: jobbIso,        // verkligt jobbtillfälle
+      datum: datumIso,
+      jobb_tid: jobbIso,
       adress_id: manuellAdressId,
       arbetstid_min: arbetstidMin,
       team_namn: manuellTeam,
@@ -1003,10 +996,8 @@ async function sparaManuellRapport() {
   } else {
     setStatus("Manuell rapport sparad");
     showPopup("👍 Manuell rapport sparad", "success", 4000);
-
     resetManuellForm();
     setVisaManuellPopup(false);
-
     if (visaOversikt) hamtaRapporter();
   }
 }
