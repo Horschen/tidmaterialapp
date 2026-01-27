@@ -78,14 +78,13 @@ function VeckoOversikt({
 }) {
   const grupperad = {};
 
-  // === Sortera på rapportens riktiga jobbtid innan vi grupperar ===
+  // Sortera raderna direkt på verklig jobbtid
   const sorteradeRapporter = [...data].sort((a, b) => {
-    const timeA = a.datum ? Date.parse(a.datum) : 0;
-    const timeB = b.datum ? Date.parse(b.datum) : 0;
-    return timeB - timeA; // nyaste först
+    const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : (a.datum ? Date.parse(a.datum) : 0);
+    const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : (b.datum ? Date.parse(b.datum) : 0);
+    return tB - tA;
   });
 
-  // === Bygg upp grupperingen adress för adress ===
   sorteradeRapporter.forEach((rad) => {
     const adressId = rad.adress_id ?? "okänd";
     const namn = rad.adresser?.namn || "Okänd adress";
@@ -100,7 +99,7 @@ function VeckoOversikt({
         antalJobb: 0,
         anstallda: 0,
         syften: new Set(),
-        senasteDatumTid: rad.datum || null,
+        senasteDatumTid: rad.jobb_tid || rad.datum || null,
         totalRader: 0,
         skyddadRader: 0,
       };
@@ -123,19 +122,17 @@ function VeckoOversikt({
         .forEach((s) => g.syften.add(s));
     }
 
-    // Behåll nyaste datumet per adress
-    if (rad.datum) {
-      const d = new Date(rad.datum);
+    // hämta senaste jobbtid för denna adress (regel: g.jobb_tid)
+    if (rad.jobb_tid) {
+      const d = new Date(rad.jobb_tid);
       if (!Number.isNaN(d.getTime())) {
         const prev = g.senasteDatumTid ? new Date(g.senasteDatumTid) : null;
-        if (!prev || d > prev) {
-          g.senasteDatumTid = rad.datum;
-        }
+        if (!prev || d > prev) g.senasteDatumTid = rad.jobb_tid;
       }
     }
   });
 
-  // === Skapa lista för tabellen, markera "ändrad" och sortera ===
+  // Mappa slutresultat för tabellen
   const lista = Object.values(grupperad)
     .map((g) => ({
       adressId: g.adressId,
@@ -153,15 +150,14 @@ function VeckoOversikt({
         new Date(g.senasteDatumTid) >
           new Date(Date.now() - 10 * 60 * 1000),
     }))
-    // Sortera på verkligt rapport‑datum (exakt tid i UTC)
     .sort((a, b) => {
-      const timeA = a.senasteDatumTid
+      const tA = a.senasteDatumTid
         ? Date.parse(a.senasteDatumTid)
         : 0;
-      const timeB = b.senasteDatumTid
+      const tB = b.senasteDatumTid
         ? Date.parse(b.senasteDatumTid)
         : 0;
-      return timeB - timeA; // nyaste överst
+      return tB - tA;
     });
 
 const metodText =
@@ -816,90 +812,104 @@ useEffect(() => {
   }
 
   // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
-  async function sparaRapport() {
-    if (!validateBeforeSaveFields()) return;
+async function sparaRapport() {
+  if (!validateBeforeSaveFields()) return;
 
-    const metod = team === "För hand" ? "hand" : "maskin";
-    const syfteText = buildSyfteString();
+  const metod = team === "För hand" ? "hand" : "maskin";
+  const syfteText = buildSyfteString();
 
-    let arbetstidMin = 0;
+  let arbetstidMin = 0;
 
-    if (aktivtPass) {
-      const nu = new Date();
-      const startTid =
-        senasteRapportTid != null
-          ? new Date(senasteRapportTid)
-          : new Date(aktivtPass.startTid);
+  // — Beräkna arbetstid beroende på om passet är aktivt eller inte —
+  if (aktivtPass) {
+    const nu = new Date();
+    const startTid =
+      senasteRapportTid != null
+        ? new Date(senasteRapportTid)
+        : new Date(aktivtPass.startTid);
 
-      const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
-      const personSek = råSek * (antalAnstallda || 1);
-      const pausPersonSek =
-        (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
-      const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
+    const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
+    const personSek = råSek * (antalAnstallda || 1);
+    const pausPersonSek = (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
+    const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
 
-      const minHeltal = Math.floor(sekEfterPausPerson / 60);
-      const restSek = sekEfterPausPerson % 60;
-      let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
+    const minHeltal = Math.floor(sekEfterPausPerson / 60);
+    const restSek = sekEfterPausPerson % 60;
+    let diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
 
-      if (diffMin <= 0) {
-        showPopup(
-          "👎 För kort tid (eller bara paus) sedan senaste rapport.",
-          "error",
-          3000
-        );
-        setStatus(
-          "För kort intervall för auto-tid (eller bara paus), försök igen om en stund."
-        );
-        return;
-      }
-
-      arbetstidMin = diffMin;
-    } else {
-      const manuell = parseInt(arbetstid, 10);
-      if (!manuell || manuell <= 0) {
-        showPopup(
-          "👎 Ange arbetstid (minuter) eller starta passet.",
-          "error",
-          3000
-        );
-        setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
-        return;
-      }
-      arbetstidMin = manuell * (antalAnstallda || 1);
+    if (diffMin <= 0) {
+      showPopup(
+        "👎 För kort tid (eller bara paus) sedan senaste rapport.",
+        "error",
+        3000
+      );
+      setStatus(
+        "För kort intervall för auto-tid (eller bara paus), försök igen om en stund."
+      );
+      return;
     }
 
-    setStatus("Sparar…");
+    arbetstidMin = diffMin;
+  } else {
+    const manuell = parseInt(arbetstid, 10);
+    if (!manuell || manuell <= 0) {
+      showPopup(
+        "👎 Ange arbetstid (minuter) eller starta passet.",
+        "error",
+        3000
+      );
+      setStatus("Ange arbetstid (minuter) om inget pass är aktivt.");
+      return;
+    }
+    arbetstidMin = manuell * (antalAnstallda || 1);
+  }
 
-    const { error } = await supabase.from("rapporter").insert([
-      {
-        datum: new Date().toISOString(),
-        adress_id: valda,
-        arbetstid_min: arbetstidMin,
-        team_namn: team,
-        arbetssatt: metod,
-        sand_kg: parseInt(sand, 10) || 0,
-        salt_kg: parseInt(salt, 10) || 0,
-        syfte: syfteText,
-        antal_anstallda: antalAnstallda,
-        skyddad: true,
-      },
-    ]);
-    
-    if (error) {
-      setStatus("❌ " + error.message);
-      showPopup("👎 Fel vid sparning", "error", 3000);
-    } else {
-      setStatus("Rapport sparad");
-      showPopup("👍 Rapport sparad", "success", 4000);
+  // — Sätt både spar-tid (nu) och verklig jobbtid —
+  const nuIso = new Date().toISOString(); // när posten sparas
+  const jobbtidIso = aktivtPass
+    ? nuIso // auto-pass använder realtid
+    : new Date().toISOString(); // manuellt läge använder nuvarande, kan ändras senare i edit
 
-      setArbetstid("");
-      setValda("");
-      setSand(0);
-      setSalt(0);
-      setAntalAnstallda(1);
+  setStatus("Sparar…");
 
-      const nuIso = new Date().toISOString();
-      setSenasteRapportTid(nuIso);
+  const { error } = await supabase.from("rapporter").insert([
+    {
+      datum: nuIso,            // tidstämpel för insättningen
+      jobb_tid: jobbtidIso,    // verklig jobbtid (nytt fält i tabellen)
+      adress_id: valda,
+      arbetstid_min: arbetstidMin,
+      team_namn: team,
+      arbetssatt: metod,
+      sand_kg: parseInt(sand, 10) || 0,
+      salt_kg: parseInt(salt, 10) || 0,
+      syfte: syfteText,
+      antal_anstallda: antalAnstallda,
+      skyddad: true,
+    },
+  ]);
+
+  if (error) {
+    setStatus("❌ " + error.message);
+    showPopup("👎 Fel vid sparning", "error", 3000);
+  } else {
+    setStatus("Rapport sparad");
+    showPopup("👍 Rapport sparad", "success", 4000);
+
+    setArbetstid("");
+    setValda("");
+    setSand(0);
+    setSalt(0);
+    setAntalAnstallda(1);
+
+    setSenasteRapportTid(nuIso);
+
+    // bocka av i pågående rutt (om används)
+    await bockAvAdressIRutt(valda);
+
+    setPaus(null);
+    setPausSekUnderIntervall(0);
+  }
+}
       
       // Bocka av adress i aktiv rutt
       await bockAvAdressIRutt(valda);
@@ -910,66 +920,67 @@ useEffect(() => {
   }
   
   // ======= Spara manuell rapport (popup) =======
-  async function sparaManuellRapport() {
-    if (!validateManuellFields()) return;
+async function sparaManuellRapport() {
+  if (!validateManuellFields()) return;
 
-    const metod = manuellTeam === "För hand" ? "hand" : "maskin";
-    const syfteText = buildManuellSyfteString();
+  const metod = manuellTeam === "För hand" ? "hand" : "maskin";
+  const syfteText = buildManuellSyfteString();
 
-    const tidMin = parseInt(manuellTidMin, 10);
-    if (!tidMin || tidMin <= 0) {
-      showPopup(
-        "👎 Ange arbetstid (minuter) för manuell registrering.",
-        "error",
-        3000
-      );
-      setStatus("Ange arbetstid (minuter) för manuell registrering.");
-      return;
-    }
-
-    const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
-
-    let datumIso;
-    try {
-      datumIso = new Date(manuellDatum + "T12:00:00").toISOString();
-    } catch (_) {
-      showPopup("👎 Ogiltigt datum för manuell registrering.", "error", 3000);
-      setStatus("Ogiltigt datum för manuell registrering.");
-      return;
-    }
-
-    setStatus("Sparar manuell rapport…");
-
-    const { error } = await supabase.from("rapporter").insert([
-      {
-        datum: datumIso,
-        adress_id: manuellAdressId,
-        arbetstid_min: arbetstidMin,
-        team_namn: manuellTeam,
-        arbetssatt: metod,
-        sand_kg: parseInt(manuellSand, 10) || 0,
-        salt_kg: parseInt(manuellSalt, 10) || 0,
-        syfte: syfteText,
-        antal_anstallda: manuellAntalAnstallda,
-        skyddad: true,
-      },
-    ]);
-
-    if (error) {
-      setStatus("❌ " + error.message);
-      showPopup("👎 Fel vid manuell sparning", "error", 3000);
-    } else {
-      setStatus("Manuell rapport sparad");
-      showPopup("👍 Manuell rapport sparad", "success", 4000);
-
-      resetManuellForm();
-      setVisaManuellPopup(false);
-
-      if (visaOversikt) {
-        hamtaRapporter();
-      }
-    }
+  const tidMin = parseInt(manuellTidMin, 10);
+  if (!tidMin || tidMin <= 0) {
+    showPopup(
+      "👎 Ange arbetstid (minuter) för manuell registrering.",
+      "error",
+      3000
+    );
+    setStatus("Ange arbetstid (minuter) för manuell registrering.");
+    return;
   }
+
+  const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
+
+  // Bygg datum + jobb_tid (med vald klockslag 12:00 om ingen tid anges)
+  let datumIso, jobbIso;
+  try {
+    datumIso = new Date().toISOString(); // nuvarande sparögonblick
+    jobbIso = new Date(manuellDatum + "T12:00:00Z").toISOString(); // verklig arbetstid som användaren valt (kan editeras senare)
+  } catch (_) {
+    showPopup("👎 Ogiltigt datum för manuell registrering.", "error", 3000);
+    setStatus("Ogiltigt datum för manuell registrering.");
+    return;
+  }
+
+  setStatus("Sparar manuell rapport…");
+
+  const { error } = await supabase.from("rapporter").insert([
+    {
+      datum: datumIso,          // postens skapande tid
+      jobb_tid: jobbIso,        // verkligt jobbtillfälle
+      adress_id: manuellAdressId,
+      arbetstid_min: arbetstidMin,
+      team_namn: manuellTeam,
+      arbetssatt: metod,
+      sand_kg: parseInt(manuellSand, 10) || 0,
+      salt_kg: parseInt(manuellSalt, 10) || 0,
+      syfte: syfteText,
+      antal_anstallda: manuellAntalAnstallda,
+      skyddad: true,
+    },
+  ]);
+
+  if (error) {
+    setStatus("❌ " + error.message);
+    showPopup("👎 Fel vid manuell sparning", "error", 3000);
+  } else {
+    setStatus("Manuell rapport sparad");
+    showPopup("👍 Manuell rapport sparad", "success", 4000);
+
+    resetManuellForm();
+    setVisaManuellPopup(false);
+
+    if (visaOversikt) hamtaRapporter();
+  }
+}
 
   // ======= Starta pass =======
   function startaPass() {
