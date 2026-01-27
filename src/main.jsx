@@ -1917,14 +1917,6 @@ async function aktiveraVantandeRutt() {
     setRuttStatus(`🚀 Rutten startar vid "${start.namn}"`);
   } else if (navigator.geolocation) {
 
-// ======= Spara planerad rutt (innan pass) =======
-async function sparaPlaneradRutt() {
-  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
-
-  if (valda.length < 2) {
-    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
-    return;
-  }
 
   setRuttStatus("Sparar planerad rutt...");
 
@@ -1982,6 +1974,16 @@ async function sparaPlaneradRutt() {
   // 📦 Nu kan du köra vidare med befintlig logik för att beräkna och spara rutten
   await beraknaOchSparaRutt(origin, destination, waypoints, medGPS, utanGPS);
 }
+
+// ======= Spara planerad rutt (innan pass) =======
+async function sparaPlaneradRutt() {
+  const valda = valjbaraRuttAdresser.filter((a) => a.vald);
+
+  if (valda.length < 2) {
+    showPopup("👎 Välj minst 2 adresser för planerad rutt.", "error", 3000);
+    return;
+  }
+
 // ======= Radera väntande rutt =======
 async function raderaVantandeRutt() {
   const { error } = await supabase.from("vantande_rutt").delete().neq("id", 0);
