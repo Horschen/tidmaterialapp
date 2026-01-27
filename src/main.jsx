@@ -691,9 +691,10 @@ async function laddaAdresser() {
     .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering");
 
   if (error) {
-    setStatus("Fel vid laddning: " + error.message);
+    console.error("❌ Fel vid laddning av adresser:", error);
+    setStatus("Fel vid laddning av adresser: " + error.message);
   } else {
-    console.log("✅ Adresser:", data?.slice(0,5));  // <-- lägg till detta
+    console.log("✅ Adresser:", data?.slice(0, 5)); // ← den här ska synas
     setAdresser(data || []);
   }
 }
