@@ -700,7 +700,7 @@ async function laddaAdresser() {
   if (error) {
     setStatus("❌ " + error.message);
   } else {
-    setAdresser(data || []);
+    setAdresser(sortAdresser(data || []));
   }
 }
 
@@ -708,18 +708,6 @@ useEffect(() => {
   laddaAdresser();
 }, []);
   
-  // ======= Hämta adresser =======
-  useEffect(() => {
-    async function laddaAdresser() {
-      const { data, error } = await supabase
-        .from("adresser")
-        .select("id, namn, gps_url, maskin_mojlig");
-      if (error) setStatus("Fel vid laddning av adresser: " + error.message);
-      else setAdresser(data || []);
-    }
-    laddaAdresser();
-  }, []);
-
   // ======= Hämta rapporter =======
   async function hamtaRapporter() {
     const { data, error } = await supabase
@@ -755,18 +743,6 @@ async function hamtaRapporter() {
     setStatus("✅ Rapporter uppdaterade.");
   }
 }
-
-// ======= Hämta adresser =======
-useEffect(() => {
-  async function laddaAdresser() {
-    const { data, error } = await supabase
-      .from("adresser")
-      .select("id, namn, gps_url, maskin_mojlig, lat, lng");
-    if (error) setStatus("Fel vid laddning av adresser: " + error.message);
-    else setAdresser(data || []);
-  }
-  laddaAdresser();
-}, []);
 
 // ======= Ladda rutter vid start (efter inloggning) =======
 useEffect(() => {
