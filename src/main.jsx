@@ -395,18 +395,21 @@ function App() {
     localStorage.getItem("snöjour_password_paused") === "true";
   const [passwordPaused, setPasswordPaused] = useState(initialPaused);
 
-  // App-lösenord
+  // 🟢 Om lösenord är pausat: börja som inloggad direkt
   const [isAuthenticated, setIsAuthenticated] = useState(initialPaused);
-  const [loginPassword, setLoginPassword] = useState("");
-  
 
-// 👉 Skriv in "pausat" värdet varje gång det ändras
-useEffect(() => {
-  localStorage.setItem("snöjour_password_paused", passwordPaused ? "true" : "false");
-}, [passwordPaused]);
-  
+  // 🟢 Fältet i login‑formuläret
   const [loginPassword, setLoginPassword] = useState("");
 
+  // 🟢 Skriv in/uppdatera värdet i localStorage varje gång det ändras
+  useEffect(() => {
+    localStorage.setItem(
+      "snöjour_password_paused",
+      passwordPaused ? "true" : "false"
+    );
+  }, [passwordPaused]);
+
+  // ======= Resterande state =======
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
 
