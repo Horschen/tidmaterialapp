@@ -1135,12 +1135,42 @@ function stoppaPass() {
     }
   }
 
+// ======= Radera EN utvald rapport (från Editera-popup) =======
+async function raderaEnRapport(postId) {
+  if (!postId) return;
+
+  const input = window.prompt("Ange lösenord för att radera denna rapport:");
+  const correct = getCurrentYearPassword();
+  if (input !== correct) {
+    showPopup("👎 Fel lösenord – rapporten raderas inte.", "error", 3000);
+    return;
+  }
+
+  const sure = window.confirm("Är du säker på att du vill radera denna rapport?");
+  if (!sure) return;
+
+  const { error } = await supabase
+    .from("rapporter")
+    .delete()
+    .eq("id", postId);
+
+  if (error) {
+    showPopup("👎 Fel vid radering: " + error.message, "error", 3000);
+    setStatus("❌ Fel vid radering: " + error.message);
+  } else {
+    showPopup("🗑️ Rapport raderad.", "success", 3000);
+    setStatus("Rapport raderad.");
+    setVisaEditPopup(false);
+    if (visaOversikt) hamtaRapporter();
+  }
+}
+  
   // ======= Öppna edit-popup för en adress (3 senaste rader) =======
   function openEditPopupForAdress(adressId) {
     const raderFörAdress = filtreradeRapporter
-      .filter((r) => r.adress_id === adressId)
-      .sort((a, b) => new Date(b.datum) - new Date(a.datum))
-      .slice(0, 3);
+  .filter((r) => r.adress_id === adressId)
+  .sort((a, b) => new Date(b.datum) - new Date(a.datum))
+  .slice(0, 14);   // visar 14 senaste
 
     if (raderFörAdress.length === 0) {
       showPopup("👎 Inga rapporter att editera för denna adress.", "error", 3000);
@@ -3764,39 +3794,63 @@ return (
     </div>
 
     <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginTop: 16,
-      }}
-    >
-      <button
-        onClick={sparaEditRapport}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#16a34a",
-          color: "#fff",
-          fontWeight: 600,
-        }}
-      >
-        Spara
-      </button>
-      <button
-  onClick={() => setVisaEditPopup(false)}
   style={{
-    padding: "10px 16px",
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#dc2626",   // 🔴 röd bakgrund
-    color: "#ffffff",
-    fontWeight: 600,
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: 16,
   }}
 >
-  Avbryt
-</button>
-    </div>
+  {/* ✅ Vänster: Spara */}
+  <button
+    onClick={sparaEditRapport}
+    style={{
+      flex: 1,
+      marginRight: 6,
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#16a34a",
+      color: "#fff",
+      fontWeight: 600,
+    }}
+  >
+    Spara
+  </button>
+
+  {/* ➡️ Mitten: Avbryt */}
+  <button
+    onClick={() => setVisaEditPopup(false)}
+    style={{
+      flex: 1,
+      margin: "0 6px",
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#fbbf24",
+      color: "#78350f",
+      fontWeight: 600,
+    }}
+  >
+    Avbryt
+  </button>
+
+  {/* 🗑️ Höger: Radera */}
+  <button
+    onClick={() => raderaEnRapport(valdaEditId)}
+    style={{
+      flex: 1,
+      marginLeft: 6,
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Radera
+  </button>
+</div>
   </div>
 )}
 
