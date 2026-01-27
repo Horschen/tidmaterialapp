@@ -2167,7 +2167,6 @@ function avbrytRadering() {
     </option>
   ))}
 </select>
-          </select>
 
           <div
             style={{
