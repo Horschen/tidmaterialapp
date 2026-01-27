@@ -1819,6 +1819,7 @@ function toggleRuttAdress(adressId, checked) {
     }`;
 
     try {
+      console.log("➡️ route‑URL:", url);
       const res = await fetch(url);
       const data = await res.json();
 
