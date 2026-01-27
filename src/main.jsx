@@ -311,6 +311,15 @@ function VeckoOversikt({
   );
 }
 
+// === Sortera adresserna i tabellen ===
+// Nyaste (mest aktuellt datum+tid) hamnar överst
+lista.sort((a, b) => {
+  const timeA = a.senasteDatumTid ? new Date(a.senasteDatumTid).getTime() : 0;
+  const timeB = b.senasteDatumTid ? new Date(b.senasteDatumTid).getTime() : 0;
+  return timeB - timeA; // störst (senaste) först
+});
+
+
 // ======= Huvudappen =======
 function App() {
   const [activeTab, setActiveTab] = useState("registrera");
@@ -1168,13 +1177,27 @@ function stoppaPass() {
     const teamNamn = editForm.team_namn || "För hand";
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
-    let datumIso;
-    try {
-      datumIso = new Date(editForm.datum + "T12:00:00").toISOString();
-    } catch {
-      showPopup("👎 Ogiltigt datum.", "error", 3000);
-      return;
-    }
+    // ---- Datumhantering: behåll original exakt om ej ändrat ----
+let datumIso;
+try {
+  const original = editRapporter.find((r) => r.id === valdaEditId);
+  const originalFull = original?.datum; // Hela ISO-strängen från databasen
+  const nyttDatumFält = editForm.datum?.trim();
+
+  // Om användaren inte ändrat datumet, använd originalsträngen rakt av
+  if (!nyttDatumFält || nyttDatumFält === originalFull?.slice(0, 10)) {
+    datumIso = originalFull;
+  } else {
+    // Behåll originalets klockslag
+    const isoTid = originalFull
+      ? originalFull.split("T")[1]
+      : "12:00:00+00";
+    datumIso = `${nyttDatumFält}T${isoTid}`;
+  }
+} catch {
+  showPopup("👎 Ogiltigt datum.", "error", 3000);
+  return;
+}
 
     setStatus("Uppdaterar rapport…");
 
