@@ -808,11 +808,11 @@ useEffect(() => {
       return false;
     }
 
-    return true;
-  }
+     return true;
+  }   // ← avslutar validateManuellFields
 
   // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
-async function sparaRapport() {
+  async function sparaRapport() {
   if (!validateBeforeSaveFields()) return;
 
   const metod = team === "För hand" ? "hand" : "maskin";
