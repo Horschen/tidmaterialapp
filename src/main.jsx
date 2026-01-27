@@ -124,9 +124,14 @@ function VeckoOversikt({
 
     // Håll senaste jobb_tid per adress (enligt databasen)
     const jobbTid = r.jobb_tid || r.datum || null;
-    if (jobbTid && (!g.senasteJobbTid || Date.parse(jobbTid) > Date.parse(g.senasteJobbTid))) {
-      g.senasteJobbTid = jobbTid;
-    }
+    if (
+  jobbTid &&
+  (!g.senasteJobbTid ||
+    Math.floor(new Date(jobbTid).getTime() / 1000) >
+      Math.floor(new Date(g.senasteJobbTid).getTime() / 1000))
+) {
+  g.senasteJobbTid = jobbTid;
+}
   });
 
   // === 3️⃣ Gör om till lista och sortera per adress efter senaste jobb_tid ===
@@ -146,11 +151,13 @@ function VeckoOversikt({
         g.senasteJobbTid &&
         new Date(g.senasteJobbTid) > new Date(Date.now() - 10 * 60 * 1000),
     }))
-    .sort((a, b) => {
-      const tA = a.senasteDatumTid ? Date.parse(a.senasteDatumTid) : 0;
-      const tB = b.senasteDatumTid ? Date.parse(b.senasteDatumTid) : 0;
-      return tB - tA; // nyaste adress högst upp
-    });
+   .sort((a, b) => {
+  const toMs = (v) =>
+    v ? Math.floor(new Date(v).getTime() / 1000) * 1000 : 0; // avrunda till närmaste sekund
+  const tA = toMs(a.senasteDatumTid);
+  const tB = toMs(b.senasteDatumTid);
+  return tB - tA; // nyaste överst
+});
 
   const metodText =
     filterMetod === "hand"
