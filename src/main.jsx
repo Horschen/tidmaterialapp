@@ -3984,6 +3984,21 @@ return (
       }}
     />
 
+    <label>Tid:</label>
+<input
+  type="time"
+  value={manuellTid || ""}
+  onChange={(e) => setManuellTid(e.target.value)}
+  style={{
+    width: "100%",
+    marginBottom: 12,
+    padding: "8px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+  }}
+/>
+
+    
     <label>Arbetstid (minuter)</label>
     <input
       type="number"
