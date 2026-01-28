@@ -710,8 +710,9 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering")
-    .order("adresslista_sortering", { ascending: true });   // redan sorterat på servern
+    .select(
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url")
+    .order("adresslista_sortering", { ascending: true });
 
   if (error) {
     setStatus("❌ " + error.message);
