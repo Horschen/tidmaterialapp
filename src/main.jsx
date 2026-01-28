@@ -556,6 +556,7 @@ function App() {
   // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
   const [kartaNotering, setKartaNotering] = useState(""); // textfält för instruktioner
+  const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
@@ -730,18 +731,17 @@ useEffect(() => {
   useEffect(() => {
     if (!kartaAdressId) {
       setKartaNotering("");
-      return;
-    }
+      setKartaNoteringEditing(false);
+      return;}
     const vald = adresser.find(
       (a) =>
         a.id === Number(kartaAdressId) ||
-        String(a.id) === String(kartaAdressId)
-    );
+        String(a.id) === String(kartaAdressId));
     if (vald) {
       setKartaNotering(vald.karta_notering || "");
     } else {
-      setKartaNotering("");
-    }
+      setKartaNotering("");}
+    setKartaNoteringEditing(false); // avsluta ev. redigering när man byter adress
   }, [kartaAdressId, adresser]);
 
   
@@ -2413,15 +2413,18 @@ function avbrytRadering() {
             .eq("id", kartaAdressId);
           if (error) throw error;
 
-          showPopup("👍 Instruktioner sparade.", "success", 3000);
-          setStatus("✅ Instruktioner uppdaterade.");
+          showPopup("👍 Notering sparad.", "success", 3000);
+          setStatus("✅ Notering uppdaterad.");
+          setKartaNoteringEditing(false);
           await laddaAdresser();
         } catch (err) {
           console.error(err);
-          showPopup("👎 Fel vid sparande av instruktioner.", "error", 3000);
+          showPopup("👎 Fel vid sparande av notering.", "error", 3000);
           setStatus("❌ Fel: " + (err.message || "Okänt fel"));
         }
       }
+
+      const harNotering = kartaNotering && kartaNotering.trim().length > 0;
 
       return (
         <section style={sectionStyle}>
@@ -2457,10 +2460,10 @@ function avbrytRadering() {
           {kartaAdressId && (
             <div style={{ marginTop: 20 }}>
               <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                Instruktioner / noteringar för denna adress
+                Noteringar för denna adress
               </h4>
               <p style={{ fontSize: 12, color: "#6b7280", marginTop: 0 }}>
-                Skriv t.ex. i punktform:
+                Används t.ex. för:
                 <br />
                 • Vilka ytor som ska prioriteras
                 <br />
@@ -2468,10 +2471,19 @@ function avbrytRadering() {
                 <br />
                 • ”Ploga ej framför garage X” osv.
               </p>
+
+              {/* Visning/editering av notering */}
               <textarea
                 value={kartaNotering}
-                onChange={(e) => setKartaNotering(e.target.value)}
-                placeholder={"• Punkt 1\n• Punkt 2\n• Punkt 3"}
+                onChange={(e) =>
+                  kartaNoteringEditing && setKartaNotering(e.target.value)
+                }
+                readOnly={!kartaNoteringEditing}
+                placeholder={
+                  kartaNoteringEditing
+                    ? "• Punkt 1\n• Punkt 2\n• Punkt 3"
+                    : "Ingen notering sparad ännu."
+                }
                 style={{
                   width: "100%",
                   minHeight: 120,
@@ -2479,21 +2491,83 @@ function avbrytRadering() {
                   fontSize: 14,
                   borderRadius: 10,
                   border: "1px solid #d1d5db",
-                  backgroundColor: "#f9fafb",
+                  backgroundColor: kartaNoteringEditing
+                    ? "#ffffff"
+                    : "#f9fafb",
                   boxSizing: "border-box",
                   whiteSpace: "pre-wrap",
+                  color: "#111827",
                 }}
               />
-              <button
-                onClick={sparaKartaNotering}
-                style={{
-                  ...primaryButton,
-                  marginTop: 8,
-                  backgroundColor: "#10b981",
-                }}
-              >
-                Spara instruktioner
-              </button>
+
+              {/* Knappar för Lägg till / Ändra / Spara */}
+              {!kartaNoteringEditing && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <button
+                    onClick={() => setKartaNoteringEditing(true)}
+                    style={{
+                      ...primaryButton,
+                      backgroundColor: "#10b981",
+                    }}
+                  >
+                    {harNotering ? "Ändra notering" : "Lägg till notering"}
+                  </button>
+                </div>
+              )}
+
+              {kartaNoteringEditing && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <button
+                    onClick={sparaKartaNotering}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 999,
+                      border: "none",
+                      backgroundColor: "#16a34a",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Spara notering
+                  </button>
+                  <button
+                    onClick={() => {
+                      // återställ till senaste sparade värde från adresser-listan
+                      const vald = adresser.find(
+                        (a) =>
+                          a.id === Number(kartaAdressId) ||
+                          String(a.id) === String(kartaAdressId)
+                      );
+                      setKartaNotering(vald?.karta_notering || "");
+                      setKartaNoteringEditing(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 999,
+                      border: "none",
+                      backgroundColor: "#e5e7eb",
+                      color: "#111827",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -2651,8 +2725,7 @@ function avbrytRadering() {
           )}
         </section>
       );
-    }
-    
+    }    
     // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
   return (
