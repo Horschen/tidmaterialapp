@@ -555,7 +555,7 @@ function App() {
 
   // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
-  const [kartaNotering, setKartaNotering] = useState(""); // 🆕 textfält för instruktioner
+  const [kartaNotering, setKartaNotering] = useState(""); // textfält för instruktioner
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
@@ -724,6 +724,26 @@ async function laddaAdresser() {
 useEffect(() => {
   laddaAdresser();
 }, []);
+
+  
+  // === Synka kartaNotering med vald adress ===
+  useEffect(() => {
+    if (!kartaAdressId) {
+      setKartaNotering("");
+      return;
+    }
+    const vald = adresser.find(
+      (a) =>
+        a.id === Number(kartaAdressId) ||
+        String(a.id) === String(kartaAdressId)
+    );
+    if (vald) {
+      setKartaNotering(vald.karta_notering || "");
+    } else {
+      setKartaNotering("");
+    }
+  }, [kartaAdressId, adresser]);
+
   
   // ======= Hämta rapporter =======
   async function hamtaRapporter() {
@@ -2384,23 +2404,6 @@ function avbrytRadering() {
 
     // === KARTA‑FLIK ===
     if (activeTab === "karta") {
-      // hitta den valda adressen
-      const valdAdress =
-        adresser.find(
-          (a) =>
-            a.id === Number(kartaAdressId) ||
-            String(a.id) === String(kartaAdressId)
-        ) || null;
-
-      // se till att textfältet uppdateras när man byter adress
-      useEffect(() => {
-        if (valdAdress) {
-          setKartaNotering(valdAdress.karta_notering || "");
-        } else {
-          setKartaNotering("");
-        }
-      }, [kartaAdressId, valdAdress]);
-
       async function sparaKartaNotering() {
         if (!kartaAdressId) return;
         try {
