@@ -555,7 +555,7 @@ function App() {
 
   // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
-
+  const [kartaNotering, setKartaNotering] = useState(""); // 🆕 textfält för instruktioner
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
 
@@ -711,7 +711,7 @@ async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
     .select(
-      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url")
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering")
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
@@ -2384,6 +2384,42 @@ function avbrytRadering() {
 
     // === KARTA‑FLIK ===
     if (activeTab === "karta") {
+      // hitta den valda adressen
+      const valdAdress =
+        adresser.find(
+          (a) =>
+            a.id === Number(kartaAdressId) ||
+            String(a.id) === String(kartaAdressId)
+        ) || null;
+
+      // se till att textfältet uppdateras när man byter adress
+      useEffect(() => {
+        if (valdAdress) {
+          setKartaNotering(valdAdress.karta_notering || "");
+        } else {
+          setKartaNotering("");
+        }
+      }, [kartaAdressId, valdAdress]);
+
+      async function sparaKartaNotering() {
+        if (!kartaAdressId) return;
+        try {
+          const { error } = await supabase
+            .from("adresser")
+            .update({ karta_notering: kartaNotering })
+            .eq("id", kartaAdressId);
+          if (error) throw error;
+
+          showPopup("👍 Instruktioner sparade.", "success", 3000);
+          setStatus("✅ Instruktioner uppdaterade.");
+          await laddaAdresser();
+        } catch (err) {
+          console.error(err);
+          showPopup("👎 Fel vid sparande av instruktioner.", "error", 3000);
+          setStatus("❌ Fel: " + (err.message || "Okänt fel"));
+        }
+      }
+
       return (
         <section style={sectionStyle}>
           <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>Karta</h2>
@@ -2414,9 +2450,53 @@ function avbrytRadering() {
             Öppna karta för vald adress
           </button>
 
-          {/* === Hantera PDF/bild‑karta för vald adress === */}
+          {/* === Instruktioner / noteringar för vald adress === */}
           {kartaAdressId && (
             <div style={{ marginTop: 20 }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                Instruktioner / noteringar för denna adress
+              </h4>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 0 }}>
+                Skriv t.ex. i punktform:
+                <br />
+                • Vilka ytor som ska prioriteras
+                <br />
+                • Särskilda gångvägar, ramper, portar
+                <br />
+                • ”Ploga ej framför garage X” osv.
+              </p>
+              <textarea
+                value={kartaNotering}
+                onChange={(e) => setKartaNotering(e.target.value)}
+                placeholder={"• Punkt 1\n• Punkt 2\n• Punkt 3"}
+                style={{
+                  width: "100%",
+                  minHeight: 120,
+                  padding: "10px 12px",
+                  fontSize: 14,
+                  borderRadius: 10,
+                  border: "1px solid #d1d5db",
+                  backgroundColor: "#f9fafb",
+                  boxSizing: "border-box",
+                  whiteSpace: "pre-wrap",
+                }}
+              />
+              <button
+                onClick={sparaKartaNotering}
+                style={{
+                  ...primaryButton,
+                  marginTop: 8,
+                  backgroundColor: "#10b981",
+                }}
+              >
+                Spara instruktioner
+              </button>
+            </div>
+          )}
+
+          {/* === Hantera PDF/bild‑karta för vald adress === */}
+          {kartaAdressId && (
+            <div style={{ marginTop: 24 }}>
               <h4 style={{ fontSize: 15, marginBottom: 6 }}>
                 PDF‑ eller bildkarta för vald adress
               </h4>
@@ -2432,21 +2512,17 @@ function avbrytRadering() {
                   try {
                     setStatus(`📤 Laddar upp "${file.name}" …`);
 
-                    // unikt filnamn
                     const ext = file.name.split(".").pop();
                     const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
                     const path = `maps/${safeName}`;
 
-                    // 1) ladda upp
                     const { error: uploadError } = await supabase.storage
                       .from("adresskartor")
                       .upload(path, file, { upsert: true });
                     if (uploadError) throw uploadError;
 
-                    // 2) publik länk
                     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
 
-                    // 3) spara i tabellen "adresser"
                     const { error: updateError } = await supabase
                       .from("adresser")
                       .update({ file_url: publicUrl })
@@ -2456,14 +2532,12 @@ function avbrytRadering() {
                     showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
                     setStatus("✅ Kartan uppladdad!");
 
-                    // ladda om adresser så previewen får rätt file_url
                     await laddaAdresser();
                   } catch (err) {
                     console.error(err);
                     showPopup("👎 Fel vid uppladdning.", "error", 3000);
                     setStatus("❌ Fel: " + (err.message || "Okänt fel"));
                   } finally {
-                    // gör att man kan välja samma fil igen om man vill
                     e.target.value = "";
                   }
                 }}
@@ -2498,9 +2572,8 @@ function avbrytRadering() {
                       <button
                         onClick={async () => {
                           try {
-                            // plocka ut sökvägen efter "adresskartor/"
                             const parts = a.file_url.split("/adresskartor/");
-                            const relativePath = parts[1]; // t.ex. "maps/123_456.png"
+                            const relativePath = parts[1];
 
                             if (relativePath) {
                               const { error: removeError } = await supabase
@@ -2576,6 +2649,7 @@ function avbrytRadering() {
         </section>
       );
     }
+    
     // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
   return (
