@@ -426,6 +426,19 @@ function App() {
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
 
+  // === Adress‑administration (för Karta / Adresser) ===
+const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
+const [nyAdress, setNyAdress] = useState({
+  namn: "",
+  material: "Grus",
+  maskin: false,
+  kombinerad: false,
+  maskin_mojlig: false,
+  Bostad_Företag: "Bostad",
+  anteckningar: "",
+});
+const [geoStatus, setGeoStatus] = useState("");
+  
   // Pass (auto-tid)
   const [aktivtPass, setAktivtPass] = useState(null); // { startTid, metod }
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
@@ -1194,6 +1207,19 @@ async function raderaEnRapport(postId) {
     if (visaOversikt) hamtaRapporter();
   }
 }
+  
+// === Adress‑administration (för Karta / Adresser) ===
+const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
+const [nyAdress, setNyAdress] = useState({
+  namn: "",
+  material: "Grus",
+  maskin: false,
+  kombinerad: false,
+  maskin_mojlig: false,
+  Bostad_Företag: "Bostad",
+  anteckningar: "",
+});
+const [geoStatus, setGeoStatus] = useState("");
   
   // ======= Öppna edit-popup för en adress (3 senaste rader) =======
   function openEditPopupForAdress(adressId) {
@@ -2395,20 +2421,8 @@ function avbrytRadering() {
       );
     }
 
-    // === KARTA / ADRESSER ===
+   // === KARTA / ADRESSER ===
 if (activeTab === "karta") {
-  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState({
-    namn: "",
-    material: "Grus",
-    maskin: false,
-    kombinerad: false,
-    maskin_mojlig: false,
-    Bostad_Företag: "Bostad",
-    anteckningar: "",
-  });
-  const [geoStatus, setGeoStatus] = useState("");
-
   async function hamtaLatLng(adressText) {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
       adressText
@@ -2429,7 +2443,7 @@ if (activeTab === "karta") {
       setGeoStatus("🔍 Hämtar position…");
       const plats = await hamtaLatLng(nyAdress.namn.trim());
 
-      // hitta nästa sorteringsnummer under 900
+      // räkna nästa sorteringsnummer under 900
       const giltiga = adresser.filter(
         (a) =>
           a.adresslista_sortering != null &&
@@ -2499,6 +2513,7 @@ if (activeTab === "karta") {
         Karta / Adresser
       </h2>
 
+      {/* Öppna admin‑popup */}
       <button
         onClick={() => setVisaAdressAdmin(true)}
         style={{
@@ -2509,7 +2524,7 @@ if (activeTab === "karta") {
         Lägg till / Ta bort Adresser
       </button>
 
-      {/* Visa adress i karta */}
+      {/* Välj adress för kartvisning */}
       <div style={{ marginTop: 16 }}>
         <label style={labelStyle}>Välj adress (karta)</label>
         <select
@@ -2537,7 +2552,7 @@ if (activeTab === "karta") {
         </button>
       </div>
 
-      {/* Popup admin */}
+      {/* Popup för adress‑administration */}
       {visaAdressAdmin && (
         <div
           style={{
@@ -2558,6 +2573,7 @@ if (activeTab === "karta") {
           }}
         >
           <h3 style={{ marginTop: 0 }}>Adressadministration</h3>
+
           {adresser.map((a) => (
             <div
               key={a.id}
@@ -2594,6 +2610,7 @@ if (activeTab === "karta") {
             onChange={(e) => setNyAdress({ ...nyAdress, namn: e.target.value })}
             style={{ ...inputStyle, marginBottom: 6 }}
           />
+
           <select
             value={nyAdress.material}
             onChange={(e) =>
@@ -2604,6 +2621,7 @@ if (activeTab === "karta") {
             <option>Grus</option>
             <option>Salt</option>
           </select>
+
           <select
             value={nyAdress.Bostad_Företag}
             onChange={(e) =>
@@ -2645,7 +2663,6 @@ if (activeTab === "karta") {
               borderRadius: 8,
               border: "1px solid #d1d5db",
               padding: 8,
-              marginTop: 6,
               marginBottom: 6,
             }}
           />
