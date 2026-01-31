@@ -2457,9 +2457,10 @@ if (activeTab === "karta") {
     }
   }
 
-  async function uppdateraAktivStatus(id, nyttVarde) {
+  // ✅ Uppdaterar kolumnen "aktiv" för vald adress i Supabase
+async function uppdateraAktivStatus(id, nyttVarde) {
   try {
-    console.log("🟡 uppdaterar id:", id, "till", nyttVarde);
+    console.log("🟡 uppdaterar adress", id, "till", nyttVarde);
 
     const { data, error } = await supabase
       .from("adresser")
@@ -2468,22 +2469,24 @@ if (activeTab === "karta") {
       .select();
 
     if (error) {
-      console.error("❌ Fel:", error);
-      showPopup("👎 Fel vid uppdatering.", "error", 3000);
+      console.error("❌ fel:", error);
+      showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
       return;
     }
 
     console.log("✅ uppdaterad rad:", data);
+    // Läser in listan igen så användargränssnittet uppdateras
     await laddaAdresser();
+
     showPopup(
       nyttVarde
         ? "🟢 Adress aktiverad (synlig i menyer)."
         : "🔴 Adress dold (tas bort från menyer).",
       "success",
-      2000
+      2500
     );
   } catch (err) {
-    console.error("💥 Undantag:", err);
+    console.error("💥 undantag:", err);
     showPopup("👎 Tekniskt fel vid uppdatering.", "error", 3000);
   }
 }
