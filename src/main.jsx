@@ -568,6 +568,8 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
 const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
 const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
 const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
+
+  
   
   // Popup-notis
   const [popup, setPopup] = useState(null);
@@ -2431,16 +2433,106 @@ function avbrytRadering() {
           </select>
 
           <button
-            onClick={oppnaKartaForKartAdress}
-            disabled={!kartaAdressId}
-            style={{
-              ...primaryButton,
-              opacity: kartaAdressId ? 1 : 0.5,
-              marginTop: 16,
-            }}
-          >
-            Öppna karta för vald adress
-          </button>
+  onClick={oppnaKartaForKartAdress}
+  disabled={!kartaAdressId}
+  style={{
+    ...primaryButton,
+    opacity: kartaAdressId ? 1 : 0.5,
+    marginTop: 16,
+  }}
+>
+  Öppna karta för vald adress
+</button>
+
+{/* 🧭 Administrera adresser */}
+<button
+  onClick={() => setVisaAdressAdmin((v) => !v)}
+  style={{
+    ...primaryButton,
+    backgroundColor: "#f59e0b", // gul
+    marginTop: 8,
+  }}
+>
+  {visaAdressAdmin ? "Stäng adress-admin" : "Administrera adresser"}
+</button>
+
+{visaAdressAdmin && (
+  <div
+    style={{
+      marginTop: 16,
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: "#fff",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+    }}
+  >
+    <h3 style={{ fontSize: 16, marginBottom: 8 }}>Adress‑admin</h3>
+    <p style={{ fontSize: 13, color: "#6b7280", marginTop: 0 }}>
+      Här kan du aktivera eller dölja adresser i appens menyer.
+    </p>
+
+    {adresser.map((a) => (
+      <label
+        key={a.id}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginBottom: 6,
+          gap: 8,
+          fontSize: 14,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={a.aktiv ?? true}
+          onChange={(e) => uppdateraAktivStatus(a.id, e.target.checked)}
+        />
+        <span style={{ flex: 1 }}>{a.namn}</span>
+        <span
+          style={{
+            fontSize: 12,
+            color: a.aktiv ? "#16a34a" : "#dc2626",
+            fontWeight: 600,
+          }}
+        >
+          {a.aktiv ? "Synlig" : "Dold"}
+        </span>
+      </label>
+    ))}
+
+    {/* Lägg till ny adress */}
+    <div style={{ marginTop: 20 }}>
+      <h4 style={{ fontSize: 15, marginBottom: 6 }}>Lägg till ny adress</h4>
+      <input
+        type="text"
+        value={nyAdress}
+        onChange={(e) => setNyAdress(e.target.value)}
+        placeholder="Skriv gatuadress eller plats"
+        style={{
+          width: "100%",
+          padding: "8px 10px",
+          borderRadius: 8,
+          border: "1px solid #d1d5db",
+          marginBottom: 8,
+        }}
+      />
+      <button
+        onClick={laggTillAdress}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#2563eb",
+          color: "#fff",
+          fontWeight: 600,
+          width: "100%",
+        }}
+      >
+        ➕ Spara ny adress
+      </button>
+    </div>
+  </div>
+)}
 
           {/* === Instruktioner / noteringar för vald adress === */}
           {kartaAdressId && (
