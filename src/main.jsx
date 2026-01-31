@@ -964,14 +964,8 @@ async function sparaManuellRapport() {
     const datePart = manuellDatum;                  // "YYYY-MM-DD"
     const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
 
-    const [hours, minutes] = timePart.split(":").map(Number);
-    const [year, month, day] = datePart.split("-").map(Number);
-
-    const combinedLocal = new Date(year, month - 1, day, hours, minutes);
-
-    if (isNaN(combinedLocal)) throw new Error("Invalid date/time");
-
-    datumIso = combinedLocal.toISOString(); // lokal -> UTC internt
+    // 🔸 Spara som lokal tid (utan zonkonvertering)
+    datumIso = `${datePart}T${timePart}:00`;
     jobbIso  = datumIso;
   } catch (e) {
     showPopup(
@@ -1286,24 +1280,23 @@ async function raderaEnRapport(postId) {
     const teamNamn = editForm.team_namn || "För hand";
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
-    // ---- Datum/tid-hantering ----
-let jobbTidIso;
-try {
-  const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
-  const nyTid = editForm.tid?.trim();        // hh:mm
-  if (!nyttDatum) {
-    showPopup("👎 Ange datum.", "error", 3000);
-    return;
-  }
+    // ---- Datum/tid-hantering (sparas i lokal tid) ----
+    let jobbTidIso;
+    try {
+      const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
+      const nyTid = editForm.tid?.trim() || "12:00"; // hh:mm
 
-  // kombinera datum + tid (om tid saknas, använd 12:00)
-  const tidDel = nyTid ? `${nyTid}:00` : "12:00:00";
-  jobbTidIso = new Date(`${nyttDatum}T${tidDel}Z`).toISOString();
+      if (!nyttDatum) {
+        showPopup("👎 Ange datum.", "error", 3000);
+        return;
+      }
 
-} catch {
-  showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
-  return;
-}
+      // 🔸 Behåll tiden exakt som användaren skrev den (utan UTC‑justering)
+      jobbTidIso = `${nyttDatum}T${nyTid}:00`;
+    } catch {
+      showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
+      return;
+    }
 
     setStatus("Uppdaterar rapport…");
 
