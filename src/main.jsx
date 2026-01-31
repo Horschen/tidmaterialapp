@@ -4587,6 +4587,5 @@ return (
     </nav>
   </div>
 );
-}  // ❌ ta bort den här klammern!  du har en för mycket här.
 
 createRoot(document.getElementById("app")).render(<App />);
