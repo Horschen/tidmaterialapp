@@ -47,18 +47,15 @@ function formatTid(minuter) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ======= Hjälp: format datum/tid (visas i lokal tid) =======
+// ======= Hjälp: format datum/tid (UTC, exakt från databasen) =======
 function formatDatumTid(iso) {
   if (!iso) return "-";
   try {
-    const date = new Date(iso); // <-- tolkar UTC, konverterar till lokal
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // Exempel: "2026-01-27T00:46:00+00:00" → "2026-01-27 00:46"
+    const [datePart, timePart] = iso.split("T");
+    if (!timePart) return datePart;
+    const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
+    return `${datePart} ${tid}`;
   } catch {
     return "-";
   }
@@ -273,122 +270,119 @@ function VeckoOversikt({
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
-{/* === TABELL === */}
-<div style={{ overflowX: "auto", marginTop: 10 }}>
-  <table
-    cellPadding={14}
-    style={{
-      borderCollapse: "collapse",
-      width: "100%",
-      minWidth: 1100,
-      fontFamily: "system-ui, -apple-system, sans-serif",
-      fontSize: 15,
-    }}
-  >
-    <thead>
-      <tr
-        style={{
-          background: "#f3f4f6",
-          borderBottom: "1px solid #e5e7eb",
-        }}
-      >
-        <th></th>
-        <th style={{ textAlign: "left" }}>Senaste jobb‑tid</th>
-        <th style={{ textAlign: "left" }}>Adress</th>
-        <th>Antal jobb</th>
-        <th>Antal anställda</th>
-        <th style={{ textAlign: "right" }}>Totalt (hh:mm)</th>
-        <th style={{ textAlign: "right" }}>Grus (kg)</th>
-        <th style={{ textAlign: "right" }}>Salt (kg)</th>
-        <th style={{ textAlign: "left" }}>Syften</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {lista.map((r, idx) => {
-        // ✅ Korrigerad tidszonsvisning per rad (automatisk lokal tid)
-function tillLokalTid(isoStr) {
-  if (!isoStr) return "-";
-  try {
-    const d = new Date(isoStr); // tolkar UTC och visar i lokal tidszon
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    const h = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${y}-${m}-${da} ${h}:${min}`;
-  } catch {
-    return "-";
-  }
-}
-
-return (
-  <tr
-    key={r.adressId}
-    style={{
-      backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-      borderBottom: "1px solid #e5e7eb",
-      height: 44,
-    }}
-  >
-    <td style={{ textAlign: "center" }}>
-      <input
-        type="checkbox"
-        checked={r.skyddad}
-        onChange={(e) =>
-          onToggleSkyddad &&
-          onToggleSkyddad(r.adressId, e.target.checked)
-        }
-      />
-    </td>
-
-    {/* 🔧 Visar alltid korrekt lokal tid */}
-    <td>{tillLokalTid(r.senasteDatumTid)}</td>
-
-    <td>
-      {r.namn}
-      {r.redigerad && (
-        <span
+      {/* === TABELL === */}
+      <div style={{ overflowX: "auto", marginTop: 10 }}>
+        <table
+          cellPadding={14}
           style={{
-            marginLeft: 6,
-            padding: "2px 6px",
-            borderRadius: 6,
-            backgroundColor: "#e0f2fe",
-            color: "#0369a1",
-            fontSize: 11,
-            fontWeight: 600,
+            borderCollapse: "collapse",
+            width: "100%",
+            minWidth: 1100,
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontSize: 15,
           }}
         >
-          📝 ändrad
-        </span>
-      )}
-    </td>
-
-    <td style={{ textAlign: "center" }}>{r.antal}</td>
-    <td style={{ textAlign: "center" }}>{r.anstallda}</td>
-    <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
-    <td style={{ textAlign: "right" }}>{r.grus}</td>
-    <td style={{ textAlign: "right" }}>{r.salt}</td>
-    <td style={{ textAlign: "left" }}>{r.syften}</td>
-    <td style={{ textAlign: "center" }}>
-      <button
-        style={{
-          padding: "4px 8px",
-          borderRadius: 999,
-          border: "1px solid #d1d5db",
-          background: "#ffffff",
-          fontSize: 12,
-          cursor: "pointer",
-        }}
-        onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
-      >
-        Editera
-      </button>
-    </td>
-  </tr>
-); 
-    
-    // ✅ Stänger VeckoOversikt innan App börjar
+          <thead>
+            <tr
+              style={{
+                background: "#f3f4f6",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
+              <th></th>
+              <th style={{ textAlign: "left" }}>Senaste jobb‑tid</th>
+              <th style={{ textAlign: "left" }}>Adress</th>
+              <th>Antal jobb</th>
+              <th>Antal anställda</th>
+              <th style={{ textAlign: "right" }}>Totalt (hh:mm)</th>
+              <th style={{ textAlign: "right" }}>Grus (kg)</th>
+              <th style={{ textAlign: "right" }}>Salt (kg)</th>
+              <th style={{ textAlign: "left" }}>Syften</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((r, idx) => (
+              <tr
+                key={r.adressId}
+                style={{
+                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                  height: 44,
+                }}
+              >
+                <td style={{ textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={r.skyddad}
+                    onChange={(e) =>
+                      onToggleSkyddad &&
+                      onToggleSkyddad(r.adressId, e.target.checked)
+                    }
+                  />
+                </td>
+                <td>{formatDatumTid(r.senasteDatumTid)}</td>
+                <td>
+                  {r.namn}
+                  {r.redigerad && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        backgroundColor: "#e0f2fe",
+                        color: "#0369a1",
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      📝 ändrad
+                    </span>
+                  )}
+                </td>
+                <td style={{ textAlign: "center" }}>{r.antal}</td>
+                <td style={{ textAlign: "center" }}>{r.anstallda}</td>
+                <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
+                <td style={{ textAlign: "right" }}>{r.grus}</td>
+                <td style={{ textAlign: "right" }}>{r.salt}</td>
+                <td style={{ textAlign: "left" }}>{r.syften}</td>
+                <td style={{ textAlign: "center" }}>
+                  <button
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      border: "1px solid #d1d5db",
+                      background: "#ffffff",
+                      fontSize: 12,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
+                  >
+                    Editera
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {lista.length === 0 && (
+              <tr>
+                <td
+                  colSpan={10}
+                  style={{
+                    textAlign: "center",
+                    fontStyle: "italic",
+                    padding: 16,
+                  }}
+                >
+                  Inga jobb hittades för vald vecka/år och filter.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+} // ✅ Stänger VeckoOversikt innan App börjar
 
       
 // ======= Huvudappen =======
@@ -898,15 +892,16 @@ async function sparaRapport() {
     arbetstidMin = manu * (antalAnstallda || 1);
   }
 
-  // — Tidsstämplar (ren UTC, ingen manuell justering) —
+  // — Tidsstämplar —
   const nuIso = new Date().toISOString();
+  const jobbtidIso = aktivtPass ? nuIso : new Date().toISOString();
 
   setStatus("Sparar...");
 
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: nuIso,
-      jobb_tid: nuIso,
+      jobb_tid: jobbtidIso,
       adress_id: valda,
       arbetstid_min: arbetstidMin,
       team_namn: team,
@@ -925,6 +920,7 @@ async function sparaRapport() {
     return;
   }
 
+  // — Lyckad sparning —
   setStatus("Rapport sparad");
   showPopup("👍 Rapport sparad", "success", 4000);
 
@@ -934,11 +930,6 @@ async function sparaRapport() {
   setSalt(0);
   setAntalAnstallda(1);
   setSenasteRapportTid(nuIso);
-  await bockAvAdressIRutt(valda);
-
-  setPaus(null);
-  setPausSekUnderIntervall(0);
-}
 
   // Nu är await inne i async-funktionen
   await bockAvAdressIRutt(valda);
@@ -956,23 +947,39 @@ async function sparaManuellRapport() {
 
   const tidMin = parseInt(manuellTidMin, 10);
   if (!tidMin || tidMin <= 0) {
-    showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
-    setStatus("Ange arbetstid (minuter).");
+    showPopup(
+      "👎 Ange arbetstid (minuter) för manuell registrering.",
+      "error",
+      3000
+    );
+    setStatus("Ange arbetstid (minuter) för manuell registrering.");
     return;
   }
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
-  // 🕓 Skapa korrekt UTC från vald lokal tid
-  let datumIso;
+  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
+  let datumIso, jobbIso;
   try {
-    const [y, m, d] = manuellDatum.split("-").map(Number);
-    const [h, min] = (manuellTid || "12:00").split(":").map(Number);
-    const local = new Date(y, m - 1, d, h, min);
-    datumIso = local.toISOString(); // lagras rena UTC-formatet
-  } catch {
-    showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
-    setStatus("Ogiltigt datum/tid.");
+    const datePart = manuellDatum;                  // "YYYY-MM-DD"
+    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
+
+    const [hours, minutes] = timePart.split(":").map(Number);
+    const [year, month, day] = datePart.split("-").map(Number);
+
+    const combinedLocal = new Date(year, month - 1, day, hours, minutes);
+
+    if (isNaN(combinedLocal)) throw new Error("Invalid date/time");
+
+    datumIso = combinedLocal.toISOString(); // lokal -> UTC internt
+    jobbIso  = datumIso;
+  } catch (e) {
+    showPopup(
+      "👎 Ogiltigt datum eller tid för manuell registrering.",
+      "error",
+      3000
+    );
+    setStatus("Ogiltigt datum/tid för manuell registrering.");
     return;
   }
 
@@ -981,7 +988,7 @@ async function sparaManuellRapport() {
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: datumIso,
-      jobb_tid: datumIso,
+      jobb_tid: jobbIso,
       adress_id: manuellAdressId,
       arbetstid_min: arbetstidMin,
       team_namn: manuellTeam,
@@ -1279,23 +1286,24 @@ async function raderaEnRapport(postId) {
     const teamNamn = editForm.team_namn || "För hand";
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
-    // ---- Datum/tid-hantering (sparas i lokal tid) ----
-    let jobbTidIso;
-    try {
-      const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
-      const nyTid = editForm.tid?.trim() || "12:00"; // hh:mm
+    // ---- Datum/tid-hantering ----
+let jobbTidIso;
+try {
+  const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
+  const nyTid = editForm.tid?.trim();        // hh:mm
+  if (!nyttDatum) {
+    showPopup("👎 Ange datum.", "error", 3000);
+    return;
+  }
 
-      if (!nyttDatum) {
-        showPopup("👎 Ange datum.", "error", 3000);
-        return;
-      }
+  // kombinera datum + tid (om tid saknas, använd 12:00)
+  const tidDel = nyTid ? `${nyTid}:00` : "12:00:00";
+  jobbTidIso = new Date(`${nyttDatum}T${tidDel}Z`).toISOString();
 
-      // 🔸 Behåll tiden exakt som användaren skrev den (utan UTC‑justering)
-      jobbTidIso = `${nyttDatum}T${nyTid}:00`;
-    } catch {
-      showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
-      return;
-    }
+} catch {
+  showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
+  return;
+}
 
     setStatus("Uppdaterar rapport…");
 
