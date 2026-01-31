@@ -976,36 +976,30 @@ async function sparaManuellRapport() {
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
-    // Bygg datum + jobb_tid från användarens val
-let datumIso, jobbIso;
-try {
-  const datePart = manuellDatum;                // "YYYY-MM-DD"
-  const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
+  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
+  let datumIso, jobbIso;
+  try {
+    const datePart = manuellDatum;                  // "YYYY-MM-DD"
+    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
 
-  const [hours, minutes] = timePart.split(":").map(Number);
-  const [year, month, day] = datePart.split("-").map(Number);
+    const [hours, minutes] = timePart.split(":").map(Number);
+    const [year, month, day] = datePart.split("-").map(Number);
 
-  // skapa datumet i lokal tid
-  const combinedLocal = new Date(year, month - 1, day, hours, minutes);
+    const combinedLocal = new Date(year, month - 1, day, hours, minutes);
 
-  if (isNaN(combinedLocal)) throw new Error("Invalid date/time");
+    if (isNaN(combinedLocal)) throw new Error("Invalid date/time");
 
-  // 🧠 justera så att tiden lagras som svensk tid (inte UTC-förskjuten)
-  const offsetMs = combinedLocal.getTimezoneOffset() * 60 * 1000;
-  const corrected = new Date(combinedLocal.getTime() - offsetMs);
-
-  // spara tiden som ISO utan konvertering till UTC
-  datumIso = corrected.toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
-  jobbIso  = datumIso;
-} catch (e) {
-  showPopup(
-    "👎 Ogiltigt datum eller tid för manuell registrering.",
-    "error",
-    3000
-  );
-  setStatus("Ogiltigt datum/tid för manuell registrering.");
-  return;
-}
+    datumIso = combinedLocal.toISOString(); // lokal -> UTC internt
+    jobbIso  = datumIso;
+  } catch (e) {
+    showPopup(
+      "👎 Ogiltigt datum eller tid för manuell registrering.",
+      "error",
+      3000
+    );
+    setStatus("Ogiltigt datum/tid för manuell registrering.");
+    return;
+  }
 
   setStatus("Sparar manuell rapport…");
 
@@ -1036,7 +1030,6 @@ try {
     if (visaOversikt) hamtaRapporter();
   }
 }
-
   // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
