@@ -766,48 +766,6 @@ async function hamtaRapporter() {
   }
 }
 
-// ✅ Funktion för att lägga till ny adress (används i adress-admin)
-async function laggTillAdress() {
-  if (!nyAdress?.trim()) {
-    showPopup("👎 Skriv in en adress först.", "error", 3000);
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        nyAdress
-      )}&key=${GOOGLE_MAPS_API_KEY}`
-    );
-    const data = await res.json();
-
-    if (!data.results || data.results.length === 0) {
-      showPopup("👎 Koordinater hittades inte.", "error", 3000);
-      return;
-    }
-
-    const { lat, lng } = data.results[0].geometry.location;
-    const formatted = data.results[0].formatted_address;
-
-    const { error } = await supabase.from("adresser").insert([
-      {
-        namn: formatted,
-        lat,
-        lng,
-        aktiv: true, // blir synlig direkt
-      },
-    ]);
-    if (error) throw error;
-
-    showPopup("👍 Ny adress sparad!", "success", 3000);
-    setNyAdress("");
-    await laddaAdresser();
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
-  }
-}
-  
   
 // ======= Ladda rutter vid start (efter inloggning) =======
 useEffect(() => {
@@ -2434,6 +2392,49 @@ function avbrytRadering() {
       );
     }
 
+// ✅ Funktion för att lägga till ny adress (används i adress-admin)
+async function laggTillAdress() {
+  if (!nyAdress?.trim()) {
+    showPopup("👎 Skriv in en adress först.", "error", 3000);
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        nyAdress
+      )}&key=${GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      showPopup("👎 Koordinater hittades inte.", "error", 3000);
+      return;
+    }
+
+    const { lat, lng } = data.results[0].geometry.location;
+    const formatted = data.results[0].formatted_address;
+
+    const { error } = await supabase.from("adresser").insert([
+      {
+        namn: formatted,
+        lat,
+        lng,
+        aktiv: true, // blir synlig direkt
+      },
+    ]);
+    if (error) throw error;
+
+    showPopup("👍 Ny adress sparad!", "success", 3000);
+    setNyAdress("");
+    await laddaAdresser();
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
+  }
+}
+
+    
 // === KARTA‑FLIK ===
 if (activeTab === "karta") {
  
