@@ -47,15 +47,18 @@ function formatTid(minuter) {
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
-// ======= Hjälp: format datum/tid (UTC, exakt från databasen) =======
+// ======= Hjälp: format datum/tid (visas i lokal tid) =======
 function formatDatumTid(iso) {
   if (!iso) return "-";
   try {
-    // Exempel: "2026-01-27T00:46:00+00:00" → "2026-01-27 00:46"
-    const [datePart, timePart] = iso.split("T");
-    if (!timePart) return datePart;
-    const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
-    return `${datePart} ${tid}`;
+    const date = new Date(iso); // <-- tolkar UTC, konverterar till lokal
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   } catch {
     return "-";
   }
