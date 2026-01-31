@@ -893,8 +893,11 @@ async function sparaRapport() {
   }
 
   // — Tidsstämplar —
-  const nuIso = new Date().toISOString();
-  const jobbtidIso = aktivtPass ? nuIso : new Date().toISOString();
+  // 🔧 skapa lokal tidssynkad ISO
+const nu = new Date();
+const nuJust = new Date(nu.getTime() - nu.getTimezoneOffset() * 60000);
+const nuIso = nuJust.toISOString();
+const jobbtidIso = nuIso;
 
   setStatus("Sparar...");
 
@@ -958,17 +961,19 @@ async function sparaManuellRapport() {
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
-  // 🕓 Skapa korrekt datum-/tidsstämpling (kompenserar för svensk tidszon)
+ // 🕓 Skapa korrekt datum-/tidsstämpling (kompenserar för svensk tidszon)
   let datumIso, jobbIso;
   try {
     const [year, month, day] = manuellDatum.split("-").map(Number);
     const [hours, minutes] = (manuellTid || "12:00").split(":").map(Number);
 
-    // Skapar tiden i lokal svensk tid
-    const local = new Date(year, month - 1, day, hours, minutes);
+    // Skapa lokal tid
+    const lokalTid = new Date(year, month - 1, day, hours, minutes);
 
-    // Gör om till UTC‑tid för lagring (Supabase tolkar som UTC)
-    datumIso = new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
+    // Justera så att UTC blir samma klockslag i Supabase
+    const justeradTid = new Date(lokalTid.getTime() - lokalTid.getTimezoneOffset() * 60000);
+
+    datumIso = justeradTid.toISOString();
     jobbIso  = datumIso;
   } catch (e) {
     showPopup(
@@ -979,6 +984,7 @@ async function sparaManuellRapport() {
     setStatus("Ogiltigt datum/tid för manuell registrering.");
     return;
   }
+  
   setStatus("Sparar manuell rapport…");
 
   const { error } = await supabase.from("rapporter").insert([
