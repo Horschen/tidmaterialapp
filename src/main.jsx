@@ -892,27 +892,44 @@ async function sparaRapport() {
     arbetstidMin = manu * (antalAnstallda || 1);
   }
 
-  // — Tidsstämplar —
-  const nuIso = new Date().toISOString();
-  const jobbtidIso = aktivtPass ? nuIso : new Date().toISOString();
+ // — Tidsstämplar —
+// Bygg tidsstämpel i lokal tid (samma logik som manuell registrering & editering)
+let nuIso;
+try {
+  const nu = new Date();
+  const y = nu.getFullYear();
+  const m = String(nu.getMonth() + 1).padStart(2, "0");
+  const d = String(nu.getDate()).padStart(2, "0");
+  const h = String(nu.getHours()).padStart(2, "0");
+  const min = String(nu.getMinutes()).padStart(2, "0");
 
-  setStatus("Sparar...");
+  // 🔸 Skapar lokal tid utan "Z" så Supabase tolkar tiden korrekt (ex. 09:00 visas som 09:00)
+  nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
+} catch {
+  showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
+  setStatus("Ogiltig tidsstämpel vid sparning.");
+  return;
+}
 
-  const { error } = await supabase.from("rapporter").insert([
-    {
-      datum: nuIso,
-      jobb_tid: jobbtidIso,
-      adress_id: valda,
-      arbetstid_min: arbetstidMin,
-      team_namn: team,
-      arbetssatt: metod,
-      sand_kg: parseInt(sand, 10) || 0,
-      salt_kg: parseInt(salt, 10) || 0,
-      syfte: syfteText,
-      antal_anstallda: antalAnstallda,
-      skyddad: true,
-    },
-  ]);
+const jobbtidIso = nuIso;
+
+setStatus("Sparar...");
+
+const { error } = await supabase.from("rapporter").insert([
+  {
+    datum: nuIso,
+    jobb_tid: jobbtidIso,
+    adress_id: valda,
+    arbetstid_min: arbetstidMin,
+    team_namn: team,
+    arbetssatt: metod,
+    sand_kg: parseInt(sand, 10) || 0,
+    salt_kg: parseInt(salt, 10) || 0,
+    syfte: syfteText,
+    antal_anstallda: antalAnstallda,
+    skyddad: true,
+  },
+]);
 
   if (error) {
     setStatus("❌ " + error.message);
