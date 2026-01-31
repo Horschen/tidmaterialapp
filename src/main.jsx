@@ -2576,6 +2576,46 @@ function avbrytRadering() {
   </div>
 )}
 
+// ✅ Uppdatera adressens aktiv-status i Supabase
+async function uppdateraAktivStatus(id, nyttVarde) {
+  try {
+    // Uppdatera raden i databasen
+    const { error } = await supabase
+      .from("adresser")
+      .update({ aktiv: nyttVarde })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Fel vid uppdatering:", error);
+      showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
+      return;
+    }
+
+    // Ladda om listan så checkboxar och text speglar rätt värden
+    await laddaAdresser();
+
+    // Ge en liten bekräftelse
+    showPopup(
+      nyttVarde
+        ? "🟢 Adress aktiverad (synlig i menyer)."
+        : "🔴 Adress dold (tas bort från menyer).",
+      "success",
+      2500
+    );
+
+    // Logga i statusfältet (valfritt)
+    setStatus(
+      nyttVarde
+        ? "Adress markerad som aktiv/synlig."
+        : "Adress markerad som inaktiv/dold."
+    );
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Ett fel uppstod vid kontakt med databasen.", "error", 3000);
+  }
+}
+
+          
           {/* === Instruktioner / noteringar för vald adress === */}
           {kartaAdressId && (
             <div style={{ marginTop: 20 }}>
