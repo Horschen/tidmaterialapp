@@ -958,14 +958,17 @@ async function sparaManuellRapport() {
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
-  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
+  // 🕓 Skapa korrekt datum-/tidsstämpling (kompenserar för svensk tidszon)
   let datumIso, jobbIso;
   try {
-    const datePart = manuellDatum;                  // "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
+    const [year, month, day] = manuellDatum.split("-").map(Number);
+    const [hours, minutes] = (manuellTid || "12:00").split(":").map(Number);
 
-    // 🔸 Spara som lokal tid (utan zonkonvertering)
-    datumIso = `${datePart}T${timePart}:00`;
+    // Skapar tiden i lokal svensk tid
+    const local = new Date(year, month - 1, day, hours, minutes);
+
+    // Gör om till UTC‑tid för lagring (Supabase tolkar som UTC)
+    datumIso = new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
     jobbIso  = datumIso;
   } catch (e) {
     showPopup(
@@ -976,7 +979,6 @@ async function sparaManuellRapport() {
     setStatus("Ogiltigt datum/tid för manuell registrering.");
     return;
   }
-
   setStatus("Sparar manuell rapport…");
 
   const { error } = await supabase.from("rapporter").insert([
