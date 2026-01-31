@@ -2395,8 +2395,9 @@ function avbrytRadering() {
       );
     }
 
-    // === KARTA‑FLIK ===
-    if (activeTab === "karta") {
+    // === KARTA / ADRESSER – FLIK ===
+if (activeTab === "karta") {
+  // --- lokala states för detta avsnitt ---
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
   const [nyAdress, setNyAdress] = useState({
     namn: "",
@@ -2409,16 +2410,18 @@ function avbrytRadering() {
   });
   const [geoStatus, setGeoStatus] = useState("");
 
-  async function hamtaLatLng(adressNamn) {
+  // --- hämta lat/lng automatiskt ---
+  async function hamtaLatLng(adressText) {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-      adressNamn
+      adressText
     )}&key=${GOOGLE_MAPS_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
     if (data.status === "OK") return data.results[0].geometry.location;
-    throw new Error("Kunde inte hämta position");
+    throw new Error("Kunde inte hämta platsen");
   }
 
+  // --- lägg till ny adress i databasen ---
   async function laggTillAdress() {
     if (!nyAdress.namn.trim()) {
       showPopup("👎 Ange namn för adressen.", "error", 3000);
@@ -2427,13 +2430,11 @@ function avbrytRadering() {
 
     try {
       setGeoStatus("🔍 Hämtar position…");
-      const pos = await hamtaLatLng(nyAdress.namn.trim());
+      const plats = await hamtaLatLng(nyAdress.namn.trim());
 
-      // Beräkna nästa adresslista_sortering (hoppar över 9xx)
+      // räkna fram nästa adresslista_sortering (hoppar över 900+)
       const giltiga = adresser.filter(
-        (a) =>
-          a.adresslista_sortering != null &&
-          Number(a.adresslista_sortering) < 900
+        (a) => a.adresslista_sortering && Number(a.adresslista_sortering) < 900
       );
       const maxSort =
         giltiga.length > 0
@@ -2441,7 +2442,7 @@ function avbrytRadering() {
           : 0;
       const nySortering = maxSort + 1;
 
-      setGeoStatus("💾 Sparar…");
+      setGeoStatus("💾 Sparar i databasen…");
 
       const { error } = await supabase.from("adresser").insert([
         {
@@ -2452,8 +2453,8 @@ function avbrytRadering() {
           maskin_mojlig: nyAdress.maskin_mojlig,
           Bostad_Företag: nyAdress.Bostad_Företag,
           anteckningar: nyAdress.anteckningar,
-          lat: pos.lat,
-          lng: pos.lng,
+          lat: plats.lat,
+          lng: plats.lng,
           adresslista_sortering: nySortering,
           aktiv: true,
         },
@@ -2461,9 +2462,10 @@ function avbrytRadering() {
 
       if (error) throw error;
 
-      showPopup("👍 Adress tillagd!", "success", 3000);
+      showPopup("👍 Ny adress tillagd!", "success", 3000);
       setGeoStatus("✅ Sparad!");
 
+      // återställ formuläret
       setNyAdress({
         namn: "",
         material: "Grus",
@@ -2476,16 +2478,17 @@ function avbrytRadering() {
       await laddaAdresser();
     } catch (err) {
       console.error(err);
-      showPopup("👎 Fel: " + err.message, "error", 4000);
       setGeoStatus("❌ " + err.message);
+      showPopup("👎 Fel vid tillägg: " + err.message, "error", 4000);
     }
   }
 
-  async function toggleAktiv(adressId, nuAktiv) {
+  // --- aktivera / inaktivera befintlig adress ---
+  async function toggleAktiv(id, nuAktiv) {
     const { error } = await supabase
       .from("adresser")
       .update({ aktiv: !nuAktiv })
-      .eq("id", adressId);
+      .eq("id", id);
     if (error) {
       showPopup("👎 Fel vid uppdatering.", "error", 3000);
     } else {
@@ -2494,13 +2497,13 @@ function avbrytRadering() {
     }
   }
 
-  // --- Själva vyn ---
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
         Karta / Adresser
       </h2>
 
+      {/* --- knapp för att öppna adminpanelen --- */}
       <button
         onClick={() => setVisaAdressAdmin(true)}
         style={{
@@ -2511,7 +2514,7 @@ function avbrytRadering() {
         Lägg till / Ta bort Adresser
       </button>
 
-      {/* befintlig kartvy */}
+      {/* --- huvud‑kartdelen --- */}
       <div style={{ marginTop: 16 }}>
         <label style={labelStyle}>Välj adress (karta)</label>
         <select
@@ -2540,7 +2543,7 @@ function avbrytRadering() {
         </button>
       </div>
 
-      {/* popup för adressadministration */}
+      {/* --- popup för adress‑administration --- */}
       {visaAdressAdmin && (
         <div
           style={{
@@ -2562,9 +2565,10 @@ function avbrytRadering() {
         >
           <h3 style={{ marginTop: 0 }}>Adressadministration</h3>
 
+          {/* --- lista för aktivera/inaktivera --- */}
           <div style={{ marginBottom: 16 }}>
             <h4 style={{ fontSize: 14, marginBottom: 6 }}>
-              Aktivera / Inaktivera
+              Aktivera / Inaktivera befintliga adresser
             </h4>
             {adresser.map((a) => (
               <div
@@ -2572,6 +2576,7 @@ function avbrytRadering() {
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
+                  alignItems: "center",
                   borderBottom: "1px solid #e5e7eb",
                   padding: "4px 0",
                   fontSize: 14,
@@ -2597,19 +2602,24 @@ function avbrytRadering() {
             ))}
           </div>
 
+          {/* --- formulär för ny adress --- */}
           <h4 style={{ marginBottom: 6 }}>➕ Lägg till ny adress</h4>
 
           <label style={labelStyle}>Adressnamn</label>
           <input
             value={nyAdress.namn}
-            onChange={(e) => setNyAdress({ ...nyAdress, namn: e.target.value })}
+            onChange={(e) =>
+              setNyAdress({ ...nyAdress, namn: e.target.value })
+            }
             style={{ ...inputStyle, marginBottom: 8 }}
           />
 
           <label style={labelStyle}>Material</label>
           <select
             value={nyAdress.material}
-            onChange={(e) => setNyAdress({ ...nyAdress, material: e.target.value })}
+            onChange={(e) =>
+              setNyAdress({ ...nyAdress, material: e.target.value })
+            }
             style={{ ...selectStyle, marginBottom: 8 }}
           >
             <option>Grus</option>
@@ -2704,7 +2714,7 @@ function avbrytRadering() {
       )}
     </section>
   );
-}    
+}
     // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
   return (
@@ -4599,7 +4609,7 @@ return (
     color: "#78350f",
   }}
 >
-  Karta
+  Karta / Adresser
 </button>
         
         <button
