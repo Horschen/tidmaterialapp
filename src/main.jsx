@@ -559,9 +559,6 @@ function App() {
   const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
-  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState("");
-  
 
 // ======= Rutt-flik state =======
 const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
@@ -628,7 +625,7 @@ const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
       window.location.href = mailto;
     }
   }
- 
+
   // ======= Lösenord för Radera-fliken =======
   function openRaderaTab() {
     if (raderaUnlocked) {
@@ -715,7 +712,7 @@ async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
     .select(
-      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv")
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering")
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
@@ -766,7 +763,6 @@ async function hamtaRapporter() {
   }
 }
 
-  
 // ======= Ladda rutter vid start (efter inloggning) =======
 useEffect(() => {
   if (isAuthenticated) {
@@ -2147,512 +2143,576 @@ function avbrytRadering() {
 }
 
   // ====== INNEHÅLL PER FLIK =======
-function renderContent() {
-  // === REGISTRERA-FLIK ===
-  if (activeTab === "registrera") {
-    return (
-      <section style={sectionStyle}>
-        {paus && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: "8px 12px",
-              borderRadius: 12,
-              backgroundColor: "#f97316",
-              color: "#ffffff",
-              fontSize: 14,
-            }}
-          >
-            Paus pågår –{" "}
-            <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
-          </div>
-        )}
-
-        {!paus && pausSekUnderIntervall > 0 && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: "8px 12px",
-              borderRadius: 12,
-              backgroundColor: "#fed7aa",
-              color: "#7c2d12",
-              fontSize: 13,
-            }}
-          >
-            Registrerad paus för denna adress/resa:{" "}
-            <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
-            (dras av när du sparar rapport)
-          </div>
-        )}
-
-        {aktivtPass && (
-          <div
-            style={{
-              marginBottom: 12,
-              padding: "8px 12px",
-              borderRadius: 12,
-              backgroundColor: "#eef2ff",
-              color: "#1d4ed8",
-              fontSize: 14,
-            }}
-          >
-            Pågående adress/resa (
-            {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-            <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-          </div>
-        )}
-
-        <h2
-          style={{
-            fontSize: 18,
-            marginTop: 0,
-            marginBottom: 12,
-          }}
-        >
-          Registrera jobb
-        </h2>
-
-        <label style={labelStyle}>Adress (för rapport)</label>
-        <select
-          value={valda}
-          onChange={(e) => setValda(e.target.value)}
-          style={selectStyle}
-        >
-          <option value="">-- Välj adress --</option>
-          {[...adresser]
-            .sort(
-              (a, b) =>
-                (Number(a.adresslista_sortering) || Number(a.id)) -
-                (Number(b.adresslista_sortering) || Number(b.id))
-            )
-            .map((a) => (
-              <option
-                key={a.id}
-                value={a.id}
-                style={{
-                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
-                }}
-              >
-                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-              </option>
-            ))}
-        </select>
-
-        <div style={{ marginTop: 6, fontSize: 12, color: "#4b5563" }}>
-          Adresser märkta (MASKIN) är maskin‑möjliga.
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>Arbetstyp (Team / metod)</label>
-          <select
-            value={team}
-            onChange={(e) => setTeam(e.target.value)}
-            style={selectStyle}
-          >
-            <option>För hand</option>
-            <option>Maskin</option>
-          </select>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>Antal anställda</label>
-          <select
-            value={antalAnstallda}
-            onChange={(e) =>
-              setAntalAnstallda(Number(e.target.value))
-            }
-            style={selectStyle}
-          >
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <label style={labelStyle}>Syfte med arbetsuppgift</label>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 6,
-              fontSize: 15,
-            }}
-          >
-            <label>
-              <input
-                type="checkbox"
-                checked={syfteOversyn}
-                onChange={(e) =>
-                  setSyfteOversyn(e.target.checked)
-                }
-                style={{ marginRight: 6 }}
-              />
-              Översyn
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={syfteRojning}
-                onChange={(e) =>
-                  setSyfteRojning(e.target.checked)
-                }
-                style={{ marginRight: 6 }}
-              />
-              Röjning
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={syfteSaltning}
-                onChange={(e) =>
-                  setSyfteSaltning(e.target.checked)
-                }
-                style={{ marginRight: 6 }}
-              />
-              Saltning
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={syfteGrusning}
-                onChange={(e) =>
-                  setSyfteGrusning(e.target.checked)
-                }
-                style={{ marginRight: 6 }}
-              />
-              Grusning
-            </label>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>
-            Arbetstid (minuter) – används bara om inget pass är aktivt
-          </label>
-          <input
-            type="number"
-            value={arbetstid}
-            onChange={(e) =>
-              setArbetstid(e.target.value)
-            }
-            style={inputStyle}
-            inputMode="numeric"
-          />
-        </div>
-
-        <button
-          style={secondaryButton}
-          onClick={sparaRapport}
-        >
-          Spara rapport
-        </button>
-
-        <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>Grus (kg)</label>
-          <select
-            value={sand}
-            onChange={(e) =>
-              setSand(e.target.value)
-            }
-            style={selectStyle}
-          >
-            <option value="0">0</option>
-            {[...Array(51)].map((_, i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginTop: 12 }}>
-          <label style={labelStyle}>Salt (kg)</label>
-          <select
-            value={salt}
-            onChange={(e) =>
-              setSalt(e.target.value)
-            }
-            style={selectStyle}
-          >
-            <option value="0">0</option>
-            {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {status && (
-          <p
-            style={{
-              marginTop: 8,
-              fontSize: 13,
-              color: status.startsWith("✅")
-                ? "#16a34a"
-                : status.startsWith("❌")
-                ? "#dc2626"
-                : "#4b5563",
-              textAlign: "center",
-            }}
-          >
-            {status}
-          </p>
-        )}
-      </section>
-    );
-  }
-
-  // === KARTA-FLIK ===
-  if (activeTab === "karta") {
-    const harNotering = kartaNotering && kartaNotering.trim().length > 0;
-
-    return (
-      <section style={sectionStyle}>
-        <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
-          Karta
-        </h2>
-
-        <label style={labelStyle}>Välj adress (karta)</label>
-        <select
-          value={kartaAdressId}
-          onChange={(e) =>
-            setKartaAdressId(e.target.value)
-          }
-          style={selectStyle}
-        >
-          <option value="">-- Välj adress --</option>
-          {sortAdresser(adresser).map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.namn}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={oppnaKartaForKartAdress}
-          disabled={!kartaAdressId}
-          style={{
-            ...primaryButton,
-            opacity: kartaAdressId ? 1 : 0.5,
-            marginTop: 16,
-          }}
-        >
-          Öppna karta för vald adress
-        </button>
-
-        {/* 🧭 Administrera adresser */}
-        <button
-          onClick={() =>
-            setVisaAdressAdmin((v) => !v)
-          }
-          style={{
-            ...primaryButton,
-            backgroundColor: "#f59e0b",
-            marginTop: 8,
-          }}
-        >
-          {visaAdressAdmin
-            ? "Stäng adress-admin"
-            : "Administrera adresser"}
-        </button>
-
-        {visaAdressAdmin && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: 16,
-              borderRadius: 12,
-              backgroundColor: "#fff",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ fontSize: 16, marginBottom: 8 }}>
-              Adress‑admin
-            </h3>
-            <p
+  function renderContent() {
+    if (activeTab === "registrera") {
+      return (
+        <section style={sectionStyle}>
+          {paus && (
+            <div
               style={{
-                fontSize: 13,
-                color: "#6b7280",
-                marginTop: 0,
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#f97316",
+                color: "#ffffff",
+                fontSize: 14,
               }}
             >
-              Här kan du aktivera eller dölja adresser i appens menyer.
-            </p>
+              Paus pågår –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+            </div>
+          )}
 
-            {adresser.map((a) => (
-              <label
-                key={a.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 6,
-                  gap: 8,
-                  fontSize: 14,
-                }}
-              >
+          {!paus && pausSekUnderIntervall > 0 && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#fed7aa",
+                color: "#7c2d12",
+                fontSize: 13,
+              }}
+            >
+              Registrerad paus för denna adress/resa:{" "}
+              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
+              (dras av när du sparar rapport)
+            </div>
+          )}
+
+          {aktivtPass && (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 12,
+                backgroundColor: "#eef2ff",
+                color: "#1d4ed8",
+                fontSize: 14,
+              }}
+            >
+              Pågående adress/resa (
+              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+            </div>
+          )}
+
+          <h2
+            style={{
+              fontSize: 18,
+              marginTop: 0,
+              marginBottom: 12,
+            }}
+          >
+            Registrera jobb
+          </h2>
+
+          <label style={labelStyle}>Adress (för rapport)</label>
+<select
+  value={valda}
+  onChange={(e) => setValda(e.target.value)}
+  style={selectStyle}
+>
+  <option value="">-- Välj adress --</option>
+  {[...adresser]
+    .sort(
+      (a, b) =>
+        (Number(a.adresslista_sortering) || Number(a.id)) -
+        (Number(b.adresslista_sortering) || Number(b.id))
+    )
+    .map((a) => (
+      <option
+        key={a.id}
+        value={a.id}
+        style={{
+          backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+        }}
+      >
+        {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+      </option>
+    ))}
+</select>
+
+          <div
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              color: "#4b5563",
+            }}
+          >
+            Adresser märkta (MASKIN) är maskin‑möjliga.
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+            <select
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              style={selectStyle}
+            >
+              <option>För hand</option>
+              <option>Maskin</option>
+            </select>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Antal anställda</label>
+            <select
+              value={antalAnstallda}
+              onChange={(e) => setAntalAnstallda(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Syfte med arbetsuppgift</label>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                fontSize: 15,
+              }}
+            >
+              <label>
                 <input
                   type="checkbox"
-                  checked={a.aktiv ?? true}
-                  onChange={(e) =>
-                    uppdateraAktivStatus(a.id, e.target.checked)
-                  }
+                  checked={syfteOversyn}
+                  onChange={(e) => setSyfteOversyn(e.target.checked)}
+                  style={{ marginRight: 6 }}
                 />
-                <span style={{ flex: 1 }}>{a.namn}</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: a.aktiv ? "#16a34a" : "#dc2626",
-                    fontWeight: 600,
-                  }}
-                >
-                  {a.aktiv ? "Synlig" : "Dold"}
-                </span>
+                Översyn
               </label>
-            ))}
-
-            {/* Lägg till ny adress */}
-            <div style={{ marginTop: 20 }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                Lägg till ny adress
-              </h4>
-              <input
-                type="text"
-                value={nyAdress}
-                onChange={(e) =>
-                  setNyAdress(e.target.value)
-                }
-                placeholder="Skriv gatuadress eller plats"
-                style={{
-                  width: "100%",
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  border: "1px solid #d1d5db",
-                  marginBottom: 8,
-                }}
-              />
-              <button
-                onClick={laggTillAdress}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: 999,
-                  border: "none",
-                  backgroundColor: "#2563eb",
-                  color: "#fff",
-                  fontWeight: 600,
-                  width: "100%",
-                }}
-              >
-                ➕ Spara ny adress
-              </button>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteRojning}
+                  onChange={(e) => setSyfteRojning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Röjning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteSaltning}
+                  onChange={(e) => setSyfteSaltning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Saltning
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={syfteGrusning}
+                  onChange={(e) => setSyfteGrusning(e.target.checked)}
+                  style={{ marginRight: 6 }}
+                />
+                Grusning
+              </label>
             </div>
           </div>
-        )}
 
-        {/* === Instruktioner / noteringar för vald adress === */}
-        {kartaAdressId && (
-          <div style={{ marginTop: 20 }}>
-            <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-              Noteringar för denna adress
-            </h4>
-            <textarea
-              value={kartaNotering}
-              onChange={(e) =>
-                kartaNoteringEditing &&
-                setKartaNotering(e.target.value)
-              }
-              readOnly={!kartaNoteringEditing}
-              placeholder={
-                kartaNoteringEditing
-                  ? "• Punkt 1\n• Punkt 2\n• Punkt 3"
-                  : "Ingen notering sparad ännu."
-              }
-              style={{
-                width: "100%",
-                minHeight: 120,
-                padding: "10px 12px",
-                fontSize: 14,
-                borderRadius: 10,
-                border: "1px solid #d1d5db",
-                backgroundColor: kartaNoteringEditing
-                  ? "#fff"
-                  : "#f9fafb",
-                boxSizing: "border-box",
-                whiteSpace: "pre-wrap",
-                color: "#111827",
-              }}
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>
+              Arbetstid (minuter) – används bara om inget pass är aktivt
+            </label>
+            <input
+              type="number"
+              value={arbetstid}
+              onChange={(e) => setArbetstid(e.target.value)}
+              style={inputStyle}
+              inputMode="numeric"
             />
-
-            {!kartaNoteringEditing && (
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button
-                  onClick={() =>
-                    setKartaNoteringEditing(true)
-                  }
-                  style={{
-                    ...primaryButton,
-                    backgroundColor: "#10b981",
-                  }}
-                >
-                  {harNotering
-                    ? "Ändra notering"
-                    : "Lägg till notering"}
-                </button>
-              </div>
-            )}
-
-            {kartaNoteringEditing && (
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button
-                  onClick={sparaKartaNotering}
-                  style={{
-                    flex: 1,
-                    padding: "10px 16px",
-                    borderRadius: 999,
-                    border: "none",
-                    backgroundColor: "#16a34a",
-                    color: "#fff",
-                    fontWeight: 600,
-                  }}
-                >
-                  Spara notering
-                </button>
-                <button
-                  onClick={() => {
-                    const vald = adresser.find(
-                      (a) =>
-                        a.id === Number(kartaAdressId) ||
-                        String(a.id) === String(kartaAdressId)
-                    );
-                    setKartaNotering(vald?.karta_notering || "");
-                    setKartaNoteringEditing(false);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "10px 16px",
-                    borderRadius: 999,
-                    border: "none",
-                    backgroundColor: "#e5e7eb",
-                    color: "#111827",
-                    fontWeight: 500,
-                  }}
-                >
-                  Avbryt
-                </button>
-              </div>
-            )}
           </div>
-        )}
-      </section>
-    );
-  }
 
-  // === SLUT PÅ KARTA-FLIK ===
-}
-    
+          <button style={secondaryButton} onClick={sparaRapport}>
+            Spara rapport
+          </button>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Grus (kg)</label>
+            <select
+              value={sand}
+              onChange={(e) => setSand(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {[...Array(51)].map((_, i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Salt (kg)</label>
+            <select
+              value={salt}
+              onChange={(e) => setSalt(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="0">0</option>
+              {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </section>
+      );
+    }
+
+    // === KARTA‑FLIK ===
+    if (activeTab === "karta") {
+      async function sparaKartaNotering() {
+        if (!kartaAdressId) return;
+        try {
+          const { error } = await supabase
+            .from("adresser")
+            .update({ karta_notering: kartaNotering })
+            .eq("id", kartaAdressId);
+          if (error) throw error;
+
+          showPopup("👍 Notering sparad.", "success", 3000);
+          setStatus("✅ Notering uppdaterad.");
+          setKartaNoteringEditing(false);
+          await laddaAdresser();
+        } catch (err) {
+          console.error(err);
+          showPopup("👎 Fel vid sparande av notering.", "error", 3000);
+          setStatus("❌ Fel: " + (err.message || "Okänt fel"));
+        }
+      }
+
+      const harNotering = kartaNotering && kartaNotering.trim().length > 0;
+
+      return (
+        <section style={sectionStyle}>
+          <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>Karta</h2>
+
+          <label style={labelStyle}>Välj adress (karta)</label>
+          <select
+            value={kartaAdressId}
+            onChange={(e) => setKartaAdressId(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="">-- Välj adress --</option>
+            {sortAdresser(adresser).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.namn}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={oppnaKartaForKartAdress}
+            disabled={!kartaAdressId}
+            style={{
+              ...primaryButton,
+              opacity: kartaAdressId ? 1 : 0.5,
+              marginTop: 16,
+            }}
+          >
+            Öppna karta för vald adress
+          </button>
+
+          {/* === Instruktioner / noteringar för vald adress === */}
+          {kartaAdressId && (
+            <div style={{ marginTop: 20 }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                Noteringar för denna adress
+              </h4>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 0 }}>
+                Används t.ex. för:
+                <br />
+                • Vilka ytor som ska prioriteras
+                <br />
+                • Särskilda gångvägar, ramper, portar
+                <br />
+                • ”Ploga ej framför garage X” osv.
+              </p>
+
+              {/* Visning/editering av notering */}
+              <textarea
+                value={kartaNotering}
+                onChange={(e) =>
+                  kartaNoteringEditing && setKartaNotering(e.target.value)
+                }
+                readOnly={!kartaNoteringEditing}
+                placeholder={
+                  kartaNoteringEditing
+                    ? "• Punkt 1\n• Punkt 2\n• Punkt 3"
+                    : "Ingen notering sparad ännu."
+                }
+                style={{
+                  width: "100%",
+                  minHeight: 120,
+                  padding: "10px 12px",
+                  fontSize: 14,
+                  borderRadius: 10,
+                  border: "1px solid #d1d5db",
+                  backgroundColor: kartaNoteringEditing
+                    ? "#ffffff"
+                    : "#f9fafb",
+                  boxSizing: "border-box",
+                  whiteSpace: "pre-wrap",
+                  color: "#111827",
+                }}
+              />
+
+              {/* Knappar för Lägg till / Ändra / Spara */}
+              {!kartaNoteringEditing && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <button
+                    onClick={() => setKartaNoteringEditing(true)}
+                    style={{
+                      ...primaryButton,
+                      backgroundColor: "#10b981",
+                    }}
+                  >
+                    {harNotering ? "Ändra notering" : "Lägg till notering"}
+                  </button>
+                </div>
+              )}
+
+              {kartaNoteringEditing && (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <button
+                    onClick={sparaKartaNotering}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 999,
+                      border: "none",
+                      backgroundColor: "#16a34a",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Spara notering
+                  </button>
+                  <button
+                    onClick={() => {
+                      // återställ till senaste sparade värde från adresser-listan
+                      const vald = adresser.find(
+                        (a) =>
+                          a.id === Number(kartaAdressId) ||
+                          String(a.id) === String(kartaAdressId)
+                      );
+                      setKartaNotering(vald?.karta_notering || "");
+                      setKartaNoteringEditing(false);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 999,
+                      border: "none",
+                      backgroundColor: "#e5e7eb",
+                      color: "#111827",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* === Hantera PDF/bild‑karta för vald adress === */}
+          {kartaAdressId && (
+            <div style={{ marginTop: 24 }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                PDF‑ eller bildkarta för vald adress
+              </h4>
+
+              {/* Uppladdningsknapp */}
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={async (e) => {
+                  const file = e.target.files && e.target.files[0];
+                  if (!file) return;
+
+                  try {
+                    setStatus(`📤 Laddar upp "${file.name}" …`);
+
+                    const ext = file.name.split(".").pop();
+                    const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
+                    const path = `maps/${safeName}`;
+
+                    const { error: uploadError } = await supabase.storage
+                      .from("adresskartor")
+                      .upload(path, file, { upsert: true });
+                    if (uploadError) throw uploadError;
+
+                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
+
+                    const { error: updateError } = await supabase
+                      .from("adresser")
+                      .update({ file_url: publicUrl })
+                      .eq("id", kartaAdressId);
+                    if (updateError) throw updateError;
+
+                    showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+                    setStatus("✅ Kartan uppladdad!");
+
+                    await laddaAdresser();
+                  } catch (err) {
+                    console.error(err);
+                    showPopup("👎 Fel vid uppladdning.", "error", 3000);
+                    setStatus("❌ Fel: " + (err.message || "Okänt fel"));
+                  } finally {
+                    e.target.value = "";
+                  }
+                }}
+                style={{ marginTop: 6 }}
+              />
+
+              {/* Förhandsvisning + Radera‑knapp för just denna adress */}
+              {adresser
+                .filter(
+                  (a) =>
+                    (a.id === Number(kartaAdressId) ||
+                      String(a.id) === String(kartaAdressId)) &&
+                    a.file_url
+                )
+                .map((a) => (
+                  <div key={a.id} style={{ marginTop: 20 }}>
+                    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                      Förhandsgranskning
+                    </h4>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "#4b5563" }}>
+                        {a.file_url.split("/").pop()}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const parts = a.file_url.split("/adresskartor/");
+                            const relativePath = parts[1];
+
+                            if (relativePath) {
+                              const { error: removeError } = await supabase
+                                .storage
+                                .from("adresskartor")
+                                .remove([relativePath]);
+                              if (removeError) throw removeError;
+                            }
+
+                            const { error: dbError } = await supabase
+                              .from("adresser")
+                              .update({ file_url: null })
+                              .eq("id", a.id);
+                            if (dbError) throw dbError;
+
+                            showPopup("🗑️ Fil raderad.", "success", 3000);
+                            await laddaAdresser();
+                          } catch (err) {
+                            console.error(err);
+                            showPopup("👎 Fel vid radering.", "error", 3000);
+                          }
+                        }}
+                        style={{
+                          padding: "4px 10px",
+                          border: "none",
+                          borderRadius: 6,
+                          backgroundColor: "#dc2626",
+                          color: "#fff",
+                          fontSize: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Radera fil
+                      </button>
+                    </div>
+
+                    {a.file_url.toLowerCase().endsWith(".pdf") ? (
+                      <iframe
+                        src={`${a.file_url}#view=FitH`}
+                        title="Karta PDF"
+                        style={{
+                          width: "100%",
+                          height: "70vh",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          maxHeight: "70vh",
+                          overflow: "auto",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <img
+                          src={a.file_url}
+                          alt="Karta"
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
+      );
+    }    
+    // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
   return (
     <section style={sectionStyle}>
