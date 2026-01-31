@@ -2395,9 +2395,8 @@ function avbrytRadering() {
       );
     }
 
-    // === KARTA / ADRESSER – FLIK ===
+    // === KARTA / ADRESSER ===
 if (activeTab === "karta") {
-  // --- lokala states för detta avsnitt ---
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
   const [nyAdress, setNyAdress] = useState({
     namn: "",
@@ -2410,7 +2409,6 @@ if (activeTab === "karta") {
   });
   const [geoStatus, setGeoStatus] = useState("");
 
-  // --- hämta lat/lng automatiskt ---
   async function hamtaLatLng(adressText) {
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
       adressText
@@ -2421,7 +2419,6 @@ if (activeTab === "karta") {
     throw new Error("Kunde inte hämta platsen");
   }
 
-  // --- lägg till ny adress i databasen ---
   async function laggTillAdress() {
     if (!nyAdress.namn.trim()) {
       showPopup("👎 Ange namn för adressen.", "error", 3000);
@@ -2432,9 +2429,11 @@ if (activeTab === "karta") {
       setGeoStatus("🔍 Hämtar position…");
       const plats = await hamtaLatLng(nyAdress.namn.trim());
 
-      // räkna fram nästa adresslista_sortering (hoppar över 900+)
+      // hitta nästa sorteringsnummer under 900
       const giltiga = adresser.filter(
-        (a) => a.adresslista_sortering && Number(a.adresslista_sortering) < 900
+        (a) =>
+          a.adresslista_sortering != null &&
+          Number(a.adresslista_sortering) < 900
       );
       const maxSort =
         giltiga.length > 0
@@ -2442,7 +2441,7 @@ if (activeTab === "karta") {
           : 0;
       const nySortering = maxSort + 1;
 
-      setGeoStatus("💾 Sparar i databasen…");
+      setGeoStatus("💾 Sparar…");
 
       const { error } = await supabase.from("adresser").insert([
         {
@@ -2461,11 +2460,8 @@ if (activeTab === "karta") {
       ]);
 
       if (error) throw error;
-
-      showPopup("👍 Ny adress tillagd!", "success", 3000);
+      showPopup("👍 Adress tillagd!", "success", 3000);
       setGeoStatus("✅ Sparad!");
-
-      // återställ formuläret
       setNyAdress({
         namn: "",
         material: "Grus",
@@ -2478,19 +2474,19 @@ if (activeTab === "karta") {
       await laddaAdresser();
     } catch (err) {
       console.error(err);
+      showPopup("👎 Fel: " + err.message, "error", 4000);
       setGeoStatus("❌ " + err.message);
-      showPopup("👎 Fel vid tillägg: " + err.message, "error", 4000);
     }
   }
 
-  // --- aktivera / inaktivera befintlig adress ---
   async function toggleAktiv(id, nuAktiv) {
     const { error } = await supabase
       .from("adresser")
       .update({ aktiv: !nuAktiv })
       .eq("id", id);
     if (error) {
-      showPopup("👎 Fel vid uppdatering.", "error", 3000);
+      console.error(error);
+      showPopup("👎 Fel vid växling.", "error", 3000);
     } else {
       await laddaAdresser();
       showPopup("✅ Status uppdaterad.", "success", 2000);
@@ -2503,7 +2499,6 @@ if (activeTab === "karta") {
         Karta / Adresser
       </h2>
 
-      {/* --- knapp för att öppna adminpanelen --- */}
       <button
         onClick={() => setVisaAdressAdmin(true)}
         style={{
@@ -2514,7 +2509,7 @@ if (activeTab === "karta") {
         Lägg till / Ta bort Adresser
       </button>
 
-      {/* --- huvud‑kartdelen --- */}
+      {/* Visa adress i karta */}
       <div style={{ marginTop: 16 }}>
         <label style={labelStyle}>Välj adress (karta)</label>
         <select
@@ -2529,7 +2524,6 @@ if (activeTab === "karta") {
             </option>
           ))}
         </select>
-
         <button
           onClick={oppnaKartaForKartAdress}
           disabled={!kartaAdressId}
@@ -2543,7 +2537,7 @@ if (activeTab === "karta") {
         </button>
       </div>
 
-      {/* --- popup för adress‑administration --- */}
+      {/* Popup admin */}
       {visaAdressAdmin && (
         <div
           style={{
@@ -2551,8 +2545,8 @@ if (activeTab === "karta") {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            zIndex: 999,
-            backgroundColor: "#fff",
+            zIndex: 9999,
+            background: "#fff",
             border: "2px solid #10b981",
             borderRadius: 12,
             boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
@@ -2564,75 +2558,58 @@ if (activeTab === "karta") {
           }}
         >
           <h3 style={{ marginTop: 0 }}>Adressadministration</h3>
-
-          {/* --- lista för aktivera/inaktivera --- */}
-          <div style={{ marginBottom: 16 }}>
-            <h4 style={{ fontSize: 14, marginBottom: 6 }}>
-              Aktivera / Inaktivera befintliga adresser
-            </h4>
-            {adresser.map((a) => (
-              <div
-                key={a.id}
+          {adresser.map((a) => (
+            <div
+              key={a.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                borderBottom: "1px solid #e5e7eb",
+                padding: "4px 0",
+              }}
+            >
+              <span style={{ color: a.aktiv ? "#111" : "#9ca3af" }}>
+                {a.namn}
+              </span>
+              <button
+                onClick={() => toggleAktiv(a.id, a.aktiv)}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderBottom: "1px solid #e5e7eb",
-                  padding: "4px 0",
-                  fontSize: 14,
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "4px 8px",
+                  backgroundColor: a.aktiv ? "#dc2626" : "#10b981",
+                  color: "#fff",
+                  fontSize: 12,
                 }}
               >
-                <span style={{ color: a.aktiv ? "#111827" : "#9ca3af" }}>
-                  {a.namn}
-                </span>
-                <button
-                  onClick={() => toggleAktiv(a.id, a.aktiv)}
-                  style={{
-                    border: "none",
-                    borderRadius: 6,
-                    padding: "4px 8px",
-                    backgroundColor: a.aktiv ? "#dc2626" : "#10b981",
-                    color: "#fff",
-                    fontSize: 12,
-                  }}
-                >
-                  {a.aktiv ? "Inaktivera" : "Aktivera"}
-                </button>
-              </div>
-            ))}
-          </div>
+                {a.aktiv ? "Inaktivera" : "Aktivera"}
+              </button>
+            </div>
+          ))}
 
-          {/* --- formulär för ny adress --- */}
-          <h4 style={{ marginBottom: 6 }}>➕ Lägg till ny adress</h4>
-
-          <label style={labelStyle}>Adressnamn</label>
+          <h4 style={{ marginTop: 12 }}>➕ Lägg till ny adress</h4>
           <input
+            placeholder="Adressnamn"
             value={nyAdress.namn}
-            onChange={(e) =>
-              setNyAdress({ ...nyAdress, namn: e.target.value })
-            }
-            style={{ ...inputStyle, marginBottom: 8 }}
+            onChange={(e) => setNyAdress({ ...nyAdress, namn: e.target.value })}
+            style={{ ...inputStyle, marginBottom: 6 }}
           />
-
-          <label style={labelStyle}>Material</label>
           <select
             value={nyAdress.material}
             onChange={(e) =>
               setNyAdress({ ...nyAdress, material: e.target.value })
             }
-            style={{ ...selectStyle, marginBottom: 8 }}
+            style={{ ...selectStyle, marginBottom: 6 }}
           >
             <option>Grus</option>
             <option>Salt</option>
           </select>
-
-          <label style={labelStyle}>Bostad / Företag</label>
           <select
             value={nyAdress.Bostad_Företag}
             onChange={(e) =>
               setNyAdress({ ...nyAdress, Bostad_Företag: e.target.value })
             }
-            style={{ ...selectStyle, marginBottom: 8 }}
+            style={{ ...selectStyle, marginBottom: 6 }}
           >
             <option>Bostad</option>
             <option>Företag</option>
@@ -2652,42 +2629,41 @@ if (activeTab === "karta") {
                 }
                 style={{ marginRight: 6 }}
               />
-              {label}: {nyAdress[key] ? "Ja" : "Nej"}
+              {label}
             </label>
           ))}
 
-          <label style={labelStyle}>Anteckningar</label>
           <textarea
+            placeholder="Anteckningar"
             value={nyAdress.anteckningar}
             onChange={(e) =>
               setNyAdress({ ...nyAdress, anteckningar: e.target.value })
             }
             style={{
               width: "100%",
-              padding: "8px",
+              minHeight: 60,
               borderRadius: 8,
               border: "1px solid #d1d5db",
-              minHeight: 60,
+              padding: 8,
+              marginTop: 6,
               marginBottom: 6,
             }}
           />
 
           {geoStatus && (
-            <div
-              style={{ fontSize: 12, color: "#4b5563", marginBottom: 8 }}
-            >
+            <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 6 }}>
               {geoStatus}
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={laggTillAdress}
               style={{
                 flex: 1,
-                padding: "10px 16px",
-                borderRadius: 999,
                 border: "none",
+                borderRadius: 999,
+                padding: "10px 16px",
                 backgroundColor: "#16a34a",
                 color: "#fff",
                 fontWeight: 600,
@@ -2699,9 +2675,9 @@ if (activeTab === "karta") {
               onClick={() => setVisaAdressAdmin(false)}
               style={{
                 flex: 1,
-                padding: "10px 16px",
-                borderRadius: 999,
                 border: "none",
+                borderRadius: 999,
+                padding: "10px 16px",
                 backgroundColor: "#dc2626",
                 color: "#fff",
                 fontWeight: 600,
@@ -2715,6 +2691,7 @@ if (activeTab === "karta") {
     </section>
   );
 }
+    
     // === SLUT PÅ KARTA-FLIK ===
     if (activeTab === "rapport") {
   return (
