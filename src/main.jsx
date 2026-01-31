@@ -306,108 +306,89 @@ function VeckoOversikt({
     </thead>
     <tbody>
       {lista.map((r, idx) => {
-        // ✅ Korrigera tidszonsvisning per rad
-        function tillLokalTid(isoStr) {
-          if (!isoStr) return "-";
-          try {
-            const d = new Date(isoStr);
-            // Vi skapar en ny date korrigerad till lokal tid
-            const lokalt = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-            const y = lokalt.getFullYear();
-            const m = String(lokalt.getMonth() + 1).padStart(2, "0");
-            const da = String(lokalt.getDate()).padStart(2, "0");
-            const h = String(lokalt.getHours()).padStart(2, "0");
-            const min = String(lokalt.getMinutes()).padStart(2, "0");
-            return `${y}-${m}-${da} ${h}:${min}`;
-          } catch {
-            return "-";
-          }
-        }
+        // ✅ Korrigerad tidszonsvisning per rad (automatisk lokal tid)
+function tillLokalTid(isoStr) {
+  if (!isoStr) return "-";
+  try {
+    const d = new Date(isoStr); // tolkar UTC och visar i lokal tidszon
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    const h = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${da} ${h}:${min}`;
+  } catch {
+    return "-";
+  }
+}
 
-        return (
-          <tr
-            key={r.adressId}
-            style={{
-              backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-              borderBottom: "1px solid #e5e7eb",
-              height: 44,
-            }}
-          >
-            <td style={{ textAlign: "center" }}>
-              <input
-                type="checkbox"
-                checked={r.skyddad}
-                onChange={(e) =>
-                  onToggleSkyddad &&
-                  onToggleSkyddad(r.adressId, e.target.checked)
-                }
-              />
-            </td>
-            {/* 🔧 Visar alltid lokal svensk tid */}
-            <td>{tillLokalTid(r.senasteDatumTid)}</td>
-            <td>
-              {r.namn}
-              {r.redigerad && (
-                <span
-                  style={{
-                    marginLeft: 6,
-                    padding: "2px 6px",
-                    borderRadius: 6,
-                    backgroundColor: "#e0f2fe",
-                    color: "#0369a1",
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
-                >
-                  📝 ändrad
-                </span>
-              )}
-            </td>
-            <td style={{ textAlign: "center" }}>{r.antal}</td>
-            <td style={{ textAlign: "center" }}>{r.anstallda}</td>
-            <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
-            <td style={{ textAlign: "right" }}>{r.grus}</td>
-            <td style={{ textAlign: "right" }}>{r.salt}</td>
-            <td style={{ textAlign: "left" }}>{r.syften}</td>
-            <td style={{ textAlign: "center" }}>
-              <button
-                style={{
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  border: "1px solid #d1d5db",
-                  background: "#ffffff",
-                  fontSize: 12,
-                  cursor: "pointer",
-                }}
-                onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
-              >
-                Editera
-              </button>
-            </td>
-          </tr>
-        );
-      })}
-      {lista.length === 0 && (
-        <tr>
-          <td
-            colSpan={10}
-            style={{
-              textAlign: "center",
-              fontStyle: "italic",
-              padding: 16,
-            }}
-          >
-            Inga jobb hittades för vald vecka/år och filter.
-          </td>
-        </tr>
+return (
+  <tr
+    key={r.adressId}
+    style={{
+      backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+      borderBottom: "1px solid #e5e7eb",
+      height: 44,
+    }}
+  >
+    <td style={{ textAlign: "center" }}>
+      <input
+        type="checkbox"
+        checked={r.skyddad}
+        onChange={(e) =>
+          onToggleSkyddad &&
+          onToggleSkyddad(r.adressId, e.target.checked)
+        }
+      />
+    </td>
+
+    {/* 🔧 Visar alltid korrekt lokal tid */}
+    <td>{tillLokalTid(r.senasteDatumTid)}</td>
+
+    <td>
+      {r.namn}
+      {r.redigerad && (
+        <span
+          style={{
+            marginLeft: 6,
+            padding: "2px 6px",
+            borderRadius: 6,
+            backgroundColor: "#e0f2fe",
+            color: "#0369a1",
+            fontSize: 11,
+            fontWeight: 600,
+          }}
+        >
+          📝 ändrad
+        </span>
       )}
-    </tbody>
-  </table>
-</div>
-      
-    </div>
-  );
-} // ✅ Stänger VeckoOversikt innan App börjar
+    </td>
+
+    <td style={{ textAlign: "center" }}>{r.antal}</td>
+    <td style={{ textAlign: "center" }}>{r.anstallda}</td>
+    <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
+    <td style={{ textAlign: "right" }}>{r.grus}</td>
+    <td style={{ textAlign: "right" }}>{r.salt}</td>
+    <td style={{ textAlign: "left" }}>{r.syften}</td>
+    <td style={{ textAlign: "center" }}>
+      <button
+        style={{
+          padding: "4px 8px",
+          borderRadius: 999,
+          border: "1px solid #d1d5db",
+          background: "#ffffff",
+          fontSize: 12,
+          cursor: "pointer",
+        }}
+        onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
+      >
+        Editera
+      </button>
+    </td>
+  </tr>
+); 
+    
+    // ✅ Stänger VeckoOversikt innan App börjar
 
       
 // ======= Huvudappen =======
@@ -917,19 +898,15 @@ async function sparaRapport() {
     arbetstidMin = manu * (antalAnstallda || 1);
   }
 
-  // — Tidsstämplar —
-  // 🔧 skapa lokal tidssynkad ISO
-const nu = new Date();
-const nuJust = new Date(nu.getTime() - nu.getTimezoneOffset() * 60000);
-const nuIso = nuJust.toISOString();
-const jobbtidIso = nuIso;
+  // — Tidsstämplar (ren UTC, ingen manuell justering) —
+  const nuIso = new Date().toISOString();
 
   setStatus("Sparar...");
 
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: nuIso,
-      jobb_tid: jobbtidIso,
+      jobb_tid: nuIso,
       adress_id: valda,
       arbetstid_min: arbetstidMin,
       team_namn: team,
@@ -948,7 +925,6 @@ const jobbtidIso = nuIso;
     return;
   }
 
-  // — Lyckad sparning —
   setStatus("Rapport sparad");
   showPopup("👍 Rapport sparad", "success", 4000);
 
@@ -958,6 +934,11 @@ const jobbtidIso = nuIso;
   setSalt(0);
   setAntalAnstallda(1);
   setSenasteRapportTid(nuIso);
+  await bockAvAdressIRutt(valda);
+
+  setPaus(null);
+  setPausSekUnderIntervall(0);
+}
 
   // Nu är await inne i async-funktionen
   await bockAvAdressIRutt(valda);
@@ -975,47 +956,32 @@ async function sparaManuellRapport() {
 
   const tidMin = parseInt(manuellTidMin, 10);
   if (!tidMin || tidMin <= 0) {
-    showPopup(
-      "👎 Ange arbetstid (minuter) för manuell registrering.",
-      "error",
-      3000
-    );
-    setStatus("Ange arbetstid (minuter) för manuell registrering.");
+    showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
+    setStatus("Ange arbetstid (minuter).");
     return;
   }
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
- // 🕓 Skapa korrekt datum-/tidsstämpling (kompenserar för svensk tidszon)
-  let datumIso, jobbIso;
+  // 🕓 Skapa korrekt UTC från vald lokal tid
+  let datumIso;
   try {
-    const [year, month, day] = manuellDatum.split("-").map(Number);
-    const [hours, minutes] = (manuellTid || "12:00").split(":").map(Number);
-
-    // Skapa lokal tid
-    const lokalTid = new Date(year, month - 1, day, hours, minutes);
-
-    // Justera så att UTC blir samma klockslag i Supabase
-    const justeradTid = new Date(lokalTid.getTime() - lokalTid.getTimezoneOffset() * 60000);
-
-    datumIso = justeradTid.toISOString();
-    jobbIso  = datumIso;
-  } catch (e) {
-    showPopup(
-      "👎 Ogiltigt datum eller tid för manuell registrering.",
-      "error",
-      3000
-    );
-    setStatus("Ogiltigt datum/tid för manuell registrering.");
+    const [y, m, d] = manuellDatum.split("-").map(Number);
+    const [h, min] = (manuellTid || "12:00").split(":").map(Number);
+    const local = new Date(y, m - 1, d, h, min);
+    datumIso = local.toISOString(); // lagras rena UTC-formatet
+  } catch {
+    showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
+    setStatus("Ogiltigt datum/tid.");
     return;
   }
-  
+
   setStatus("Sparar manuell rapport…");
 
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: datumIso,
-      jobb_tid: jobbIso,
+      jobb_tid: datumIso,
       adress_id: manuellAdressId,
       arbetstid_min: arbetstidMin,
       team_namn: manuellTeam,
