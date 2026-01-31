@@ -273,116 +273,138 @@ function VeckoOversikt({
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
-      {/* === TABELL === */}
-      <div style={{ overflowX: "auto", marginTop: 10 }}>
-        <table
-          cellPadding={14}
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            minWidth: 1100,
-            fontFamily: "system-ui, -apple-system, sans-serif",
-            fontSize: 15,
-          }}
-        >
-          <thead>
-            <tr
-              style={{
-                background: "#f3f4f6",
-                borderBottom: "1px solid #e5e7eb",
-              }}
-            >
-              <th></th>
-              <th style={{ textAlign: "left" }}>Senaste jobb‑tid</th>
-              <th style={{ textAlign: "left" }}>Adress</th>
-              <th>Antal jobb</th>
-              <th>Antal anställda</th>
-              <th style={{ textAlign: "right" }}>Totalt (hh:mm)</th>
-              <th style={{ textAlign: "right" }}>Grus (kg)</th>
-              <th style={{ textAlign: "right" }}>Salt (kg)</th>
-              <th style={{ textAlign: "left" }}>Syften</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {lista.map((r, idx) => (
-              <tr
-                key={r.adressId}
-                style={{
-                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
-                  height: 44,
-                }}
-              >
-                <td style={{ textAlign: "center" }}>
-                  <input
-                    type="checkbox"
-                    checked={r.skyddad}
-                    onChange={(e) =>
-                      onToggleSkyddad &&
-                      onToggleSkyddad(r.adressId, e.target.checked)
-                    }
-                  />
-                </td>
-                <td>{formatDatumTid(r.senasteDatumTid)}</td>
-                <td>
-                  {r.namn}
-                  {r.redigerad && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                        backgroundColor: "#e0f2fe",
-                        color: "#0369a1",
-                        fontSize: 11,
-                        fontWeight: 600,
-                      }}
-                    >
-                      📝 ändrad
-                    </span>
-                  )}
-                </td>
-                <td style={{ textAlign: "center" }}>{r.antal}</td>
-                <td style={{ textAlign: "center" }}>{r.anstallda}</td>
-                <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
-                <td style={{ textAlign: "right" }}>{r.grus}</td>
-                <td style={{ textAlign: "right" }}>{r.salt}</td>
-                <td style={{ textAlign: "left" }}>{r.syften}</td>
-                <td style={{ textAlign: "center" }}>
-                  <button
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: 999,
-                      border: "1px solid #d1d5db",
-                      background: "#ffffff",
-                      fontSize: 12,
-                      cursor: "pointer",
-                    }}
-                    onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
-                  >
-                    Editera
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {lista.length === 0 && (
-              <tr>
-                <td
-                  colSpan={10}
+{/* === TABELL === */}
+<div style={{ overflowX: "auto", marginTop: 10 }}>
+  <table
+    cellPadding={14}
+    style={{
+      borderCollapse: "collapse",
+      width: "100%",
+      minWidth: 1100,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+      fontSize: 15,
+    }}
+  >
+    <thead>
+      <tr
+        style={{
+          background: "#f3f4f6",
+          borderBottom: "1px solid #e5e7eb",
+        }}
+      >
+        <th></th>
+        <th style={{ textAlign: "left" }}>Senaste jobb‑tid</th>
+        <th style={{ textAlign: "left" }}>Adress</th>
+        <th>Antal jobb</th>
+        <th>Antal anställda</th>
+        <th style={{ textAlign: "right" }}>Totalt (hh:mm)</th>
+        <th style={{ textAlign: "right" }}>Grus (kg)</th>
+        <th style={{ textAlign: "right" }}>Salt (kg)</th>
+        <th style={{ textAlign: "left" }}>Syften</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {lista.map((r, idx) => {
+        // ✅ Korrigera tidszonsvisning per rad
+        function tillLokalTid(isoStr) {
+          if (!isoStr) return "-";
+          try {
+            const d = new Date(isoStr);
+            // Vi skapar en ny date korrigerad till lokal tid
+            const lokalt = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+            const y = lokalt.getFullYear();
+            const m = String(lokalt.getMonth() + 1).padStart(2, "0");
+            const da = String(lokalt.getDate()).padStart(2, "0");
+            const h = String(lokalt.getHours()).padStart(2, "0");
+            const min = String(lokalt.getMinutes()).padStart(2, "0");
+            return `${y}-${m}-${da} ${h}:${min}`;
+          } catch {
+            return "-";
+          }
+        }
+
+        return (
+          <tr
+            key={r.adressId}
+            style={{
+              backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+              borderBottom: "1px solid #e5e7eb",
+              height: 44,
+            }}
+          >
+            <td style={{ textAlign: "center" }}>
+              <input
+                type="checkbox"
+                checked={r.skyddad}
+                onChange={(e) =>
+                  onToggleSkyddad &&
+                  onToggleSkyddad(r.adressId, e.target.checked)
+                }
+              />
+            </td>
+            {/* 🔧 Visar alltid lokal svensk tid */}
+            <td>{tillLokalTid(r.senasteDatumTid)}</td>
+            <td>
+              {r.namn}
+              {r.redigerad && (
+                <span
                   style={{
-                    textAlign: "center",
-                    fontStyle: "italic",
-                    padding: 16,
+                    marginLeft: 6,
+                    padding: "2px 6px",
+                    borderRadius: 6,
+                    backgroundColor: "#e0f2fe",
+                    color: "#0369a1",
+                    fontSize: 11,
+                    fontWeight: 600,
                   }}
                 >
-                  Inga jobb hittades för vald vecka/år och filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  📝 ändrad
+                </span>
+              )}
+            </td>
+            <td style={{ textAlign: "center" }}>{r.antal}</td>
+            <td style={{ textAlign: "center" }}>{r.anstallda}</td>
+            <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
+            <td style={{ textAlign: "right" }}>{r.grus}</td>
+            <td style={{ textAlign: "right" }}>{r.salt}</td>
+            <td style={{ textAlign: "left" }}>{r.syften}</td>
+            <td style={{ textAlign: "center" }}>
+              <button
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  border: "1px solid #d1d5db",
+                  background: "#ffffff",
+                  fontSize: 12,
+                  cursor: "pointer",
+                }}
+                onClick={() => onOpenEdit && onOpenEdit(r.adressId)}
+              >
+                Editera
+              </button>
+            </td>
+          </tr>
+        );
+      })}
+      {lista.length === 0 && (
+        <tr>
+          <td
+            colSpan={10}
+            style={{
+              textAlign: "center",
+              fontStyle: "italic",
+              padding: 16,
+            }}
+          >
+            Inga jobb hittades för vald vecka/år och filter.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
+      
     </div>
   );
 } // ✅ Stänger VeckoOversikt innan App börjar
