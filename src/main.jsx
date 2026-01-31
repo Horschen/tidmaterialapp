@@ -4582,10 +4582,11 @@ return (
           }}
         >
           Radera
-              </button>
+          </button>
       </div>
     </nav>
   </div>
-);
+  );
+}             // stänger function App -- behåll endast en enda sådan
 
 createRoot(document.getElementById("app")).render(<App />);
