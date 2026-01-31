@@ -1219,7 +1219,6 @@ const [nyAdress, setNyAdress] = useState({
   Bostad_Företag: "Bostad",
   anteckningar: "",
 });
-const [geoStatus, setGeoStatus] = useState("");
   
   // ======= Öppna edit-popup för en adress (3 senaste rader) =======
   function openEditPopupForAdress(adressId) {
