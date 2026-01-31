@@ -2457,40 +2457,36 @@ if (activeTab === "karta") {
     }
   }
 
-  // ✅ Uppdatera adressers aktiv-status
   async function uppdateraAktivStatus(id, nyttVarde) {
-    try {
-      const { error } = await supabase
-        .from("adresser")
-        .update({ aktiv: nyttVarde })
-        .eq("id", id);
-      if (error) throw error;
+  try {
+    console.log("🟡 uppdaterar id:", id, "till", nyttVarde);
 
-      await laddaAdresser();
-      showPopup(
-        nyttVarde
-          ? "🟢 Adress aktiverad (synlig i menyer)."
-          : "🔴 Adress dold (tas bort från menyer).",
-        "success",
-        2500
-      );
-      setStatus(
-        nyttVarde
-          ? "Adress markerad som aktiv/synlig."
-          : "Adress markerad som inaktiv/dold."
-      );
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Ett fel uppstod vid uppdatering.", "error", 3000);
-    }
-  }
+    const { data, error } = await supabase
+      .from("adresser")
+      .update({ aktiv: nyttVarde })
+      .eq("id", id)
+      .select();
 
-  // ✅ Lägg till ny adress med automatisk koordinat
-  async function laggTillAdress() {
-    if (!nyAdress.trim()) {
-      showPopup("👎 Skriv in en adress först.", "error", 3000);
+    if (error) {
+      console.error("❌ Fel:", error);
+      showPopup("👎 Fel vid uppdatering.", "error", 3000);
       return;
     }
+
+    console.log("✅ uppdaterad rad:", data);
+    await laddaAdresser();
+    showPopup(
+      nyttVarde
+        ? "🟢 Adress aktiverad (synlig i menyer)."
+        : "🔴 Adress dold (tas bort från menyer).",
+      "success",
+      2000
+    );
+  } catch (err) {
+    console.error("💥 Undantag:", err);
+    showPopup("👎 Tekniskt fel vid uppdatering.", "error", 3000);
+  }
+}
 
     try {
       const res = await fetch(
