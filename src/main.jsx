@@ -561,6 +561,7 @@ function App() {
   const [filterMetod, setFilterMetod] = useState("alla");
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
   const [nyAdress, setNyAdress] = useState("");
+  
 
 // ======= Rutt-flik state =======
 const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
@@ -2434,9 +2435,7 @@ function avbrytRadering() {
 
 // === KARTA‑FLIK ===
 if (activeTab === "karta") {
-  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState("");
-
+ 
   // ✅ Sparar noteringar
   async function sparaKartaNotering() {
     if (!kartaAdressId) return;
