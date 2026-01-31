@@ -603,21 +603,40 @@ async function laggTillAdress() {
     showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
   }
 }
-async function uppdateraAktivStatus(id, nyttVarde) {
-  const { error } = await supabase
-    .from("adresser")
-    .update({ aktiv: nyttVarde })
-    .eq("id", id);
+// async function uppdateraAktivStatus(id, nyttVarde) {
+//  const { error } = await supabase
+//    .from("adresser")
+//    .update({ aktiv: nyttVarde })
+//    .eq("id", id);
+//
+//  if (error) {
+//   console.error(error);
+//    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
+//  } else {
+//  showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
+//    await laddaAdresser();
+//  }
+//}
 
-  if (error) {
-    console.error(error);
-    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
-  } else {
-    showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
-    await laddaAdresser();
+  async function uppdateraAktivStatus(id, nyttVarde) {
+  try {
+    const { error } = await supabase
+      .from("adresser")
+      .update({ aktiv: nyttVarde })
+      .eq("id", id);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
+    } else {
+      showPopup("👍 Adressstatus uppdaterad!", "success", 2000);
+      await laddaAdresser();
+    }
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Kunde inte nå servern.", "error", 3000);
   }
 }
-
   
 // ======= Rutt-flik state =======
 const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
