@@ -603,7 +603,20 @@ async function laggTillAdress() {
     showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
   }
 }
+async function uppdateraAktivStatus(id, nyttVarde) {
+  const { error } = await supabase
+    .from("adresser")
+    .update({ aktiv: nyttVarde })
+    .eq("id", id);
 
+  if (error) {
+    console.error(error);
+    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
+  } else {
+    showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
+    await laddaAdresser();
+  }
+}
 
   
 // ======= Rutt-flik state =======
