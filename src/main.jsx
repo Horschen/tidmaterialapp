@@ -814,7 +814,7 @@ async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
     .select(
-      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering")
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv")
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
