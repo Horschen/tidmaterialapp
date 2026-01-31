@@ -744,26 +744,7 @@ useEffect(() => {
     setKartaNoteringEditing(false); // avsluta ev. redigering när man byter adress
   }, [kartaAdressId, adresser]);
 
-  
-  // ======= Hämta rapporter =======
-  async function hamtaRapporter() {
-    const { data, error } = await supabase
-      .from("rapporter")
-      .select(
-        "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
-      )
-      .order("datum", { ascending: false });
-    if (error) {
-      setStatus("❌ " + error.message);
-      showPopup("👎 Fel vid hämtning av rapporter", "error", 3000);
-    } else {
-      setRapporter(data || []);
-      setVisaOversikt(true);
-      setStatus("✅ Rapporter uppdaterade.");
-    }
-  }
-
-  // ======= Hämta rapporter =======
+   // ======= Hämta rapporter =======
 async function hamtaRapporter() {
   const { data, error } = await supabase
     .from("rapporter")
