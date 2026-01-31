@@ -956,7 +956,7 @@ async function sparaRapport() {
   setPausSekUnderIntervall(0);
 }   // ✅ avslutar sparaRapport
   
-  // ======= Spara manuell rapport (popup) =======
+// ======= Spara manuell rapport (popup) =======
 async function sparaManuellRapport() {
   if (!validateManuellFields()) return;
 
@@ -1030,6 +1030,7 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
+  
   // ======= Starta pass =======
   function startaPass() {
     if (aktivtPass) {
