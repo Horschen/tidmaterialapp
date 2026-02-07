@@ -5898,7 +5898,7 @@ return (
       </div>
     </nav>
   </div>
-)
-}
+);    // <-- Semikolon här!
+}     // <-- Avslutar return för App's huvudvy
 
 createRoot(document.getElementById("app")).render(<App />);
