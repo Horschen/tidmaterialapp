@@ -1272,20 +1272,6 @@ async function stoppaPass() {
   }
 }
   
-
-  // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
-  const sek = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
-  );
-
-  setAktivtPass(null);
-  setSenasteRapportTid(null);
-  setPaus(null);
-  setPausSekUnderIntervall(0);
-  setStatus(`Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
-}
-
   // ======= Start Paus =======
   function startPaus() {
     if (!aktivtPass) {
@@ -4961,6 +4947,4 @@ return (
     </nav>
   </div>
 );
-}
-
 createRoot(document.getElementById("app")).render(<App />);
