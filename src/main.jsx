@@ -422,6 +422,16 @@ function App() {
 const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
 const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
 
+  // Popup för anslutning till aktivt pass
+const [aktivPassPopup, setAktivPassPopup] = useState(null);
+/* struktur:
+   null                      → ingen popup
+   {typ:"hand", start:"2026-01-10T12:00:00", steg:1}   → Visa fråga "För hand pågår..."
+   {typ:"maskin", start:"…",  steg:1}                  → Visa fråga "Maskin pågår..."
+   {steg:2, val:"hand"}                                → Visa fråga "Vill du starta maskin?"
+   {lista:[…]}                                         → flera pass finns
+*/
+
   // Rapportinmatning (Registrera-fliken)
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
@@ -779,125 +789,48 @@ useEffect(() => {
 
 // ======= Vid app-start: kontrollera om aktiva pass finns =======
 useEffect(() => {
+  useEffect(() => {
   async function kollaAktivaPass() {
     try {
-      // 1️⃣  Kolla localStorage först
-      const sparat = localStorage.getItem("snöjour_aktivt_pass");
-      if (sparat) {
-        const data = JSON.parse(sparat);
-        const label = data.team_typ === "maskin" ? "Maskin" : "För hand";
-        if (
-          window.confirm(
-            `Ett ${label}-pass startades ${formatDatumTid(
-              data.startTid
-            )}. Vill du återuppta det?`
-          )
-        ) {
-          setAktivtPass(data);
-          setTeam(label);
-          setStatus(`🔄 Återupptog ${label}-pass.`);
-          return;
-        } else {
-          localStorage.removeItem("snöjour_aktivt_pass");
-          // fortsätter och kontrollerar databasen
-        }
-      }
-
-      // 2️⃣  Hämtar alla aktiva pass (kan vara flera olika typer)
       const { data, error } = await supabase
         .from("tillstand_pass")
         .select("*")
         .eq("aktiv", true);
 
       if (error) throw error;
-      if (!data || data.length === 0) return; // inget aktivt pass alls
+      if (!data || data.length === 0) return;
 
-      // Dela upp hand och maskin
       const handPass = data.find((p) => p.team_typ === "hand");
       const maskinPass = data.find((p) => p.team_typ === "maskin");
 
-      // 🔸 Olika fall
+      // Om båda finns
+      if (handPass && maskinPass) {
+        setAktivPassPopup({
+          lista: [
+            { typ: "hand", start: handPass.start_tid },
+            { typ: "maskin", start: maskinPass.start_tid },
+          ],
+        });
+        return;
+      }
+
+      // Om bara ett finns → visa steg 1‑popup
       if (handPass && !maskinPass) {
-        const ok = window.confirm(
-          `Ett pass för För hand är aktivt sedan ${formatDatumTid(
-            handPass.start_tid
-          )}. Vill du återuppta det, eller skapa ett pass för Maskin?`
-        );
-        if (ok) {
-          const aktivt = {
-            id: handPass.id,
-            startTid: handPass.start_tid,
-            metod: "hand",
-            team_typ: "hand",
-          };
-          setAktivtPass(aktivt);
-          setTeam("För hand");
-          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog För hand‑pass.");
-        } else {
-          setTeam("Maskin");
-          setStatus("👷 Redo att starta Maskin‑pass.");
-        }
+        setAktivPassPopup({
+          typ: "hand",
+          start: handPass.start_tid,
+          steg: 1,
+        });
       } else if (maskinPass && !handPass) {
-        const ok = window.confirm(
-          `Ett pass för Maskin är aktivt sedan ${formatDatumTid(
-            maskinPass.start_tid
-          )}. Vill du återuppta det, eller skapa ett pass för För hand?`
-        );
-        if (ok) {
-          const aktivt = {
-            id: maskinPass.id,
-            startTid: maskinPass.start_tid,
-            metod: "maskin",
-            team_typ: "maskin",
-          };
-          setAktivtPass(aktivt);
-          setTeam("Maskin");
-          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog Maskin‑pass.");
-        } else {
-          setTeam("För hand");
-          setStatus("👷 Redo att starta För hand‑pass.");
-        }
-      } else if (handPass && maskinPass) {
-        // bägge finns – användaren får välja vilken som ska aktiveras
-        const val = window.prompt(
-          `Det finns två aktiva pass:\n1 = För hand (${formatDatumTid(
-            handPass.start_tid
-          )})\n2 = Maskin (${formatDatumTid(
-            maskinPass.start_tid
-          )})\n\nVilket vill du återuppta?`,
-          "1"
-        );
-        if (val === "1") {
-          const aktivt = {
-            id: handPass.id,
-            startTid: handPass.start_tid,
-            metod: "hand",
-            team_typ: "hand",
-          };
-          setAktivtPass(aktivt);
-          setTeam("För hand");
-          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog För hand‑pass.");
-        } else if (val === "2") {
-          const aktivt = {
-            id: maskinPass.id,
-            startTid: maskinPass.start_tid,
-            metod: "maskin",
-            team_typ: "maskin",
-          };
-          setAktivtPass(aktivt);
-          setTeam("Maskin");
-          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog Maskin‑pass.");
-        } else {
-          setStatus("ℹ️ Inget pass aktiverades ännu.");
-        }
+        setAktivPassPopup({
+          typ: "maskin",
+          start: maskinPass.start_tid,
+          steg: 1,
+        });
       }
     } catch (err) {
       console.error(err);
-      setStatus("⚠️ Fel vid kontroll av aktiva pass: " + err.message);
+      setStatus("⚠️ Fel vid kontroll av aktiva pass: " + err.message);
     }
   }
 
@@ -4890,6 +4823,193 @@ return (
       {renderContent()}
     </div>
 
+    {aktivPassPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      borderRadius: "9999px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 400,
+      padding: 24,
+      zIndex: 999,
+      textAlign: "center",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    {/* === Alternativ: två pågående pass === */}
+    {aktivPassPopup.lista && (
+      <>
+        <h3 style={{ fontSize: 18, marginTop: 0, marginBottom: 16 }}>
+          Det finns aktiva arbetspass:
+        </h3>
+        {aktivPassPopup.lista.map((p) => (
+          <button
+            key={p.typ}
+            onClick={() => {
+              const label = p.typ === "hand" ? "För hand" : "Maskin";
+              const aktivt = {
+                id: 0,
+                startTid: p.start,
+                metod: p.typ,
+                team_typ: p.typ,
+              };
+              setAktivtPass(aktivt);
+              setTeam(label);
+              localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+              setAktivPassPopup(null);
+              setStatus(`✅ Anslöt till ${label}-pass.`);
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              marginBottom: 10,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#2563eb",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 15,
+            }}
+          >
+            {p.typ === "hand"
+              ? "Anslut till För hand‑pass"
+              : "Anslut till Maskin‑pass"}
+          </button>
+        ))}
+        <button
+          onClick={() => setAktivPassPopup(null)}
+          style={{
+            marginTop: 8,
+            padding: "8px 16px",
+            borderRadius: 999,
+            border: "none",
+            backgroundColor: "#e5e7eb",
+            color: "#111827",
+            fontWeight: 500,
+          }}
+        >
+          Avbryt
+        </button>
+      </>
+    )}
+
+    {/* === En aktiv typ (steg 1 eller 2) === */}
+    {!aktivPassPopup.lista && aktivPassPopup.steg === 1 && (
+      <>
+        <h3 style={{ fontSize: 18, marginTop: 0 }}>
+          Arbetspass för {aktivPassPopup.typ === "hand" ? "För hand" : "Maskin"} pågår
+        </h3>
+        <p style={{ fontSize: 14, color: "#4b5563", marginBottom: 16 }}>
+          Startades {formatDatumTid(aktivPassPopup.start)}
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => {
+              const label =
+                aktivPassPopup.typ === "hand" ? "För hand" : "Maskin";
+              const aktivt = {
+                id: 0,
+                startTid: aktivPassPopup.start,
+                metod: aktivPassPopup.typ,
+                team_typ: aktivPassPopup.typ,
+              };
+              setAktivtPass(aktivt);
+              setTeam(label);
+              localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+              setAktivPassPopup(null);
+              setStatus(`✅ Anslöt till ${label}-pass.`);
+            }}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#fff",
+              fontWeight: 600,
+            }}
+          >
+            Ja, anslut
+          </button>
+          <button
+            onClick={() =>
+              setAktivPassPopup({
+                steg: 2,
+                val: aktivPassPopup.typ,
+              })
+            }
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#dc2626",
+              color: "#fff",
+              fontWeight: 600,
+            }}
+          >
+            Nej
+          </button>
+        </div>
+      </>
+    )}
+
+    {/* === Steg 2: fråga om nytt pass av andra typen === */}
+    {aktivPassPopup.steg === 2 && (
+      <>
+        <h3 style={{ fontSize: 18, marginTop: 0 }}>
+          Vill du starta ett nytt pass för 
+          {aktivPassPopup.val === "hand" ? "Maskin" : "För hand"}?
+        </h3>
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <button
+            onClick={() => {
+              setTeam(
+                aktivPassPopup.val === "hand" ? "Maskin" : "För hand"
+              );
+              setAktivPassPopup(null);
+              setVisaMetodValPopup(true); // öppnar din vanliga start‑popup
+            }}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#fff",
+              fontWeight: 600,
+            }}
+          >
+            Ja
+          </button>
+          <button
+            onClick={() => setAktivPassPopup(null)}
+            style={{
+              flex: 1,
+              padding: "10px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#e5e7eb",
+              color: "#111827",
+              fontWeight: 500,
+            }}
+          >
+            Nej
+          </button>
+        </div>
+      </>
+    )}
+  </div>
+)}
+
+    
     {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
     <nav
       style={{
