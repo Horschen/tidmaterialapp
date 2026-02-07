@@ -2973,18 +2973,20 @@ function avbrytRadering() {
           <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>Karta</h2>
 
           <label style={labelStyle}>Välj adress (karta)</label>
-          <select
-            value={kartaAdressId}
-            onChange={(e) => setKartaAdressId(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="">-- Välj adress --</option>
-            {sortAdresser(adresser).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.namn}
-              </option>
-            ))}
-          </select>
+<select
+  value={kartaAdressId}
+  onChange={(e) => setKartaAdressId(e.target.value)}
+  style={selectStyle}
+>
+  <option value="">-- Välj adress --</option>
+  {sortAdresser(adresser)
+    .filter((a) => a.aktiv !== false)  // Filtrera bort inaktiva
+    .map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.namn}
+      </option>
+    ))}
+</select>
 
           <button
   onClick={oppnaKartaForKartAdress}
