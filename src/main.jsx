@@ -2818,145 +2818,142 @@ function avbrytRadering() {
             </div>
           )}
 
-          {/* === Hantera PDF/bild‑karta för vald adress === */}
-          {kartaAdressId && (
-            <div style={{ marginTop: 24 }}>
-              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                PDF‑ eller bildkarta för vald adress
-              </h4>
+{/* === Hantera PDF/bild‑karta för vald adress === */}
+{kartaAdressId && (
+  <div style={{ marginTop: 24 }}>
+    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+      PDF‑ eller bildkarta för vald adress
+    </h4>
 
-              {/* Uppladdningsknapp */}
-              <input
-                type="file"
-                accept="application/pdf,image/*"
-                onChange={async (e) => {
-                  const file = e.target.files && e.target.files[0];
-                  if (!file) return;
+    {/* Uppladdningsknapp */}
+    <input
+      type="file"
+      accept="application/pdf,image/*"
+      onChange={async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
 
-                  try {
-                    setStatus(`📤 Laddar upp "${file.name}" …`);
+        try {
+          setStatus(`📤 Laddar upp "${file.name}" …`);
 
-                    const ext = file.name.split(".").pop();
-                    const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
-                    const path = `maps/${safeName}`;
+          const ext = file.name.split(".").pop();
+          const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
+          const path = `maps/${safeName}`;
 
-                    const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
+            .from("adresskartor")
+            .upload(path, file, { upsert: true });
+          if (uploadError) throw uploadError;
+
+          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
+
+          const { error: updateError } = await supabase
+            .from("adresser")
+            .update({ file_url: publicUrl })
+            .eq("id", kartaAdressId);
+          if (updateError) throw updateError;
+
+          showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+          setStatus("✅ Kartan uppladdad!");
+          await laddaAdresser();
+        } catch (err) {
+          console.error(err);
+          showPopup("👎 Fel vid uppladdning.", "error", 3000);
+          setStatus("❌ Fel: " + (err.message || "Okänt fel"));
+        } finally {
+          // se till att input fältet nollställs oavsett
+          e.target.value = "";
+        }
+      }}
+      style={{ marginTop: 6 }}
+    />
+
+    {/* Förhandsvisning + Radera‑knapp för just denna adress */}
+    {adresser
+      .filter(
+        (a) =>
+          (a.id === Number(kartaAdressId) ||
+            String(a.id) === String(kartaAdressId)) &&
+          a.file_url
+      )
+      .map((a) => (
+        <div key={a.id} style={{ marginTop: 20 }}>
+          <h4 style={{ fontSize: 15, marginBottom: 6 }}>Förhandsgranskning</h4>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <span style={{ fontSize: 13, color: "#4b5563" }}>
+              {a.file_url.split("/").pop()}
+            </span>
+            <button
+              onClick={async () => {
+                try {
+                  const parts = a.file_url.split("/adresskartor/");
+                  const relativePath = parts[1];
+
+                  if (relativePath) {
+                    const { error: removeError } = await supabase.storage
                       .from("adresskartor")
-                      .upload(path, file, { upsert: true });
-                    if (uploadError) throw uploadError;
-
-                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
-
-                    const { error: updateError } = await supabase
-                      .from("adresser")
-                      .update({ file_url: publicUrl })
-                      .eq("id", kartaAdressId);
-                    if (updateError) throw updateError;
-
-                    showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
-                    setStatus("✅ Kartan uppladdad!");
-
-                    await laddaAdresser();
-                  } catch (err) {
-                    console.error(err);
-                    showPopup("👎 Fel vid uppladdning.", "error", 3000);
-                    setStatus("❌ Fel: " + (err.message || "Okänt fel"));
-                  } finally {
-                    e.target.value = "";
+                      .remove([relativePath]);
+                    if (removeError) throw removeError;
                   }
-                }}
-                style={{ marginTop: 6 }}
-              />
 
-              {/* Förhandsvisning + Radera‑knapp för just denna adress */}
-              {adresser
-                .filter(
-                  (a) =>
-                    (a.id === Number(kartaAdressId) ||
-                      String(a.id) === String(kartaAdressId)) &&
-                    a.file_url
-                )
-                .map((a) => (
-                  <div key={a.id} style={{ marginTop: 20 }}>
-                    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                      Förhandsgranskning
-                    </h4>
+                  const { error: dbError } = await supabase
+                    .from("adresser")
+                    .update({ file_url: null })
+                    .eq("id", a.id);
+                  if (dbError) throw dbError;
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <span style={{ fontSize: 13, color: "#4b5563" }}>
-                        {a.file_url.split("/").pop()}
-                      </span>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const parts = a.file_url.split("/adresskartor/");
-                            const relativePath = parts[1];
+                  showPopup("🗑️ Fil raderad.", "success", 3000);
+                  await laddaAdresser();
+                } catch (err) {
+                  console.error(err);
+                  showPopup("👎 Fel vid radering.", "error", 3000);
+                }
+              }}
+              style={{
+                padding: "4px 10px",
+                border: "none",
+                borderRadius: 6,
+                backgroundColor: "#dc2626",
+                color: "#fff",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              Radera fil
+            </button>
+          </div>
 
-                            if (relativePath) {
-                              const { error: removeError } = await supabase
-                                .storage
-                                .from("adresskartor")
-                                .remove([relativePath]);
-                              if (removeError) throw removeError;
-                            }
-
-                            const { error: dbError } = await supabase
-                              .from("adresser")
-                              .update({ file_url: null })
-                              .eq("id", a.id);
-                            if (dbError) throw dbError;
-
-                            showPopup("🗑️ Fil raderad.", "success", 3000);
-                            await laddaAdresser();
-                          } catch (err) {
-                            console.error(err);
-                            showPopup("👎 Fel vid radering.", "error", 3000);
-                          }
-                        }}
-                        style={{
-                          padding: "4px 10px",
-                          border: "none",
-                          borderRadius: 6,
-                          backgroundColor: "#dc2626",
-                          color: "#fff",
-                          fontSize: 12,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Radera fil
-                      </button>
-                    </div>
-
-                    {a.file_url.toLowerCase().endsWith(".pdf") ? (
-                      <iframe
-                        src={`${a.file_url}#view=FitH`}
-                        title="Karta PDF"
-                        style={{
-                          width: "100%",
-                          height: "70vh",
-                          border: "1px solid #d1d5db",
-                          borderRadius: 8,
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          maxHeight: "70vh",
-                          overflow: "auto",
-                          border: "1px solid #d1d5db",
-                          borderRadius: 8,
-                        }}
-                      >
-                        <img
-                          src={a.file_url}
+          {a.file_url.toLowerCase().endsWith(".pdf") ? (
+            <iframe
+              src={`${a.file_url}#view=FitH`}
+              title="Karta PDF"
+              style={{
+                width: "100%",
+                height: "70vh",
+                border: "1px solid #d1d5db",
+                borderRadius: 8,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                maxHeight: "70vh",
+                overflow: "auto",
+                border: "1px solid #d1d5db",
+                borderRadius: 8,
+              }}
+            >
+              <img
+                src={a.file_url}
                           alt="Karta"
                           style={{
                             width: "100%",
