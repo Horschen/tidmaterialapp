@@ -417,6 +417,10 @@ function App() {
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
+  
+  // 🟡 Popup‑för val av pass‑typ
+const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
 
   // Rapportinmatning (Registrera-fliken)
   const [valda, setValda] = useState("");
@@ -1124,9 +1128,7 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
-// 🟡 Popup‑för val av pass‑typ (läggs här, utanför alla andra funktioner men inuti App)
-const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
-const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+
   
  // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
