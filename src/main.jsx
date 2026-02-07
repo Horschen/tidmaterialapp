@@ -6084,7 +6084,7 @@ return (
       }}
     >
       <button
-        onClick={sparaNyAdress}
+        onClick={sparaEditAdress}
         style={{
           flex: 1,
           padding: "10px 16px",
@@ -6095,10 +6095,13 @@ return (
           fontWeight: 600,
         }}
       >
-        Spara adress
+        Spara
       </button>
       <button
-        onClick={() => setVisaNyAdressPopup(false)}
+        onClick={() => {
+          setVisaAdressEditPopup(false);
+          setEditAdressData(null);
+        }}
         style={{
           flex: 1,
           padding: "10px 16px",
