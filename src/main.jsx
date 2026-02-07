@@ -387,34 +387,27 @@ function VeckoOversikt({
       
 // ======= Huvudappen =======
 function App() {
+  // ======= 1️⃣ ALLA useState FÖRST =======
   const [activeTab, setActiveTab] = useState("registrera");
 
-  // 🟢 Läs sparat pausläge direkt innan något ritas
+  // 🟢 Läs sparat pausläge direkt innan något ritas
   const initialPaused =
     typeof localStorage !== "undefined" &&
     localStorage.getItem("snöjour_password_paused") === "true";
   const [passwordPaused, setPasswordPaused] = useState(initialPaused);
 
-  // 🟢 Om lösenord är pausat: börja som inloggad direkt
+  // 🟢 Om lösenord är pausat: börja som inloggad direkt
   const [isAuthenticated, setIsAuthenticated] = useState(initialPaused);
 
-  // 🟢 Fältet i login‑formuläret
+  // 🟢 Fältet i login‑formuläret
   const [loginPassword, setLoginPassword] = useState("");
 
-  // 🟢 Skriv in/uppdatera värdet i localStorage varje gång det ändras
-  useEffect(() => {
-    localStorage.setItem(
-      "snöjour_password_paused",
-      passwordPaused ? "true" : "false"
-    );
-  }, [passwordPaused]);
-
   // ======= Arbetspass-översikt state =======
-const [visaPassOversikt, setVisaPassOversikt] = useState(false);
-const [passHistorik, setPassHistorik] = useState([]); // Lista med sparade pass
-const [valtPassId, setValtPassId] = useState(""); // Valt pass för visning
-const [passDetaljer, setPassDetaljer] = useState(null); // Detaljer för valt pass
-const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
+  const [visaPassOversikt, setVisaPassOversikt] = useState(false);
+  const [passHistorik, setPassHistorik] = useState([]);
+  const [valtPassId, setValtPassId] = useState("");
+  const [passDetaljer, setPassDetaljer] = useState(null);
+  const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
 
   // ======= Resterande state =======
   const [rapporter, setRapporter] = useState([]);
@@ -424,102 +417,32 @@ const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
-
-  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
-  const veckansRapporter = rapporter.filter((r) => {
-    const d = new Date(r.datum);
-    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-    const år = tmp.getUTCFullYear();
-
-    const veckaOK =
-      !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
-
-    return veckaOK && årOK;
-  });
-
-  const filtreradeRapporter = veckansRapporter.filter((r) => {
-    const metodOK =
-      filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
-    return metodOK;
-  });
-
-  const totalMaskinMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "maskin")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-
-  const totalHandMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "hand")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
   
   // 🟡 Popup‑för val av pass‑typ
-const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
-const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+  const [valdMetodTemp, setValdMetodTemp] = useState("hand");
 
   // Popup för anslutning till aktivt pass
-const [aktivPassPopup, setAktivPassPopup] = useState(null);
-/* struktur:
-   null                      → ingen popup
-   {typ:"hand", start:"2026-01-10T12:00:00", steg:1}   → Visa fråga "För hand pågår..."
-   {typ:"maskin", start:"…",  steg:1}                  → Visa fråga "Maskin pågår..."
-   {steg:2, val:"hand"}                                → Visa fråga "Vill du starta maskin?"
-   {lista:[…]}                                         → flera pass finns
-*/
+  const [aktivPassPopup, setAktivPassPopup] = useState(null);
 
   // Rapportinmatning (Registrera-fliken)
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
-  const [team, setTeam] = useState("För hand");
+  const [team, setTeam] = useState("För hand");
   const [antalAnstallda, setAntalAnstallda] = useState(1);
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
 
   // Pass (auto-tid)
-  const [aktivtPass, setAktivtPass] = useState(null); // { startTid, metod }
+  const [aktivtPass, setAktivtPass] = useState(null);
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
   // Paus
-  const [paus, setPaus] = useState(null); // { startTid } när paus pågår
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
+  const [paus, setPaus] = useState(null);
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0);
 
   // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNuTid(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Primär timer: total pass-tid
-  const passTotalSek =
-    aktivtPass != null
-      ? Math.max(
-          0,
-          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
-        )
-      : 0;
-
-  // Sekundär timer: tid sedan senaste adress (eller pass-start om första)
-  const pågåendePassSek =
-    aktivtPass != null
-      ? Math.max(
-          0,
-          Math.floor(
-            (nuTid -
-              new Date(senasteRapportTid || aktivtPass.startTid)) /
-              1000
-          )
-        )
-      : 0;
-
-  // Pågående paus (sekunder sedan Start Paus)
-  const pågåendePausSek =
-    paus != null
-      ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
-      : 0;
 
   // Syften (auto/registrera)
   const [syfteOversyn, setSyfteOversyn] = useState(false);
@@ -527,20 +450,10 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   const [syfteSaltning, setSyfteSaltning] = useState(false);
   const [syfteGrusning, setSyfteGrusning] = useState(false);
 
-  function buildSyfteString() {
-    const delar = [];
-    if (syfteOversyn) delar.push("Översyn");
-    if (syfteRojning) delar.push("Röjning");
-    if (syfteSaltning) delar.push("Saltning");
-    if (syfteGrusning) delar.push("Grusning");
-    return delar.join(", ");
-  }
-
   // Manuell registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
-  const [manuellTeam, setManuellTeam] = useState("För hand");
-  const [manuellAntalAnstallda, setManuellAntalAnstallda] =
-    useState(1);
+  const [manuellTeam, setManuellTeam] = useState("För hand");
+  const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
   const [manuellDatum, setManuellDatum] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -554,6 +467,262 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   const [visaManuellPopup, setVisaManuellPopup] = useState(false);
   const [manuellTid, setManuellTid] = useState("");
 
+  // Editera-rapport popup
+  const [visaEditPopup, setVisaEditPopup] = useState(false);
+  const [editAdressId, setEditAdressId] = useState(null);
+  const [editRapporter, setEditRapporter] = useState([]);
+  const [valdaEditId, setValdaEditId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    datum: "",
+    tid: "",
+    arbetstid_min: "",
+    sand_kg: "",
+    salt_kg: "",
+    syfteOversyn: false,
+    syfteRojning: false,
+    syfteSaltning: false,
+    syfteGrusning: false,
+    antal_anstallda: 1,
+    team_namn: "För hand",
+  });
+
+  // Kartflik
+  const [kartaAdressId, setKartaAdressId] = useState("");
+  const [kartaNotering, setKartaNotering] = useState("");
+  const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
+  const [status, setStatus] = useState("");
+  const [filterMetod, setFilterMetod] = useState("alla");
+  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
+  const [nyAdress, setNyAdress] = useState("");
+
+  // ======= Rutt-flik state =======
+  const [ruttAdresser, setRuttAdresser] = useState([]);
+  const [visaRuttPopup, setVisaRuttPopup] = useState(false);
+  const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]);
+  const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null);
+  const [ruttStatus, setRuttStatus] = useState("");
+  const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]);
+  const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
+  const [ruttKortider, setRuttKortider] = useState([]);
+
+  // Popup-notis
+  const [popup, setPopup] = useState(null);
+
+  // Delete-confirm popup
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Radera-flik state
+  const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
+  const [raderaMånad, setRaderaMånad] = useState("");
+  const [raderaPågår, setRaderaPågår] = useState(false);
+  const [raderaUnlocked, setRaderaUnlocked] = useState(false);
+
+  // ======= 2️⃣ BERÄKNADE VÄRDEN =======
+  
+  // Primär timer: total pass-tid
+  const passTotalSek =
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
+        )
+      : 0;
+
+  // Sekundär timer: tid sedan senaste adress
+  const pågåendePassSek =
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor(
+            (nuTid - new Date(senasteRapportTid || aktivtPass.startTid)) / 1000
+          )
+        )
+      : 0;
+
+  // Pågående paus (sekunder)
+  const pågåendePausSek =
+    paus != null
+      ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
+      : 0;
+
+  // Filtrera rapporter på vecka/år/metod
+  const veckansRapporter = rapporter.filter((r) => {
+    const d = new Date(r.datum);
+    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    const år = tmp.getUTCFullYear();
+
+    const veckaOK = !filtreradVecka || Number(filtreradVecka) === Number(vecka);
+    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
+
+    return veckaOK && årOK;
+  });
+
+  const filtreradeRapporter = veckansRapporter.filter((r) => {
+    const metodOK = filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
+    return metodOK;
+  });
+
+  const totalMaskinMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "maskin")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  const totalHandMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "hand")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  // ======= 3️⃣ useEffect HOOKS =======
+  
+  // Skriv in/uppdatera värdet i localStorage varje gång det ändras
+  useEffect(() => {
+    localStorage.setItem(
+      "snöjour_password_paused",
+      passwordPaused ? "true" : "false"
+    );
+  }, [passwordPaused]);
+
+  // Timer för pass / paus
+  useEffect(() => {
+    const id = setInterval(() => setNuTid(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Varning vid stängning/uppdatering om pass är aktivt
+  useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (aktivtPass) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+      return undefined;
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [aktivtPass]);
+
+  // Spara/Läs pass-state i localStorage
+  useEffect(() => {
+    const payload = {
+      aktivtPass,
+      senasteRapportTid,
+      paus,
+      pausSekUnderIntervall,
+      team,
+      antalAnstallda,
+    };
+    try {
+      localStorage.setItem("snöjour_pass_state", JSON.stringify(payload));
+    } catch (_) {}
+  }, [aktivtPass, senasteRapportTid, paus, pausSekUnderIntervall, team, antalAnstallda]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("snöjour_pass_state");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data && data.aktivtPass && data.aktivtPass.startTid) {
+        setAktivtPass(data.aktivtPass);
+        setSenasteRapportTid(data.senasteRapportTid || null);
+        setPaus(data.paus || null);
+        setPausSekUnderIntervall(data.pausSekUnderIntervall || 0);
+        if (data.team) setTeam(data.team);
+        if (data.antalAnstallda) setAntalAnstallda(data.antalAnstallda);
+        setStatus("⏱️ Återupptog pågående pass från tidigare session.");
+      }
+    } catch (_) {}
+  }, []);
+
+  // Ladda adresser vid start
+  useEffect(() => {
+    laddaAdresser();
+  }, []);
+
+  // Ladda rutter vid start (efter inloggning)
+  useEffect(() => {
+    if (isAuthenticated) {
+      laddaAktivRutt();
+      laddaVantandeRutt();
+    }
+  }, [isAuthenticated]);
+
+  // Synka kartaNotering med vald adress
+  useEffect(() => {
+    if (!kartaAdressId) {
+      setKartaNotering("");
+      setKartaNoteringEditing(false);
+      return;
+    }
+    const vald = adresser.find(
+      (a) => a.id === Number(kartaAdressId) || String(a.id) === String(kartaAdressId)
+    );
+    if (vald) {
+      setKartaNotering(vald.karta_notering || "");
+    } else {
+      setKartaNotering("");
+    }
+    setKartaNoteringEditing(false);
+  }, [kartaAdressId, adresser]);
+
+  // Vid app-start: kontrollera om aktiva pass finns
+  useEffect(() => {
+    async function kollaAktivaPass() {
+      try {
+        const { data, error } = await supabase
+          .from("tillstand_pass")
+          .select("*")
+          .eq("aktiv", true);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        const handPass = data.find((p) => p.team_typ === "hand");
+        const maskinPass = data.find((p) => p.team_typ === "maskin");
+
+        if (handPass && maskinPass) {
+          setAktivPassPopup({
+            lista: [
+              { typ: "hand", start: handPass.start_tid },
+              { typ: "maskin", start: maskinPass.start_tid },
+            ],
+          });
+          return;
+        }
+
+        if (handPass && !maskinPass) {
+          setAktivPassPopup({ typ: "hand", start: handPass.start_tid, steg: 1 });
+        } else if (maskinPass && !handPass) {
+          setAktivPassPopup({ typ: "maskin", start: maskinPass.start_tid, steg: 1 });
+        }
+      } catch (err) {
+        console.error(err);
+        setStatus("⚠️ Fel vid kontroll av aktiva pass: " + err.message);
+      }
+    }
+
+    kollaAktivaPass();
+  }, []);
+
+  // ======= 4️⃣ HJÄLPFUNKTIONER =======
+
+  function showPopup(text, type = "success", durationMs = 4000) {
+    setPopup({ text, type });
+    setTimeout(() => setPopup(null), durationMs);
+  }
+
+  function buildSyfteString() {
+    const delar = [];
+    if (syfteOversyn) delar.push("Översyn");
+    if (syfteRojning) delar.push("Röjning");
+    if (syfteSaltning) delar.push("Saltning");
+    if (syfteGrusning) delar.push("Grusning");
+    return delar.join(", ");
+  }
+
   function buildManuellSyfteString() {
     const delar = [];
     if (manSyfteOversyn) delar.push("Översyn");
@@ -565,7 +734,7 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
 
   function resetManuellForm() {
     setManuellAdressId("");
-    setManuellTeam("För hand");
+    setManuellTeam("För hand");
     setManuellAntalAnstallda(1);
     setManuellDatum(new Date().toISOString().slice(0, 10));
     setManuellTidMin("");
@@ -587,215 +756,196 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
     resetManuellForm();
   }
 
-  // Editera-rapport popup
-  const [visaEditPopup, setVisaEditPopup] = useState(false);
-  const [editAdressId, setEditAdressId] = useState(null);
-  const [editRapporter, setEditRapporter] = useState([]);
-  const [valdaEditId, setValdaEditId] = useState(null);
-  const [editForm, setEditForm] = useState({
-    datum: "",
-    arbetstid_min: "",
-    sand_kg: "",
-    salt_kg: "",
-    syfteOversyn: false,
-    syfteRojning: false,
-    syfteSaltning: false,
-    syfteGrusning: false,
-    antal_anstallda: 1,
-    team_namn: "För hand",
-  });
-
-  // Kartflik
-  const [kartaAdressId, setKartaAdressId] = useState("");
-  const [kartaNotering, setKartaNotering] = useState(""); // textfält för instruktioner
-  const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
-  const [status, setStatus] = useState("");
-  const [filterMetod, setFilterMetod] = useState("alla");
-  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState("");
-  const [ruttKortider, setRuttKortider] = useState([]); // Körtider från Google Maps
-  
-  
-// ======= Rutt-flik state =======
-const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
-const [visaRuttPopup, setVisaRuttPopup] = useState(false);
-const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]); // För checkboxar i popup
-const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Maps route data
-const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
-const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
-const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
-
-  
-// ✅ Funktion för att lägga till ny adress (används i adress-admin)
-async function laggTillAdress() {
-  if (!nyAdress?.trim()) {
-    showPopup("👎 Skriv in en adress först.", "error", 3000);
-    return;
+  // Formatera sekunder till läsbar tid
+  function formatSekTillLasbar(sek) {
+    if (!sek || sek === 0) return "—";
+    const h = Math.floor(sek / 3600);
+    const m = Math.floor((sek % 3600) / 60);
+    if (h > 0) {
+      return `${h}h ${m}min`;
+    }
+    return `${m} min`;
   }
 
-  try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        nyAdress
-      )}&key=${GOOGLE_MAPS_API_KEY}`
-    );
-    const data = await res.json();
+  // ======= 5️⃣ ASYNC FUNKTIONER =======
 
-    if (!data.results || data.results.length === 0) {
-      showPopup("👎 Koordinater hittades inte.", "error", 3000);
+  // Ladda adresser
+  async function laddaAdresser() {
+    const { data, error } = await supabase
+      .from("adresser")
+      .select(
+        "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, uppskattad_tid_min, Bostad_Företag"
+      )
+      .order("adresslista_sortering", { ascending: true });
+
+    if (error) {
+      setStatus("❌ " + error.message);
+    } else {
+      setAdresser(sortAdresser(data || []));
+    }
+  }
+
+  // Ladda aktiv rutt från databasen
+  async function laddaAktivRutt() {
+    console.log("🔄 laddaAktivRutt() körs...");
+
+    const { data: ruttData, error: ruttError } = await supabase
+      .from("aktiv_rutt")
+      .select("*")
+      .order("ordning", { ascending: true });
+
+    if (ruttError) {
+      console.error("❌ Fel vid laddning av rutt:", ruttError);
+      setRuttStatus("❌ Kunde inte ladda rutt: " + ruttError.message);
       return;
     }
 
-    const { lat, lng } = data.results[0].geometry.location;
-    const formatted = data.results[0].formatted_address;
+    const { data: adresserData, error: adresserError } = await supabase
+      .from("adresser")
+      .select("id, namn, lat, lng");
 
-    const { error } = await supabase.from("adresser").insert([
-      {
-        namn: formatted,
-        lat,
-        lng,
-        aktiv: true, // blir synlig direkt
-      },
-    ]);
-    if (error) throw error;
-
-    showPopup("👍 Ny adress sparad!", "success", 3000);
-    setNyAdress("");
-    await laddaAdresser();
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
-  }
-}
-  
-  // Popup-notis
-  const [popup, setPopup] = useState(null);
-  function showPopup(text, type = "success", durationMs = 4000) {
-    setPopup({ text, type });
-    setTimeout(() => setPopup(null), durationMs);
-  }
-
-  // Delete-confirm popup
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  
-  // ======= Hämta lista med alla arbetspass =======
-async function hamtaPassHistorik() {
-  try {
-    const { data, error } = await supabase
-      .from("tillstand_pass")
-      .select("*")
-      .order("start_tid", { ascending: false })
-      .limit(50);
-
-    if (error) throw error;
-
-    setPassHistorik(data || []);
-    return data;
-  } catch (err) {
-    console.error("Fel vid hämtning av passhistorik:", err);
-    showPopup("👎 Kunde inte hämta passhistorik.", "error", 3000);
-    return [];
-  }
-}
-
-// ======= Hämta detaljer för ett specifikt pass =======
-async function hamtaPassDetaljer(passId) {
-  if (!passId) {
-    setPassDetaljer(null);
-    return;
-  }
-
-  setLaddaPassDetaljer(true);
-
-  try {
-    // Hämta pass-info
-    const { data: passData, error: passError } = await supabase
-      .from("tillstand_pass")
-      .select("*")
-      .eq("id", passId)
-      .single();
-
-    if (passError) throw passError;
-
-    // Hämta logg för detta pass
-    const { data: loggData, error: loggError } = await supabase
-      .from("pass_logg")
-      .select(`
-        *,
-        adresser (id, namn, uppskattad_tid_min)
-      `)
-      .eq("pass_id", passId)
-      .order("ordning", { ascending: true });
-
-    if (loggError) throw loggError;
-
-    // Om ingen logg finns, hämta från rapporter istället
-    let adressLista = loggData || [];
-    
-    if (adressLista.length === 0) {
-      // Fallback: hämta rapporter för detta datum/team
-      const startDatum = passData.start_tid?.split("T")[0];
-      const slutDatum = passData.sluttid?.split("T")[0] || startDatum;
-      
-      const { data: rapportData, error: rapportError } = await supabase
-        .from("rapporter")
-        .select(`
-          *,
-          adresser (id, namn, uppskattad_tid_min)
-        `)
-        .eq("team_namn", passData.team_typ === "hand" ? "För hand" : "Maskin")
-        .gte("datum", startDatum)
-        .lte("datum", slutDatum || startDatum)
-        .order("datum", { ascending: true });
-
-      if (!rapportError && rapportData) {
-        adressLista = rapportData.map((r, idx) => ({
-          ordning: idx + 1,
-          adress_id: r.adress_id,
-          adresser: r.adresser,
-          arbets_tid_sek: (r.arbetstid_min || 0) * 60,
-          transport_tid_sek: 0, // Okänt för gamla rapporter
-          total_tid_sek: (r.arbetstid_min || 0) * 60,
-          uppskattad_arbete_sek: (r.adresser?.uppskattad_tid_min || 10) * 60,
-          ankomst_tid: r.datum,
-        }));
-      }
+    if (adresserError) {
+      console.error("❌ Fel vid laddning av adresser:", adresserError);
+      setRuttStatus("❌ Kunde inte ladda adresser: " + adresserError.message);
+      return;
     }
 
-    // Beräkna sammanfattning
-    const totalArbeteSek = adressLista.reduce((sum, a) => sum + (a.arbets_tid_sek || 0), 0);
-    const totalTransportSek = adressLista.reduce((sum, a) => sum + (a.transport_tid_sek || 0), 0);
-    const totalTidSek = totalArbeteSek + totalTransportSek;
-
-    const uppskattadArbeteSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_arbete_sek || 600), 0);
-    const uppskattadTransportSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_transport_sek || 300), 0);
-    const uppskattadTotalSek = uppskattadArbeteSek + uppskattadTransportSek;
-
-    const avvikelseSek = totalTidSek - uppskattadTotalSek;
-
-    setPassDetaljer({
-      pass: passData,
-      adresser: adressLista,
-      sammanfattning: {
-        totalArbeteSek,
-        totalTransportSek,
-        totalTidSek,
-        uppskattadArbeteSek,
-        uppskattadTransportSek,
-        uppskattadTotalSek,
-        avvikelseSek,
-        antalAdresser: adressLista.length,
-      },
+    const adresserMap = {};
+    adresserData.forEach((a) => {
+      adresserMap[a.id] = a;
     });
 
-  } catch (err) {
-    console.error("Fel vid hämtning av passdetaljer:", err);
-    showPopup("👎 Kunde inte hämta passdetaljer.", "error", 3000);
-    setPassDetaljer(null);
-  } finally {
-    setLaddaPassDetaljer(false);
+    const ruttMedAdresser = ruttData.map((r) => ({
+      ...r,
+      adresser: adresserMap[r.adress_id] || null,
+    }));
+
+    console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
+    setRuttAdresser(ruttMedAdresser);
+    setRuttStatus("");
   }
-}
+
+  // Ladda väntande rutt
+  async function laddaVantandeRutt() {
+    const { data, error } = await supabase
+      .from("vantande_rutt")
+      .select("*");
+
+    if (error) {
+      console.error("❌ Fel vid laddning av väntande rutt:", error);
+    } else {
+      console.log("📋 Väntande rutt laddad:", data);
+      setVantandeRuttAdresser(data || []);
+      setVisaAktiveraRuttKnapp(data && data.length > 0);
+    }
+  }
+
+  // Hämta lista med alla arbetspass
+  async function hamtaPassHistorik() {
+    try {
+      const { data, error } = await supabase
+        .from("tillstand_pass")
+        .select("*")
+        .order("start_tid", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setPassHistorik(data || []);
+      return data;
+    } catch (err) {
+      console.error("Fel vid hämtning av passhistorik:", err);
+      showPopup("👎 Kunde inte hämta passhistorik.", "error", 3000);
+      return [];
+    }
+  }
+
+  // Hämta detaljer för ett specifikt pass
+  async function hamtaPassDetaljer(passId) {
+    if (!passId) {
+      setPassDetaljer(null);
+      return;
+    }
+
+    setLaddaPassDetaljer(true);
+
+    try {
+      const { data: passData, error: passError } = await supabase
+        .from("tillstand_pass")
+        .select("*")
+        .eq("id", passId)
+        .single();
+
+      if (passError) throw passError;
+
+      const { data: loggData, error: loggError } = await supabase
+        .from("pass_logg")
+        .select(`*, adresser (id, namn, uppskattad_tid_min)`)
+        .eq("pass_id", passId)
+        .order("ordning", { ascending: true });
+
+      if (loggError) throw loggError;
+
+      let adressLista = loggData || [];
+
+      if (adressLista.length === 0) {
+        const startDatum = passData.start_tid?.split("T")[0];
+        const slutDatum = passData.sluttid?.split("T")[0] || startDatum;
+
+        const { data: rapportData, error: rapportError } = await supabase
+          .from("rapporter")
+          .select(`*, adresser (id, namn, uppskattad_tid_min)`)
+          .eq("team_namn", passData.team_typ === "hand" ? "För hand" : "Maskin")
+          .gte("datum", startDatum)
+          .lte("datum", slutDatum || startDatum)
+          .order("datum", { ascending: true });
+
+        if (!rapportError && rapportData) {
+          adressLista = rapportData.map((r, idx) => ({
+            ordning: idx + 1,
+            adress_id: r.adress_id,
+            adresser: r.adresser,
+            arbets_tid_sek: (r.arbetstid_min || 0) * 60,
+            transport_tid_sek: 0,
+            total_tid_sek: (r.arbetstid_min || 0) * 60,
+            uppskattad_arbete_sek: (r.adresser?.uppskattad_tid_min || 10) * 60,
+            ankomst_tid: r.datum,
+          }));
+        }
+      }
+
+      const totalArbeteSek = adressLista.reduce((sum, a) => sum + (a.arbets_tid_sek || 0), 0);
+      const totalTransportSek = adressLista.reduce((sum, a) => sum + (a.transport_tid_sek || 0), 0);
+      const totalTidSek = totalArbeteSek + totalTransportSek;
+
+      const uppskattadArbeteSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_arbete_sek || 600), 0);
+      const uppskattadTransportSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_transport_sek || 300), 0);
+      const uppskattadTotalSek = uppskattadArbeteSek + uppskattadTransportSek;
+
+      const avvikelseSek = totalTidSek - uppskattadTotalSek;
+
+      setPassDetaljer({
+        pass: passData,
+        adresser: adressLista,
+        sammanfattning: {
+          totalArbeteSek,
+          totalTransportSek,
+          totalTidSek,
+          uppskattadArbeteSek,
+          uppskattadTransportSek,
+          uppskattadTotalSek,
+          avvikelseSek,
+          antalAdresser: adressLista.length,
+        },
+      });
+    } catch (err) {
+      console.error("Fel vid hämtning av passdetaljer:", err);
+      showPopup("👎 Kunde inte hämta passdetaljer.", "error", 3000);
+      setPassDetaljer(null);
+    } finally {
+      setLaddaPassDetaljer(false);
+    }
+  }
 
 // ======= Formatera sekunder till läsbar tid =======
 function formatSekTillLasbar(sek) {
@@ -2060,12 +2210,11 @@ const secondaryButton = {
 };
 
 // ======= RUTT-FUNKTIONER =======
-  
-// Ladda aktiv rutt från databasen (utan nested relation)
+
+// Ladda aktiv rutt från databasen
 async function laddaAktivRutt() {
-  console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
+  console.log("🔄 laddaAktivRutt() körs...");
   
-  // Hämta rutt-data
   const { data: ruttData, error: ruttError } = await supabase
     .from("aktiv_rutt")
     .select("*")
@@ -2077,7 +2226,6 @@ async function laddaAktivRutt() {
     return;
   }
 
-  // Hämta alla adresser
   const { data: adresserData, error: adresserError } = await supabase
     .from("adresser")
     .select("id, namn, lat, lng");
@@ -2088,7 +2236,6 @@ async function laddaAktivRutt() {
     return;
   }
 
-  // Merga data manuellt
   const adresserMap = {};
   adresserData.forEach((a) => {
     adresserMap[a.id] = a;
@@ -2101,10 +2248,10 @@ async function laddaAktivRutt() {
 
   console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
   setRuttAdresser(ruttMedAdresser);
-  setRuttStatus(""); // Rensa felmeddelande
+  setRuttStatus("");
 }
 
-// ======= Ladda väntande rutt =======
+// Ladda väntande rutt
 async function laddaVantandeRutt() {
   const { data, error } = await supabase
     .from("vantande_rutt")
