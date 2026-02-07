@@ -1098,52 +1098,6 @@ function validateManuellFields() {
 }   // ✅ avslutar validateManuellFields
 
 // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
-// === Logga till pass_logg för spårbarhet ===
-if (aktivtPass && aktivtPass.id) {
-  try {
-    // Räkna ut transport-tid (tid sedan förra rapporten minus arbetstid)
-    const startTid = senasteRapportTid 
-      ? new Date(senasteRapportTid) 
-      : new Date(aktivtPass.startTid);
-    
-    const nuTidObj = new Date();
-    const totalSek = Math.floor((nuTidObj - startTid) / 1000);
-    const arbetsSek = arbetstidMin * 60;
-    const transportSek = Math.max(0, totalSek - arbetsSek - (pausSekUnderIntervall || 0));
-
-    // Hämta uppskattade tider från adress
-    const adressInfo = adresser.find((a) => a.id === Number(valda));
-    const uppskattadArbeteSek = (adressInfo?.uppskattad_tid_min || 10) * 60;
-
-    // Räkna ordning
-    const { count } = await supabase
-      .from("pass_logg")
-      .select("*", { count: "exact", head: true })
-      .eq("pass_id", aktivtPass.id);
-
-    const ordning = (count || 0) + 1;
-
-    await supabase.from("pass_logg").insert([
-      {
-        pass_id: aktivtPass.id,
-        adress_id: Number(valda),
-        ordning: ordning,
-        ankomst_tid: startTid.toISOString(),
-        start_arbete_tid: new Date(nuTidObj.getTime() - arbetsSek * 1000).toISOString(),
-        slut_arbete_tid: nuTidObj.toISOString(),
-        transport_tid_sek: transportSek,
-        arbets_tid_sek: arbetsSek,
-        total_tid_sek: totalSek,
-        uppskattad_arbete_sek: uppskattadArbeteSek,
-        avvikelse_sek: totalSek - uppskattadArbeteSek,
-      },
-    ]);
-  } catch (loggErr) {
-    console.error("Kunde inte logga till pass_logg:", loggErr);
-    // Fortsätt ändå - rapporten är redan sparad
-  }
-}
-  
 async function sparaRapport() {
   if (!validateBeforeSaveFields()) return;
 
@@ -1184,49 +1138,93 @@ async function sparaRapport() {
     arbetstidMin = manu * (antalAnstallda || 1);
   }
 
- // — Tidsstämplar —
-// Bygg tidsstämpel i lokal tid (samma logik som manuell registrering & editering)
-let nuIso;
-try {
-  const nu = new Date();
-  const y = nu.getFullYear();
-  const m = String(nu.getMonth() + 1).padStart(2, "0");
-  const d = String(nu.getDate()).padStart(2, "0");
-  const h = String(nu.getHours()).padStart(2, "0");
-  const min = String(nu.getMinutes()).padStart(2, "0");
+  // — Tidsstämplar —
+  let nuIso;
+  try {
+    const nu = new Date();
+    const y = nu.getFullYear();
+    const m = String(nu.getMonth() + 1).padStart(2, "0");
+    const d = String(nu.getDate()).padStart(2, "0");
+    const h = String(nu.getHours()).padStart(2, "0");
+    const min = String(nu.getMinutes()).padStart(2, "0");
 
-  // 🔸 Skapar lokal tid utan "Z" så Supabase tolkar tiden korrekt (ex. 09:00 visas som 09:00)
-  nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
-} catch {
-  showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
-  setStatus("Ogiltig tidsstämpel vid sparning.");
-  return;
-}
+    nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
+  } catch {
+    showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
+    setStatus("Ogiltig tidsstämpel vid sparning.");
+    return;
+  }
 
-const jobbtidIso = nuIso;
+  const jobbtidIso = nuIso;
 
-setStatus("Sparar...");
+  setStatus("Sparar...");
 
-const { error } = await supabase.from("rapporter").insert([
-  {
-    datum: nuIso,
-    jobb_tid: jobbtidIso,
-    adress_id: valda,
-    arbetstid_min: arbetstidMin,
-    team_namn: team,
-    arbetssatt: metod,
-    sand_kg: parseInt(sand, 10) || 0,
-    salt_kg: parseInt(salt, 10) || 0,
-    syfte: syfteText,
-    antal_anstallda: antalAnstallda,
-    skyddad: true,
-  },
-]);
+  const { error } = await supabase.from("rapporter").insert([
+    {
+      datum: nuIso,
+      jobb_tid: jobbtidIso,
+      adress_id: valda,
+      arbetstid_min: arbetstidMin,
+      team_namn: team,
+      arbetssatt: metod,
+      sand_kg: parseInt(sand, 10) || 0,
+      salt_kg: parseInt(salt, 10) || 0,
+      syfte: syfteText,
+      antal_anstallda: antalAnstallda,
+      skyddad: true,
+    },
+  ]);
 
   if (error) {
     setStatus("❌ " + error.message);
     showPopup("👎 Fel vid sparning", "error", 3000);
     return;
+  }
+
+  // === Logga till pass_logg för spårbarhet (om pass är aktivt) ===
+  if (aktivtPass && aktivtPass.id && aktivtPass.id !== 0) {
+    try {
+      // Räkna ut transport-tid (tid sedan förra rapporten minus arbetstid)
+      const startTid = senasteRapportTid 
+        ? new Date(senasteRapportTid) 
+        : new Date(aktivtPass.startTid);
+      
+      const nuTidObj = new Date();
+      const totalSek = Math.floor((nuTidObj - startTid) / 1000);
+      const arbetsSek = arbetstidMin * 60;
+      const transportSek = Math.max(0, totalSek - arbetsSek - (pausSekUnderIntervall || 0));
+
+      // Hämta uppskattade tider från adress
+      const adressInfo = adresser.find((a) => a.id === Number(valda));
+      const uppskattadArbeteSek = (adressInfo?.uppskattad_tid_min || 10) * 60;
+
+      // Räkna ordning
+      const { count } = await supabase
+        .from("pass_logg")
+        .select("*", { count: "exact", head: true })
+        .eq("pass_id", aktivtPass.id);
+
+      const ordning = (count || 0) + 1;
+
+      await supabase.from("pass_logg").insert([
+        {
+          pass_id: aktivtPass.id,
+          adress_id: Number(valda),
+          ordning: ordning,
+          ankomst_tid: startTid.toISOString(),
+          start_arbete_tid: new Date(nuTidObj.getTime() - arbetsSek * 1000).toISOString(),
+          slut_arbete_tid: nuTidObj.toISOString(),
+          transport_tid_sek: transportSek,
+          arbets_tid_sek: arbetsSek,
+          total_tid_sek: totalSek,
+          uppskattad_arbete_sek: uppskattadArbeteSek,
+          avvikelse_sek: totalSek - uppskattadArbeteSek,
+        },
+      ]);
+    } catch (loggErr) {
+      console.error("Kunde inte logga till pass_logg:", loggErr);
+      // Fortsätt ändå - rapporten är redan sparad
+    }
   }
 
   // — Lyckad sparning —
@@ -1240,11 +1238,12 @@ const { error } = await supabase.from("rapporter").insert([
   setAntalAnstallda(1);
   setSenasteRapportTid(nuIso);
 
-  // Nu är await inne i async-funktionen
   await bockAvAdressIRutt(valda);
 
   setPaus(null);
   setPausSekUnderIntervall(0);
+}
+  
 }   // ✅ avslutar sparaRapport
   
 // ======= Spara manuell rapport (popup) =======
