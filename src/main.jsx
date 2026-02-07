@@ -3194,466 +3194,465 @@ function avbrytRadering() {
         Veckorapport
       </h2>
             
-          {/* Gula ovala rutor för total tider */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              marginBottom: 12,
-            }}
-          >
-            <div
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                backgroundColor: "#facc15",
-                color: "#854d0e",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Total Maskin Tid:{" "}
-              <span style={{ fontFamily: "monospace" }}>
-                {formatTid(totalMaskinMin)}
-              </span>
-            </div>
-            <div
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                backgroundColor: "#facc15",
-                color: "#854d0e",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Total Man Tid:{" "}
-              <span style={{ fontFamily: "monospace" }}>
-                {formatTid(totalHandMin)}
-              </span>
-            </div>
-          </div>
+      {/* Gula ovala rutor för total tider */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
+            padding: "6px 12px",
+            borderRadius: 999,
+            backgroundColor: "#facc15",
+            color: "#854d0e",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          Total Maskin Tid:{" "}
+          <span style={{ fontFamily: "monospace" }}>
+            {formatTid(totalMaskinMin)}
+          </span>
+        </div>
+        <div
+          style={{
+            padding: "6px 12px",
+            borderRadius: 999,
+            backgroundColor: "#facc15",
+            color: "#854d0e",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          Total Man Tid:{" "}
+          <span style={{ fontFamily: "monospace" }}>
+            {formatTid(totalHandMin)}
+          </span>
+        </div>
+      </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 8,
-              marginBottom: 8,
-            }}
-          >
-            <div>
-              <label style={labelStyle}>Vecka</label>
-              <input
-                type="number"
-                min="1"
-                max="52"
-                value={filtreradVecka}
-                onChange={(e) => setFiltreradVecka(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <div>
+          <label style={labelStyle}>Vecka</label>
+          <input
+            type="number"
+            min="1"
+            max="52"
+            value={filtreradVecka}
+            onChange={(e) => setFiltreradVecka(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
 
-            <div>
-              <label style={labelStyle}>År</label>
-              <input
-                type="number"
-                min="2020"
-                max="2100"
-                value={filtreratÅr}
-                onChange={(e) => setFiltreratÅr(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-          </div>
+        <div>
+          <label style={labelStyle}>År</label>
+          <input
+            type="number"
+            min="2020"
+            max="2100"
+            value={filtreratÅr}
+            onChange={(e) => setFiltreratÅr(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
 
-          <button
-            onClick={() => {
-              const nu = getCurrentIsoWeekAndYear();
-              const aktuellVecka = Number(filtreradVecka) || nu.vecka;
-              const aktuelltÅr = Number(filtreratÅr) || nu.år;
+      <button
+        onClick={() => {
+          const nu = getCurrentIsoWeekAndYear();
+          const aktuellVecka = Number(filtreradVecka) || nu.vecka;
+          const aktuelltÅr = Number(filtreratÅr) || nu.år;
 
-              let prevVecka = aktuellVecka - 1;
-              let prevÅr = aktuelltÅr;
+          let prevVecka = aktuellVecka - 1;
+          let prevÅr = aktuelltÅr;
 
-              if (prevVecka < 1) {
-                prevVecka = 52;
-                prevÅr = aktuelltÅr - 1;
-              }
+          if (prevVecka < 1) {
+            prevVecka = 52;
+            prevÅr = aktuelltÅr - 1;
+          }
 
-              setFiltreradVecka(String(prevVecka));
-              setFiltreratÅr(String(prevÅr));
-            }}
-            style={{
-              ...secondaryButton,
-              marginTop: 4,
-              marginBottom: 4,
-            }}
-          >
-            Föregående vecka
-          </button>
+          setFiltreradVecka(String(prevVecka));
+          setFiltreratÅr(String(prevÅr));
+        }}
+        style={{
+          ...secondaryButton,
+          marginTop: 4,
+          marginBottom: 4,
+        }}
+      >
+        Föregående vecka
+      </button>
 
-          <button
-            onClick={() => {
-              const { vecka, år } = getCurrentIsoWeekAndYear();
-              setFiltreradVecka(String(vecka));
-              setFiltreratÅr(String(år));
-            }}
-            style={{
-              ...secondaryButton,
-              marginTop: 4,
-              marginBottom: 8,
-            }}
-          >
-            Denna vecka
-          </button>
+      <button
+        onClick={() => {
+          const { vecka, år } = getCurrentIsoWeekAndYear();
+          setFiltreradVecka(String(vecka));
+          setFiltreratÅr(String(år));
+        }}
+        style={{
+          ...secondaryButton,
+          marginTop: 4,
+          marginBottom: 8,
+        }}
+      >
+        Denna vecka
+      </button>
 
-          <label style={labelStyle}>Filtrera på metod</label>
+      <label style={labelStyle}>Filtrera på metod</label>
+      <select
+        value={filterMetod}
+        onChange={(e) => setFilterMetod(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="alla">Alla</option>
+        <option value="hand">Endast För hand</option>
+        <option value="maskin">Endast Maskin</option>
+      </select>
+
+      <button
+        style={{ ...secondaryButton, marginTop: 12 }}
+        onClick={hamtaRapporter}
+      >
+        Uppdatera översikt
+      </button>
+
+      {/* === ARBETSPASS-ÖVERSIKT === */}
+      <div style={{ marginTop: 16 }}>
+        <button
+          onClick={async () => {
+            setVisaPassOversikt(!visaPassOversikt);
+            if (!visaPassOversikt) {
+              await hamtaPassHistorik();
+            }
+          }}
+          style={{
+            ...secondaryButton,
+            backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
+            color: "#ffffff",
+          }}
+        >
+          {visaPassOversikt ? "🔼 Dölj arbetspass-översikt" : "📋 Arbetspass-översikt"}
+        </button>
+      </div>
+
+      {visaPassOversikt && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: "#f5f3ff",
+            border: "1px solid #c4b5fd",
+          }}
+        >
+          <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
+            📋 Arbetspass-översikt
+          </h3>
+
+          {/* Dropdown för att välja pass */}
+          <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
           <select
-            value={filterMetod}
-            onChange={(e) => setFilterMetod(e.target.value)}
-            style={selectStyle}
+            value={valtPassId}
+            onChange={(e) => {
+              setValtPassId(e.target.value);
+              hamtaPassDetaljer(e.target.value);
+            }}
+            style={{
+              ...selectStyle,
+              marginBottom: 16,
+              borderColor: "#c4b5fd",
+            }}
           >
-            <option value="alla">Alla</option>
-            <option value="hand">Endast För hand</option>
-            <option value="maskin">Endast Maskin</option>
+            <option value="">-- Välj ett arbetspass --</option>
+            
+            {/* Pågående pass */}
+            {passHistorik
+              .filter((p) => p.aktiv)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  🟢 Pågående: {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
+                  {new Date(p.start_tid).toLocaleString("sv-SE", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  )
+                </option>
+              ))}
+            
+            {/* Avslutade pass */}
+            {passHistorik
+              .filter((p) => !p.aktiv)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  📅 {new Date(p.start_tid).toLocaleDateString("sv-SE")} |{" "}
+                  {p.team_typ === "hand" ? "För hand" : "Maskin"}
+                  {p.sluttid && ` | ${formatSekTillLasbar(
+                    Math.floor((new Date(p.sluttid) - new Date(p.start_tid)) / 1000)
+                  )}`}
+                </option>
+              ))}
           </select>
 
-          <button
-            style={{ ...secondaryButton, marginTop: 12 }}
-            onClick={hamtaRapporter}
-          >
-            Uppdatera översikt
-          </button>
-
-{/* === ARBETSPASS-ÖVERSIKT === */}
-<div style={{ marginTop: 16 }}>
-  <button
-    onClick={async () => {
-      setVisaPassOversikt(!visaPassOversikt);
-      if (!visaPassOversikt) {
-        await hamtaPassHistorik();
-      }
-    }}
-    style={{
-      ...secondaryButton,
-      backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
-      color: "#ffffff",
-    }}
-  >
-    {visaPassOversikt ? "🔼 Dölj arbetspass-översikt" : "📋 Arbetspass-översikt"}
-  </button>
-</div>
-
-{visaPassOversikt && (
-  <div
-    style={{
-      marginTop: 16,
-      padding: 16,
-      borderRadius: 12,
-      backgroundColor: "#f5f3ff",
-      border: "1px solid #c4b5fd",
-    }}
-  >
-    <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
-      📋 Arbetspass-översikt
-    </h3>
-
-    {/* Dropdown för att välja pass */}
-    <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
-    <select
-      value={valtPassId}
-      onChange={(e) => {
-        setValtPassId(e.target.value);
-        hamtaPassDetaljer(e.target.value);
-      }}
-      style={{
-        ...selectStyle,
-        marginBottom: 16,
-        borderColor: "#c4b5fd",
-      }}
-    >
-      <option value="">-- Välj ett arbetspass --</option>
-      
-      {/* Pågående pass */}
-      {passHistorik
-        .filter((p) => p.aktiv)
-        .map((p) => (
-          <option key={p.id} value={p.id}>
-            🟢 Pågående: {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
-            {new Date(p.start_tid).toLocaleString("sv-SE", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            )
-          </option>
-        ))}
-      
-      {/* Avslutade pass */}
-      {passHistorik
-        .filter((p) => !p.aktiv)
-        .map((p) => (
-          <option key={p.id} value={p.id}>
-            📅 {new Date(p.start_tid).toLocaleDateString("sv-SE")} |{" "}
-            {p.team_typ === "hand" ? "För hand" : "Maskin"}
-            {p.sluttid && ` | ${formatSekTillLasbar(
-              Math.floor((new Date(p.sluttid) - new Date(p.start_tid)) / 1000)
-            )}`}
-          </option>
-        ))}
-    </select>
-
-    {laddaPassDetaljer && (
-      <p style={{ textAlign: "center", color: "#6b7280" }}>
-        Laddar passdetaljer...
-      </p>
-    )}
-
-    {/* Visa passdetaljer */}
-    {passDetaljer && !laddaPassDetaljer && (
-      <div>
-        {/* Sammanfattning */}
-        <div
-          style={{
-            padding: 12,
-            borderRadius: 8,
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-            📅 {new Date(passDetaljer.pass.start_tid).toLocaleDateString("sv-SE")} |{" "}
-            {passDetaljer.pass.team_typ === "hand" ? "För hand" : "Maskin"} |{" "}
-            {passDetaljer.sammanfattning.antalAdresser} adresser
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
-            <div>
-              🚗 Total körtid:{" "}
-              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTransportSek)}</strong>
-            </div>
-            <div style={{ color: "#6b7280" }}>
-              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTransportSek)})
-            </div>
-            
-            <div>
-              🔧 Total arbetstid:{" "}
-              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalArbeteSek)}</strong>
-            </div>
-            <div style={{ color: "#6b7280" }}>
-              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadArbeteSek)})
-            </div>
-            
-            <div style={{ fontWeight: 600, fontSize: 14 }}>
-              ⏱️ Total tid:{" "}
-              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTidSek)}</strong>
-            </div>
-            <div style={{ color: "#6b7280" }}>
-              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTotalSek)})
-            </div>
-          </div>
-
-          {/* Avvikelse-indikator */}
-          <div
-            style={{
-              marginTop: 12,
-              padding: "8px 12px",
-              borderRadius: 8,
-              backgroundColor:
-                passDetaljer.sammanfattning.avvikelseSek <= 0
-                  ? "#d1fae5"
-                  : passDetaljer.sammanfattning.avvikelseSek < 600
-                  ? "#fef3c7"
-                  : "#fee2e2",
-              color:
-                passDetaljer.sammanfattning.avvikelseSek <= 0
-                  ? "#065f46"
-                  : passDetaljer.sammanfattning.avvikelseSek < 600
-                  ? "#92400e"
-                  : "#991b1b",
-              fontWeight: 600,
-              fontSize: 14,
-              textAlign: "center",
-            }}
-          >
-            {passDetaljer.sammanfattning.avvikelseSek <= 0 ? (
-              <>✅ {formatSekTillLasbar(Math.abs(passDetaljer.sammanfattning.avvikelseSek))} FÖRE schema</>
-            ) : passDetaljer.sammanfattning.avvikelseSek < 600 ? (
-              <>⚠️ {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} efter schema</>
-            ) : (
-              <>🔴 {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} EFTER schema</>
-            )}
-          </div>
-        </div>
-
-        {/* Adresslista med detaljer */}
-        <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
-          Rutt-detaljer:
-        </h4>
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: 8,
-            border: "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
-        >
-          {passDetaljer.adresser.map((a, idx) => {
-            const arbetsSek = a.arbets_tid_sek || 0;
-            const transportSek = a.transport_tid_sek || 0;
-            const totalSek = arbetsSek + transportSek;
-            const uppskattadArbeteSek = a.uppskattad_arbete_sek || 600;
-            const uppskattadTransportSek = a.uppskattad_transport_sek || 0;
-            
-            const arbetsAvvikelse = arbetsSek - uppskattadArbeteSek;
-            const transportAvvikelse = transportSek - uppskattadTransportSek;
-
-            return (
-              <div key={a.id || idx}>
-                {/* Transport-separator (om inte första) */}
-                {idx > 0 && transportSek > 0 && (
-                  <div
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "#f3f4f6",
-                      borderTop: "1px dashed #d1d5db",
-                      borderBottom: "1px dashed #d1d5db",
-                      textAlign: "center",
-                      fontSize: 12,
-                      color: "#6b7280",
-                    }}
-                  >
-                    🚗 Körtid: {formatSekTillLasbar(transportSek)}
-                    {uppskattadTransportSek > 0 && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          color: transportAvvikelse <= 0 ? "#059669" : "#dc2626",
-                        }}
-                      >
-                        ({transportAvvikelse <= 0 ? "" : "+"}
-                        {Math.round(transportAvvikelse / 60)} min)
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Adress-rad */}
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    borderBottom: idx < passDetaljer.adresser.length - 1 ? "1px solid #f3f4f6" : "none",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        backgroundColor: "#7c3aed",
-                        color: "#ffffff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 700,
-                        fontSize: 12,
-                        marginRight: 10,
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
-                    <strong style={{ fontSize: 14 }}>{a.adresser?.namn || "Okänd adress"}</strong>
-                  </div>
-
-                  <div style={{ fontSize: 12, color: "#4b5563", marginLeft: 34 }}>
-                    <div>
-                      🔧 Arbetstid: {formatSekTillLasbar(arbetsSek)}
-                      {uppskattadArbeteSek > 0 && (
-                        <span
-                          style={{
-                            marginLeft: 6,
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            fontSize: 11,
-                            backgroundColor: arbetsAvvikelse <= 0 ? "#d1fae5" : "#fee2e2",
-                            color: arbetsAvvikelse <= 0 ? "#065f46" : "#991b1b",
-                          }}
-                        >
-                          {arbetsAvvikelse <= 0 ? "✅" : "⚠️"}{" "}
-                          {arbetsAvvikelse <= 0 ? "" : "+"}
-                          {Math.round(arbetsAvvikelse / 60)} min
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ marginTop: 4 }}>
-                      ⏱️ Total: {formatSekTillLasbar(totalSek)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {passDetaljer.adresser.length === 0 && (
-          <p style={{ textAlign: "center", color: "#6b7280", fontStyle: "italic" }}>
-            Ingen detaljerad logg finns för detta pass.
-            <br />
-            <span style={{ fontSize: 12 }}>
-              (Loggning aktiveras automatiskt för nya pass)
-            </span>
-          </p>
-        )}
-      </div>
-    )}
-
-    {!passDetaljer && !laddaPassDetaljer && valtPassId && (
-      <p style={{ textAlign: "center", color: "#6b7280" }}>
-        Kunde inte ladda passdetaljer.
-      </p>
-    )}
-  </div>
-)}
-      
-      
-          {visaOversikt && (
-            <VeckoOversikt
-              data={filtreradeRapporter}
-              onSkickaEmail={skickaVeckorapportEmail}
-              onExportCSV={exportVeckorapportCSV}
-              filtreradVecka={filtreradVecka}
-              filtreratÅr={filtreratÅr}
-              filterMetod={filterMetod}
-              onOpenManuell={openManuellPopup}
-              onToggleSkyddad={toggleSkyddadForAdress}
-              onOpenEdit={openEditPopupForAdress}
-            />
-          )}
-
-          {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
+          {laddaPassDetaljer && (
+            <p style={{ textAlign: "center", color: "#6b7280" }}>
+              Laddar passdetaljer...
             </p>
           )}
-        </section>
-      );
-    }
+
+          {/* Visa passdetaljer */}
+          {passDetaljer && !laddaPassDetaljer && (
+            <div>
+              {/* Sammanfattning */}
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  marginBottom: 16,
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+                  📅 {new Date(passDetaljer.pass.start_tid).toLocaleDateString("sv-SE")} |{" "}
+                  {passDetaljer.pass.team_typ === "hand" ? "För hand" : "Maskin"} |{" "}
+                  {passDetaljer.sammanfattning.antalAdresser} adresser
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
+                  <div>
+                    🚗 Total körtid:{" "}
+                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTransportSek)}</strong>
+                  </div>
+                  <div style={{ color: "#6b7280" }}>
+                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTransportSek)})
+                  </div>
+                  
+                  <div>
+                    🔧 Total arbetstid:{" "}
+                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalArbeteSek)}</strong>
+                  </div>
+                  <div style={{ color: "#6b7280" }}>
+                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadArbeteSek)})
+                  </div>
+                  
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>
+                    ⏱️ Total tid:{" "}
+                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTidSek)}</strong>
+                  </div>
+                  <div style={{ color: "#6b7280" }}>
+                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTotalSek)})
+                  </div>
+                </div>
+
+                {/* Avvikelse-indikator */}
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    backgroundColor:
+                      passDetaljer.sammanfattning.avvikelseSek <= 0
+                        ? "#d1fae5"
+                        : passDetaljer.sammanfattning.avvikelseSek < 600
+                        ? "#fef3c7"
+                        : "#fee2e2",
+                    color:
+                      passDetaljer.sammanfattning.avvikelseSek <= 0
+                        ? "#065f46"
+                        : passDetaljer.sammanfattning.avvikelseSek < 600
+                        ? "#92400e"
+                        : "#991b1b",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    textAlign: "center",
+                  }}
+                >
+                  {passDetaljer.sammanfattning.avvikelseSek <= 0 ? (
+                    <>✅ {formatSekTillLasbar(Math.abs(passDetaljer.sammanfattning.avvikelseSek))} FÖRE schema</>
+                  ) : passDetaljer.sammanfattning.avvikelseSek < 600 ? (
+                    <>⚠️ {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} efter schema</>
+                  ) : (
+                    <>🔴 {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} EFTER schema</>
+                  )}
+                </div>
+              </div>
+
+              {/* Adresslista med detaljer */}
+              <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
+                Rutt-detaljer:
+              </h4>
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 8,
+                  border: "1px solid #e5e7eb",
+                  overflow: "hidden",
+                }}
+              >
+                {passDetaljer.adresser.map((a, idx) => {
+                  const arbetsSek = a.arbets_tid_sek || 0;
+                  const transportSek = a.transport_tid_sek || 0;
+                  const totalSek = arbetsSek + transportSek;
+                  const uppskattadArbeteSek = a.uppskattad_arbete_sek || 600;
+                  const uppskattadTransportSek = a.uppskattad_transport_sek || 0;
+                  
+                  const arbetsAvvikelse = arbetsSek - uppskattadArbeteSek;
+                  const transportAvvikelse = transportSek - uppskattadTransportSek;
+
+                  return (
+                    <div key={a.id || idx}>
+                      {/* Transport-separator (om inte första) */}
+                      {idx > 0 && transportSek > 0 && (
+                        <div
+                          style={{
+                            padding: "6px 12px",
+                            backgroundColor: "#f3f4f6",
+                            borderTop: "1px dashed #d1d5db",
+                            borderBottom: "1px dashed #d1d5db",
+                            textAlign: "center",
+                            fontSize: 12,
+                            color: "#6b7280",
+                          }}
+                        >
+                          🚗 Körtid: {formatSekTillLasbar(transportSek)}
+                          {uppskattadTransportSek > 0 && (
+                            <span
+                              style={{
+                                marginLeft: 8,
+                                color: transportAvvikelse <= 0 ? "#059669" : "#dc2626",
+                              }}
+                            >
+                              ({transportAvvikelse <= 0 ? "" : "+"}
+                              {Math.round(transportAvvikelse / 60)} min)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Adress-rad */}
+                      <div
+                        style={{
+                          padding: "12px 16px",
+                          borderBottom: idx < passDetaljer.adresser.length - 1 ? "1px solid #f3f4f6" : "none",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+                          <div
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: "50%",
+                              backgroundColor: "#7c3aed",
+                              color: "#ffffff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              fontSize: 12,
+                              marginRight: 10,
+                            }}
+                          >
+                            {idx + 1}
+                          </div>
+                          <strong style={{ fontSize: 14 }}>{a.adresser?.namn || "Okänd adress"}</strong>
+                        </div>
+
+                        <div style={{ fontSize: 12, color: "#4b5563", marginLeft: 34 }}>
+                          <div>
+                            🔧 Arbetstid: {formatSekTillLasbar(arbetsSek)}
+                            {uppskattadArbeteSek > 0 && (
+                              <span
+                                style={{
+                                  marginLeft: 6,
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  fontSize: 11,
+                                  backgroundColor: arbetsAvvikelse <= 0 ? "#d1fae5" : "#fee2e2",
+                                  color: arbetsAvvikelse <= 0 ? "#065f46" : "#991b1b",
+                                }}
+                              >
+                                {arbetsAvvikelse <= 0 ? "✅" : "⚠️"}{" "}
+                                {arbetsAvvikelse <= 0 ? "" : "+"}
+                                {Math.round(arbetsAvvikelse / 60)} min
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ marginTop: 4 }}>
+                            ⏱️ Total: {formatSekTillLasbar(totalSek)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {passDetaljer.adresser.length === 0 && (
+                <p style={{ textAlign: "center", color: "#6b7280", fontStyle: "italic" }}>
+                  Ingen detaljerad logg finns för detta pass.
+                  <br />
+                  <span style={{ fontSize: 12 }}>
+                    (Loggning aktiveras automatiskt för nya pass)
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {!passDetaljer && !laddaPassDetaljer && valtPassId && (
+            <p style={{ textAlign: "center", color: "#6b7280" }}>
+              Kunde inte ladda passdetaljer.
+            </p>
+          )}
+        </div>
+      )}
+      
+      {visaOversikt && (
+        <VeckoOversikt
+          data={filtreradeRapporter}
+          onSkickaEmail={skickaVeckorapportEmail}
+          onExportCSV={exportVeckorapportCSV}
+          filtreradVecka={filtreradVecka}
+          filtreratÅr={filtreratÅr}
+          filterMetod={filterMetod}
+          onOpenManuell={openManuellPopup}
+          onToggleSkyddad={toggleSkyddadForAdress}
+          onOpenEdit={openEditPopupForAdress}
+        />
+      )}
+
+      {status && (
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: status.startsWith("✅")
+              ? "#16a34a"
+              : status.startsWith("❌")
+              ? "#dc2626"
+              : "#4b5563",
+            textAlign: "center",
+          }}
+        >
+          {status}
+        </p>
+      )}
+    </section>
+  );
+}
 
     if (activeTab === "radera") {
       return (
