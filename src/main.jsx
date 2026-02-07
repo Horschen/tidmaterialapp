@@ -4947,4 +4947,6 @@ return (
     </nav>
   </div>
 );
+}
+
 createRoot(document.getElementById("app")).render(<App />);
