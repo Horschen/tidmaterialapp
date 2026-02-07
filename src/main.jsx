@@ -1124,7 +1124,10 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
-
+// 🟡 Popup‑för val av pass‑typ (läggs här, utanför alla andra funktioner men inuti App)
+const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+  
  // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
   if (aktivtPass) {
@@ -1207,12 +1210,7 @@ async function stoppaPass() {
     setPaus(null);
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
- 
-  // 🟡 Popup-för val av pass-typ (läggs till här)
-  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
-  const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
-
-  
+   
   // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
   const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
