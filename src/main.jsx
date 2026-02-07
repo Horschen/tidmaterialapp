@@ -1076,10 +1076,6 @@ async function sparaManuellRapport() {
   }
     const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
   
-  // 🟡 Popup-för val av pass-typ (läggs till här)
-  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
-  const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
-
   // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
   try {
@@ -1128,8 +1124,8 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
-  
-// ======= Starta pass (öppnar val-popup) =======
+
+ // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
   if (aktivtPass) {
     showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -1211,7 +1207,12 @@ async function stoppaPass() {
     setPaus(null);
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
-
+ 
+  // 🟡 Popup-för val av pass-typ (läggs till här)
+  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+  const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+  }
+  
   // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
   const veckansRapporter = rapporter.filter((r) => {
     const d = new Date(r.datum);
