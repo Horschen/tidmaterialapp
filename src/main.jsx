@@ -3371,6 +3371,76 @@ function avbrytRadering() {
   const totalAdresser = ruttAdresser.length;
   const avklaradeAntal = ruttAdresser.filter((r) => r.avklarad).length;
 
+  // Beräkna uppskattad total tid för rutten
+  const uppskattadTotalMin = ruttAdresser.reduce((sum, r) => {
+    const adress = adresser.find((a) => a.id === r.adress_id);
+    return sum + (adress?.uppskattad_tid_min || 10);
+  }, 0);
+
+  // ======= Fasta rutter: Uppifrån-Ner / Nerifrån-Upp =======
+  async function aktiveraBostadsrutt(riktning) {
+    setRuttStatus(`Hämtar bostadsadresser (${riktning})...`);
+
+    try {
+      // Hämta endast bostäder, sorterade efter adresslista_sortering
+      const { data, error } = await supabase
+        .from("adresser")
+        .select("id, namn, lat, lng, adresslista_sortering, uppskattad_tid_min")
+        .eq("Bostad_Företag", "Bostad")
+        .eq("aktiv", true)
+        .order("adresslista_sortering", { 
+          ascending: riktning === "uppifrån-ner" 
+        });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        showPopup("👎 Inga bostadsadresser hittades.", "error", 3000);
+        setRuttStatus("❌ Inga bostäder i databasen.");
+        return;
+      }
+
+      // Rensa gammal aktiv rutt
+      await supabase.from("aktiv_rutt").delete().neq("id", 0);
+
+      // Spara den nya rutten
+      const ruttRader = data.map((a, idx) => ({
+        adress_id: a.id,
+        ordning: idx + 1,
+        avklarad: false,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("aktiv_rutt")
+        .insert(ruttRader);
+
+      if (insertError) throw insertError;
+
+      await laddaAktivRutt();
+
+      const riktningText = riktning === "uppifrån-ner" 
+        ? "Uppifrån → Ner" 
+        : "Nerifrån → Upp";
+      
+      // Beräkna uppskattad tid
+      const totalMin = data.reduce((sum, a) => sum + (a.uppskattad_tid_min || 10), 0);
+      const timmar = Math.floor(totalMin / 60);
+      const minuter = totalMin % 60;
+
+      showPopup(
+        `👍 ${riktningText}: ${data.length} bostäder\n⏱️ Ca ${timmar}h ${minuter}min`, 
+        "success", 
+        4000
+      );
+      setRuttStatus(`✅ Rutt aktiverad: ${riktningText} (${data.length} adresser)`);
+
+    } catch (err) {
+      console.error(err);
+      showPopup("👎 Fel vid aktivering av rutt.", "error", 3000);
+      setRuttStatus("❌ " + err.message);
+    }
+  }
+
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
@@ -3408,6 +3478,9 @@ function avbrytRadering() {
           }}
         >
           📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
+          <div style={{ fontSize: 12, fontWeight: 400, marginTop: 4 }}>
+            ⏱️ Uppskattad tid: {formatTid(uppskattadTotalMin)}
+          </div>
         </div>
       )}
 
@@ -3426,6 +3499,53 @@ function avbrytRadering() {
           🚗 Nästa stopp: {nastaAdress.adresser?.namn}
         </div>
       )}
+
+      {/* === FASTA RUTTER: BOSTÄDER === */}
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 12,
+          borderRadius: 12,
+          backgroundColor: "#f0fdf4",
+          border: "1px solid #86efac",
+        }}
+      >
+        <h3 style={{ fontSize: 15, marginTop: 0, marginBottom: 8, color: "#166534" }}>
+          🏠 Fasta bostadsrutter
+        </h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => aktiveraBostadsrutt("uppifrån-ner")}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#22c55e",
+              color: "#ffffff",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            ⬇️ Uppifrån-Ner
+          </button>
+          <button
+            onClick={() => aktiveraBostadsrutt("nerifrån-upp")}
+            style={{
+              flex: 1,
+              padding: "12px 16px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#ffffff",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            ⬆️ Nerifrån-Upp
+          </button>
+        </div>
+      </div>
 
       <button
         onClick={oppnaRuttPopup}
@@ -3500,8 +3620,8 @@ function avbrytRadering() {
       {ruttAdresser.length > 0 && (
         <button
           onClick={() => {
-            // Öppna hela rutten i Google Maps
             const coords = ruttAdresser
+              .filter((r) => r.adresser?.lat && r.adresser?.lng)
               .map((r) => `${r.adresser.lat},${r.adresser.lng}`)
               .join("/");
             const url = `https://www.google.com/maps/dir/${coords}`;
@@ -3542,6 +3662,8 @@ function avbrytRadering() {
           >
             {ruttAdresser.map((r, idx) => {
               const harGPS = r.adresser?.lat && r.adresser?.lng;
+              const adressData = adresser.find((a) => a.id === r.adress_id);
+              const uppskattadMin = adressData?.uppskattad_tid_min || 10;
               
               return (
                 <div
@@ -3594,8 +3716,11 @@ function avbrytRadering() {
                   </div>
                   <div style={{ flex: 1, fontSize: 14 }}>
                     <strong>{r.adresser?.namn}</strong>
+                    <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+                      ⏱️ ~{uppskattadMin} min
+                    </div>
                     {!harGPS && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: "#dc2626" }}>
+                      <span style={{ fontSize: 11, color: "#dc2626" }}>
                         (Ingen GPS)
                       </span>
                     )}
@@ -3634,7 +3759,7 @@ function avbrytRadering() {
             fontStyle: "italic",
           }}
         >
-          Ingen rutt vald. Tryck "Välj adresser & planera rutt" för att börja.
+          Ingen rutt vald. Använd snabbknapparna ovan eller tryck "Välj adresser & planera rutt".
         </p>
       )}
     </section>
