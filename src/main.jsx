@@ -4566,7 +4566,7 @@ if (activeTab === "info") {
       );
     }
     return null;
-  }
+  
 
   const popupStyle =
     popup && popup.type === "error"
