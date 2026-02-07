@@ -799,6 +799,7 @@ useEffect(() => {
         .from("tillstand_pass")
         .select("*")
         .eq("aktiv", true)
+        .eq("team_typ", team === "För hand" ? "hand" : "maskin")
         .order("start_tid", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -1132,11 +1133,11 @@ async function sparaManuellRapport() {
   
  // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
-  if (aktivtPass) {
-    showPopup("👎 Ett pass är redan igång.", "error", 3000);
-    setStatus("Ett pass är redan igång. Stoppa passet först.");
-    return;
-  }
+if (aktivtPass && aktivtPass.team_typ === (team === "För hand" ? "hand" : "maskin")) {
+  showPopup(`👎 Ett ${team}-pass är redan igång. Stoppa det först.`, "error", 3000);
+  setStatus(`Ett ${team}-pass är redan igång.`);
+  return;
+}
   // 🟢 visa vår popup för att välja metod
   setVisaMetodValPopup(true);
 }
