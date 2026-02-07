@@ -789,7 +789,6 @@ useEffect(() => {
 
 // ======= Vid app-start: kontrollera om aktiva pass finns =======
 useEffect(() => {
-  useEffect(() => {
   async function kollaAktivaPass() {
     try {
       const { data, error } = await supabase
