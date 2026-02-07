@@ -1221,6 +1221,38 @@ function stoppaPass() {
     return;
   }
 
+// ======= Start Paus =======
+function startPaus() {
+  if (!aktivtPass) {
+    showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
+    setStatus("Inget aktivt pass att pausa.");
+    return;
+  }
+  if (paus) {
+    showPopup("👎 Paus är redan igång.", "error", 3000);
+    setStatus("En paus är redan igång.");
+    return;
+  }
+  const nuIso = new Date().toISOString();
+  setPaus({ startTid: nuIso });
+  setStatus("⏸️ Paus startad.");
+}
+
+// ======= Stop Paus =======
+function stopPaus() {
+  if (!paus) {
+    showPopup("👎 Ingen paus är igång.", "error", 3000);
+    setStatus("Ingen paus att stoppa.");
+    return;
+  }
+  const nu = new Date();
+  const start = new Date(paus.startTid);
+  const diffSek = Math.max(Math.floor((nu - start) / 1000), 0);
+  setPausSekUnderIntervall((prev) => prev + diffSek);
+  setPaus(null);
+  setStatus("Paus stoppad (lagras till nästa rapport).");
+}
+  
   // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
   const sek = Math.max(
     0,
