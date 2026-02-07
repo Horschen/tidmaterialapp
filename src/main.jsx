@@ -6371,6 +6371,7 @@ return (
       }}
     >
       <button
+      <button
         onClick={sparaNyAdress}
         style={{
           flex: 1,
@@ -6383,8 +6384,9 @@ return (
         }}
       >
         Spara adress
+      </button>
       <button
-  onClick={() => setVisaNyAdressPopup(false)}
+        onClick={() => setVisaNyAdressPopup(false)}
   style={{
     flex: 1,
     padding: "10px 16px",
