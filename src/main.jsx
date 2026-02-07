@@ -5004,11 +5004,10 @@ return (
             Nej
           </button>
         </div>
-      </>
-   )}
+     </>
+    )}
   </div>
-)
-
+)}
     
     {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
     <nav
