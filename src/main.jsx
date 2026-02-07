@@ -1235,7 +1235,7 @@ function startPaus() {
   }
   const nuIso = new Date().toISOString();
   setPaus({ startTid: nuIso });
-  setStatus("⏸️ Paus startad.");
+  setStatus("⏸️ Paus startad.");
 }
 
 // ======= Stop Paus =======
