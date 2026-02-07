@@ -1077,6 +1077,10 @@ async function sparaManuellRapport() {
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
+   // 🟡 Popup-för val av pass-typ (läggs till här)
+  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+  const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+
   // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
   try {
@@ -1126,38 +1130,16 @@ async function sparaManuellRapport() {
   }
 }
   
-// ======= Starta pass (med val av metod) =======
+// ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
   if (aktivtPass) {
     showPopup("👎 Ett pass är redan igång.", "error", 3000);
     setStatus("Ett pass är redan igång. Stoppa passet först.");
     return;
   }
-
-  // 🟡 Steg 1: Fråga användaren vilken metod
-  const val = window.prompt(
-    'Vilken typ av pass vill du starta?\n\nSkriv "1" för För hand\nSkriv "2" för Maskin',
-    "1"
-  );
-
-  if (val === null) {
-    // Användaren avbröt
-    setStatus("Start av passet avbröts.");
-    return;
-  }
-
-  let metod, metodLabel;
-  if (val.trim() === "2") {
-    metod = "maskin";
-    metodLabel = "Maskin";
-  } else if (val.trim() === "1") {
-    metod = "hand";
-    metodLabel = "För hand";
-  } else {
-    showPopup("👎 Ogiltigt val. Ange 1 eller 2.", "error", 3000);
-    setStatus("Start av passet avbröts (fel val).");
-    return;
-  }
+  // 🟢 visa vår popup för att välja metod
+  setVisaMetodValPopup(true);
+}
 
   // 🟢 Sätt UI‑state direkt – med rätt teamtext
   setTeam(metodLabel);
