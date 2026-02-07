@@ -4108,7 +4108,7 @@ function avbrytRadering() {
   const totalDistansM = ruttKortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
   const totalDistansKm = (totalDistansM / 1000).toFixed(1);
 
-  / ======= Steg 1: Öppna popup för att välja startpunkt =======
+  // ======= Steg 1: Öppna popup för att välja startpunkt =======
 function initieraBostadsrutt(riktning) {
   setValdStartAdressId(""); // Nollställ valet
   setVisaStartPunktPopup(riktning);
