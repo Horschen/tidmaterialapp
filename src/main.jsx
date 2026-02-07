@@ -34,6 +34,10 @@ function getCurrentIsoWeekAndYear() {
 
 const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 
+// Startpunkt-popup för bostadsrutt
+const [visaStartPunktPopup, setVisaStartPunktPopup] = useState(null); // 'uppifrån-ner' eller 'nerifrån-upp'
+const [valdStartAdressId, setValdStartAdressId] = useState("");
+
 // ======= Hjälpfunktion: lösenord per år =======
 function getCurrentYearPassword() {
   const year = new Date().getFullYear();
@@ -4104,86 +4108,139 @@ function avbrytRadering() {
   const totalDistansM = ruttKortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
   const totalDistansKm = (totalDistansM / 1000).toFixed(1);
 
-  // ======= Fasta rutter: Uppifrån-Ner / Nerifrån-Upp =======
-  async function aktiveraBostadsrutt(riktning) {
+  / ======= Steg 1: Öppna popup för att välja startpunkt =======
+function initieraBostadsrutt(riktning) {
+  setValdStartAdressId(""); // Nollställ valet
+  setVisaStartPunktPopup(riktning);
+}
+
+// ======= Steg 2: Kör beräkningen efter att startpunkt valts =======
+async function korBostadsruttBerakning() {
+  const riktning = visaStartPunktPopup;
+  const startAdress = adresser.find((a) => String(a.id) === String(valdStartAdressId));
+
+  setVisaStartPunktPopup(null); // Stäng popup
+
+  try {
     setRuttStatus(`Hämtar bostadsadresser (${riktning})...`);
 
-    try {
-      // Hämta endast bostäder, sorterade efter adresslista_sortering
-      const { data, error } = await supabase
-        .from("adresser")
-        .select("id, namn, lat, lng, adresslista_sortering, uppskattad_tid_min")
-        .eq("Bostad_Företag", "Bostad")
-        .eq("aktiv", true)
-        .order("adresslista_sortering", { 
-          ascending: riktning === "uppifrån-ner" 
-        });
+    // 1. Hämta endast aktiva bostäder som INTE börjar med "Start"
+    const { data: bostader, error } = await supabase
+      .from("adresser")
+      .select("id, namn, lat, lng, adresslista_sortering, uppskattad_tid_min")
+      .eq("Bostad_Företag", "Bostad")
+      .eq("aktiv", true)
+      .not("namn", "ilike", "Start%")
+      .order("adresslista_sortering", {
+        ascending: riktning === "uppifrån-ner",
+      });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      if (!data || data.length === 0) {
-        showPopup("👎 Inga bostadsadresser hittades.", "error", 3000);
-        setRuttStatus("❌ Inga bostäder i databasen.");
-        return;
-      }
-
-      // Rensa gammal aktiv rutt
-      await supabase.from("aktiv_rutt").delete().neq("id", 0);
-
-      // Spara den nya rutten
-      const ruttRader = data.map((a, idx) => ({
-        adress_id: a.id,
-        ordning: idx + 1,
-        avklarad: false,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("aktiv_rutt")
-        .insert(ruttRader);
-
-      if (insertError) throw insertError;
-
-      await laddaAktivRutt();
-
-      // === Hämta körtider från Google Maps ===
-      setRuttStatus("Beräknar körtider via Google Maps...");
-      const kortider = await hamtaKortiderForRutt(data);
-      setRuttKortider(kortider);
-
-      const riktningText = riktning === "uppifrån-ner" 
-        ? "Uppifrån → Ner" 
-        : "Nerifrån → Upp";
-      
-      // Beräkna uppskattad arbetstid (från databasen)
-      const totalArbeteMin = data.reduce((sum, a) => sum + (a.uppskattad_tid_min || 10), 0);
-      
-      // Beräkna total körtid (från Google Maps)
-      const totalTransportSek = kortider.reduce((sum, k) => sum + (k.duration_sek || 0), 0);
-      const totalTransportMin = Math.round(totalTransportSek / 60);
-      
-      // Total tid
-      const totalMin = totalArbeteMin + totalTransportMin;
-      const timmar = Math.floor(totalMin / 60);
-      const minuter = totalMin % 60;
-
-      // Total körsträcka
-      const totalDistansM = kortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
-      const totalDistansKm = (totalDistansM / 1000).toFixed(1);
-
-      showPopup(
-        `👍 ${riktningText}: ${data.length} bostäder\n🚗 ${totalDistansKm} km körsträcka\n⏱️ Ca ${timmar}h ${minuter}min totalt`, 
-        "success", 
-        5000
-      );
-      setRuttStatus(`✅ Rutt aktiverad: ${riktningText}`);
-
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Fel vid aktivering av rutt.", "error", 3000);
-      setRuttStatus("❌ " + err.message);
+    if (!bostader || bostader.length === 0) {
+      showPopup("👎 Inga bostadsadresser hittades.", "error", 3000);
+      setRuttStatus("❌ Inga bostäder i databasen.");
+      return;
     }
-  }
 
+    let komplettLista = [];
+
+    // 2. Om startadress är vald, lägg den först
+    if (startAdress) {
+      console.log("📍 Startadress vald:", startAdress.namn);
+      komplettLista = [startAdress, ...bostader];
+    } else {
+      // 3. Ingen startadress vald - försök använda GPS
+      console.log("📍 Ingen startadress vald, försöker använda GPS...");
+
+      const gpsPosition = await new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          console.warn("⚠️ GPS ej tillgänglig");
+          resolve(null);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          (error) => {
+            console.warn("⚠️ GPS-fel:", error.message);
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      });
+
+      if (gpsPosition) {
+        console.log("✅ GPS-position hämtad:", gpsPosition);
+        setRuttStatus("Sorterar efter närmaste adress...");
+
+        // Sortera bostäder efter avstånd från GPS-position
+        const bostaderMedAvstand = bostader
+          .filter((b) => b.lat && b.lng)
+          .map((b) => ({
+            ...b,
+            avstand: Math.sqrt(
+              Math.pow(b.lat - gpsPosition.lat, 2) +
+                Math.pow(b.lng - gpsPosition.lng, 2)
+            ),
+          }))
+          .sort((a, b) => a.avstand - b.avstand);
+
+        // Lägg till bostäder utan GPS-koordinater sist
+        const bostaderUtanGPS = bostader.filter((b) => !b.lat || !b.lng);
+
+        komplettLista = [...bostaderMedAvstand, ...bostaderUtanGPS];
+
+        showPopup("📍 Rutt beräknad från din position", "success", 3000);
+      } else {
+        // Ingen GPS - använd ordningen som den är
+        console.warn("⚠️ Kunde inte hämta GPS, använder standardordning");
+        komplettLista = bostader;
+        showPopup("⚠️ GPS ej tillgänglig, använder standardordning", "warning", 3000);
+      }
+    }
+
+    // 4. Rensa gammal aktiv rutt
+    await supabase.from("aktiv_rutt").delete().neq("id", 0);
+
+    // 5. Spara den nya rutten
+    const ruttRader = komplettLista.map((a, idx) => ({
+      adress_id: a.id,
+      ordning: idx + 1,
+      avklarad: false,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("aktiv_rutt")
+      .insert(ruttRader);
+
+    if (insertError) throw insertError;
+
+    await laddaAktivRutt();
+
+    // 6. Hämta körtider via Google Maps
+    setRuttStatus("Beräknar körtider via Google Maps...");
+    const kortider = await hamtaKortiderForRutt(komplettLista);
+    setRuttKortider(kortider);
+
+    // 7. Visa bekräftelse
+    const riktningText = riktning === "uppifrån-ner" ? "Uppifrån → Ner" : "Nerifrån → Upp";
+    const startText = startAdress ? `Start: ${startAdress.namn}` : "Start: Din position";
+
+    showPopup(`👍 ${riktningText}: ${komplettLista.length} adresser`, "success", 4000);
+    setRuttStatus(`✅ ${startText} + ${bostader.length} bostäder`);
+
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid aktivering av rutt.", "error", 3000);
+    setRuttStatus("❌ " + err.message);
+  }
+}
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
@@ -4255,52 +4312,51 @@ function avbrytRadering() {
       )}
 
       {/* === FASTA RUTTER: BOSTÄDER === */}
-      <div
-        style={{
-          marginBottom: 16,
-          padding: 12,
-          borderRadius: 12,
-          backgroundColor: "#f0fdf4",
-          border: "1px solid #86efac",
-        }}
-      >
-        <h3 style={{ fontSize: 15, marginTop: 0, marginBottom: 8, color: "#166534" }}>
-          🏠 Fasta bostadsrutter
-        </h3>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => aktiveraBostadsrutt("uppifrån-ner")}
-            style={{
-              flex: 1,
-              padding: "12px 8px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#22c55e",
-              color: "#ffffff",
-              fontWeight: 600,
-              fontSize: 13,
-            }}
-          >
-            ⬇️ Uppifrån-Ner Bostad
-          </button>
-          <button
-            onClick={() => aktiveraBostadsrutt("nerifrån-upp")}
-            style={{
-              flex: 1,
-              padding: "12px 8px",
-              borderRadius: 999,
-              border: "none",
-              backgroundColor: "#16a34a",
-              color: "#ffffff",
-              fontWeight: 600,
-              fontSize: 13,
-            }}
-          >
-            ⬆️ Nerifrån-Upp Bostad
-          </button>
-        </div>
-      </div>
-
+<div
+  style={{
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#f0fdf4",
+    border: "1px solid #86efac",
+  }}
+>
+  <h3 style={{ fontSize: 15, marginTop: 0, marginBottom: 8, color: "#166534" }}>
+    🏠 Fasta bostadsrutter
+  </h3>
+  <div style={{ display: "flex", gap: 8 }}>
+    <button
+      onClick={() => initieraBostadsrutt("uppifrån-ner")}
+      style={{
+        flex: 1,
+        padding: "12px 8px",
+        borderRadius: 999,
+        border: "none",
+        backgroundColor: "#22c55e",
+        color: "#ffffff",
+        fontWeight: 600,
+        fontSize: 13,
+      }}
+    >
+      ⬇️ Uppifrån-Ner Bostad
+    </button>
+    <button
+      onClick={() => initieraBostadsrutt("nerifrån-upp")}
+      style={{
+        flex: 1,
+        padding: "12px 8px",
+        borderRadius: 999,
+        border: "none",
+        backgroundColor: "#16a34a",
+        color: "#ffffff",
+        fontWeight: 600,
+        fontSize: 13,
+      }}
+    >
+      ⬆️ Nerifrån-Upp Bostad
+    </button>
+  </div>
+</div>
       <button
         onClick={oppnaRuttPopup}
         style={{
@@ -6413,7 +6469,104 @@ return (
     </div>
   </div>
 )}
-      
+
+{/* ===== POPUP: VÄLJ STARTPUNKT FÖR BOSTADSRUTT ===== */}
+{visaStartPunktPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 300,
+      backgroundColor: "#ffffff",
+      border: "2px solid #22c55e",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 380,
+      padding: 24,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#166534", textAlign: "center" }}>
+      📍 Välj Startpunkt
+    </h3>
+    <p style={{ fontSize: 14, color: "#4b5563", textAlign: "center", marginBottom: 16 }}>
+      Var börjar du rutten?<br />
+      <strong style={{ color: "#166534" }}>
+        {visaStartPunktPopup === "uppifrån-ner" ? "⬇️ Uppifrån → Ner" : "⬆️ Nerifrån → Upp"}
+      </strong>
+    </p>
+
+    <label style={{ fontSize: 13, fontWeight: 500, display: "block", marginBottom: 4 }}>
+      Startadress:
+    </label>
+    <select
+      value={valdStartAdressId}
+      onChange={(e) => setValdStartAdressId(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "12px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        marginBottom: 8,
+        fontSize: 15,
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option value="">📍 Använd min GPS-position</option>
+      {/* Visa endast adresser som börjar med "Start" */}
+      {adresser
+        .filter((a) => a.aktiv !== false && a.namn.toLowerCase().startsWith("start"))
+        .sort((a, b) => a.namn.localeCompare(b.namn))
+        .map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.namn}
+          </option>
+        ))}
+    </select>
+
+    <p style={{ fontSize: 12, color: "#6b7280", marginTop: 0, marginBottom: 16 }}>
+      {valdStartAdressId
+        ? "✅ Startadressen räknas med i rutten och arbetstiden."
+        : "📍 Rutten beräknas från din nuvarande position."}
+    </p>
+
+    <div style={{ display: "flex", gap: 8 }}>
+      <button
+        onClick={korBostadsruttBerakning}
+        style={{
+          flex: 1,
+          padding: "12px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+          fontSize: 15,
+        }}
+      >
+        🚗 Starta Rutt
+      </button>
+      <button
+        onClick={() => setVisaStartPunktPopup(null)}
+        style={{
+          flex: 1,
+          padding: "12px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#fbbf24",
+          color: "#78350f",
+          fontWeight: 600,
+          fontSize: 15,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
       
       {renderContent()}
     </div>
