@@ -2769,8 +2769,9 @@ function avbrytRadering() {
   onChange={(e) => setValda(e.target.value)}
   style={selectStyle}
 >
-  <option value="">-- Välj adress --</option>
+  <option value="">-- Välj adress --</option>
   {[...adresser]
+    .filter((a) => a.aktiv !== false)  // ← LÄGG TILL DENNA RAD
     .sort(
       (a, b) =>
         (Number(a.adresslista_sortering) || Number(a.id)) -
@@ -5547,12 +5548,14 @@ return (
     backgroundColor: "#f9fafb",
   }}
 >
-  <option value="">-- Välj adress --</option>
-  {sortAdresser(adresser).map((a) => (
-    <option key={a.id} value={a.id}>
-      {a.namn}
-    </option>
-  ))}
+  <option value="">-- Välj adress --</option>
+  {sortAdresser(adresser)
+    .filter((a) => a.aktiv !== false)  // ← LÄGG TILL DENNA RAD
+    .map((a) => (
+      <option key={a.id} value={a.id}>
+        {a.namn}
+      </option>
+    ))}
 </select>
  
     <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
