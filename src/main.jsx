@@ -1192,79 +1192,44 @@ async function startaPass() {
   const metod = team === "För hand" ? "hand" : "maskin";
 
   try {
-    // 2️⃣ Kolla om något pass är aktivt – separat för hand och maskin
-const { data, error } = await supabase
-  .from("tillstand_pass")
-  .select("*")
-  .eq("aktiv", true)
-  .order("start_tid", { ascending: false });
-
-if (error) throw error;
-
-if (data && data.length > 0) {
-  for (const pass of data) {
-    const label = pass.team_typ === "hand" ? "För hand" : "Maskin";
-    if (
-      window.confirm(
-        `Ett ${label}-pass är aktivt sedan ${formatDatumTid(pass.start_tid)}.\nVill du återuppta det?`
-      )
-    ) {
-      const aktivt = {
-        id: pass.id,
-        startTid: pass.start_tid,
-        metod: pass.team_typ,
-        team_typ: pass.team_typ,
-      };
-      setAktivtPass(aktivt);
-      localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-      setStatus(`✅ Återupptog ${label}-pass från databasen.`);
-      break; // återuppta första valda passet
-    } else {
-      await supabase.from("tillstand_pass")
-        .update({ aktiv: false })
-        .eq("id", pass.id);
-      setStatus(`🛑 ${label}-pass stängdes.`);
-    }
-  }
-}
-
-// ======= Stoppa pass (beständigt via Supabase) =======
-async function stoppaPass() {
-  if (!aktivtPass) {
-    showPopup("👎 Inget aktivt pass.", "error", 3000);
-    setStatus("Inget aktivt pass att stoppa.");
+    // ======= Starta pass (uppdaterad för dubbla team) =======
+async function startaPass() {
+  if (aktivtPass && aktivtPass.team_typ === (team === "För hand" ? "hand" : "maskin")) {
+    showPopup("👎 Ett pass av denna typ är redan igång.", "error", 3000);
+    setStatus("Det finns redan ett aktivt pass för denna arbetstyp.");
     return;
   }
 
-  const sek = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
-  );
+  const metod = team === "För hand" ? "hand" : "maskin";
 
   try {
-    // 🔹 Markera som avslutat i databasen
-    const { error } = await supabase
+    // 🔹 Skapa nytt pass i databasen (du kan behålla din logik här eller utöka senare)
+    const { data, error } = await supabase
       .from("tillstand_pass")
-      .update({
-        aktiv: false,
-        sluttid: new Date().toISOString(),
-      })
-      .eq("id", aktivtPass.id);
+      .insert([{ team_typ: metod, start_tid: new Date().toISOString(), aktiv: true }])
+      .select()
+      .single();
 
     if (error) throw error;
 
-    // 🔹 Rensa lokalt
-    setAktivtPass(null);
-    localStorage.removeItem("snöjour_aktivt_pass");
+    const nyttPass = {
+      id: data.id,
+      startTid: data.start_tid,
+      metod,
+      team_typ: metod,
+    };
+    setAktivtPass(nyttPass);
+    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-
-    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
-    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 3000);
+    setStatus("⏱️ Pass startat.");
+    showPopup("✅ Pass startat – fortsätter även om appen stängs.", "success", 3000);
   } catch (err) {
     console.error(err);
-    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+    showPopup("👎 Fel vid start av pass.", "error", 3000);
+    setStatus("❌ Fel vid start av pass: " + err.message);
   }
 }
   
