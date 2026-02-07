@@ -4275,9 +4275,9 @@ return (
       )}
 
       {/* övriga popup-komponenter */}
-      {visaEditPopup && (/* ...hela editfönstret... */)}
-      {visaRuttPopup && (/* ...popup för rutt... */)}
-      {visaManuellPopup && (/* ...popup för manuell registrering... */)}
+      // {visaEditPopup && (/* ...hela editfönstret... */)}
+      // {visaRuttPopup && (/* ...popup för rutt... */)}
+      // {visaManuellPopup && (/* ...popup för manuell registrering... */)}
 
       {renderContent()}
     </div>
