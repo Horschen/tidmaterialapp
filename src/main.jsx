@@ -1181,37 +1181,33 @@ async function sparaManuellRapport() {
   }
 }
   
-// ======= Starta pass (uppdaterad för dubbla team) =======
+// ======= Starta pass (beständigt via Supabase) =======
 async function startaPass() {
-  if (aktivtPass && aktivtPass.team_typ === (team === "För hand" ? "hand" : "maskin")) {
-    showPopup("👎 Ett pass av denna typ är redan igång.", "error", 3000);
-    setStatus("Det finns redan ett aktivt pass för denna arbetstyp.");
+  if (aktivtPass) {
+    showPopup("👎 Ett pass är redan igång.", "error", 3000);
+    setStatus("Ett pass är redan igång. Stoppa passet först.");
     return;
   }
 
   const metod = team === "För hand" ? "hand" : "maskin";
 
   try {
-    // ======= Starta pass (uppdaterad för dubbla team) =======
-async function startaPass() {
-  if (aktivtPass && aktivtPass.team_typ === (team === "För hand" ? "hand" : "maskin")) {
-    showPopup("👎 Ett pass av denna typ är redan igång.", "error", 3000);
-    setStatus("Det finns redan ett aktivt pass för denna arbetstyp.");
-    return;
-  }
-
-  const metod = team === "För hand" ? "hand" : "maskin";
-
-  try {
-    // 🔹 Skapa nytt pass i databasen (du kan behålla din logik här eller utöka senare)
+    // 🔹 Skapa nytt pass i databasen
     const { data, error } = await supabase
       .from("tillstand_pass")
-      .insert([{ team_typ: metod, start_tid: new Date().toISOString(), aktiv: true }])
+      .insert([
+        {
+          team_typ: metod,
+          start_tid: new Date().toISOString(),
+          aktiv: true,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
 
+    // 🔹 Spara lokalt
     const nyttPass = {
       id: data.id,
       startTid: data.start_tid,
@@ -1224,12 +1220,55 @@ async function startaPass() {
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat.");
-    showPopup("✅ Pass startat – fortsätter även om appen stängs.", "success", 3000);
+    setStatus("⏱️ Pass startat och sparat i molnet.");
+    showPopup(
+      "✅ Pass startat – fortsätter även om appen stängs.",
+      "success",
+      3000
+    );
   } catch (err) {
     console.error(err);
-    showPopup("👎 Fel vid start av pass.", "error", 3000);
-    setStatus("❌ Fel vid start av pass: " + err.message);
+    showPopup("👎 Kunde inte starta passet.", "error", 3000);
+  }
+}
+
+// ======= Stoppa pass (beständigt via Supabase) =======
+async function stoppaPass() {
+  if (!aktivtPass) {
+    showPopup("👎 Inget aktivt pass.", "error", 3000);
+    setStatus("Inget aktivt pass att stoppa.");
+    return;
+  }
+
+  const sek = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
+  );
+
+  try {
+    // 🔹 Markera som avslutat i databasen
+    const { error } = await supabase
+      .from("tillstand_pass")
+      .update({
+        aktiv: false,
+        sluttid: new Date().toISOString(),
+      })
+      .eq("id", aktivtPass.id);
+
+    if (error) throw error;
+
+    // 🔹 Rensa lokalt
+    setAktivtPass(null);
+    localStorage.removeItem("snöjour_aktivt_pass");
+    setSenasteRapportTid(null);
+    setPaus(null);
+    setPausSekUnderIntervall(0);
+
+    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
+    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 3000);
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
   }
 }
   
@@ -2818,142 +2857,145 @@ function avbrytRadering() {
             </div>
           )}
 
-{/* === Hantera PDF/bild‑karta för vald adress === */}
-{kartaAdressId && (
-  <div style={{ marginTop: 24 }}>
-    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-      PDF‑ eller bildkarta för vald adress
-    </h4>
+          {/* === Hantera PDF/bild‑karta för vald adress === */}
+          {kartaAdressId && (
+            <div style={{ marginTop: 24 }}>
+              <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                PDF‑ eller bildkarta för vald adress
+              </h4>
 
-    {/* Uppladdningsknapp */}
-    <input
-      type="file"
-      accept="application/pdf,image/*"
-      onChange={async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+              {/* Uppladdningsknapp */}
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={async (e) => {
+                  const file = e.target.files && e.target.files[0];
+                  if (!file) return;
 
-        try {
-          setStatus(`📤 Laddar upp "${file.name}" …`);
+                  try {
+                    setStatus(`📤 Laddar upp "${file.name}" …`);
 
-          const ext = file.name.split(".").pop();
-          const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
-          const path = `maps/${safeName}`;
+                    const ext = file.name.split(".").pop();
+                    const safeName = `${kartaAdressId}_${Date.now()}.${ext}`;
+                    const path = `maps/${safeName}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from("adresskartor")
-            .upload(path, file, { upsert: true });
-          if (uploadError) throw uploadError;
-
-          const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
-
-          const { error: updateError } = await supabase
-            .from("adresser")
-            .update({ file_url: publicUrl })
-            .eq("id", kartaAdressId);
-          if (updateError) throw updateError;
-
-          showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
-          setStatus("✅ Kartan uppladdad!");
-          await laddaAdresser();
-        } catch (err) {
-          console.error(err);
-          showPopup("👎 Fel vid uppladdning.", "error", 3000);
-          setStatus("❌ Fel: " + (err.message || "Okänt fel"));
-        } finally {
-          // se till att input fältet nollställs oavsett
-          e.target.value = "";
-        }
-      }}
-      style={{ marginTop: 6 }}
-    />
-
-    {/* Förhandsvisning + Radera‑knapp för just denna adress */}
-    {adresser
-      .filter(
-        (a) =>
-          (a.id === Number(kartaAdressId) ||
-            String(a.id) === String(kartaAdressId)) &&
-          a.file_url
-      )
-      .map((a) => (
-        <div key={a.id} style={{ marginTop: 20 }}>
-          <h4 style={{ fontSize: 15, marginBottom: 6 }}>Förhandsgranskning</h4>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ fontSize: 13, color: "#4b5563" }}>
-              {a.file_url.split("/").pop()}
-            </span>
-            <button
-              onClick={async () => {
-                try {
-                  const parts = a.file_url.split("/adresskartor/");
-                  const relativePath = parts[1];
-
-                  if (relativePath) {
-                    const { error: removeError } = await supabase.storage
+                    const { error: uploadError } = await supabase.storage
                       .from("adresskartor")
-                      .remove([relativePath]);
-                    if (removeError) throw removeError;
+                      .upload(path, file, { upsert: true });
+                    if (uploadError) throw uploadError;
+
+                    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/adresskartor/${path}`;
+
+                    const { error: updateError } = await supabase
+                      .from("adresser")
+                      .update({ file_url: publicUrl })
+                      .eq("id", kartaAdressId);
+                    if (updateError) throw updateError;
+
+                    showPopup("👍 Fil uppladdad och kopplad!", "success", 3000);
+                    setStatus("✅ Kartan uppladdad!");
+
+                    await laddaAdresser();
+                  } catch (err) {
+                    console.error(err);
+                    showPopup("👎 Fel vid uppladdning.", "error", 3000);
+                    setStatus("❌ Fel: " + (err.message || "Okänt fel"));
+                  } finally {
+                    e.target.value = "";
                   }
+                }}
+                style={{ marginTop: 6 }}
+              />
 
-                  const { error: dbError } = await supabase
-                    .from("adresser")
-                    .update({ file_url: null })
-                    .eq("id", a.id);
-                  if (dbError) throw dbError;
+              {/* Förhandsvisning + Radera‑knapp för just denna adress */}
+              {adresser
+                .filter(
+                  (a) =>
+                    (a.id === Number(kartaAdressId) ||
+                      String(a.id) === String(kartaAdressId)) &&
+                    a.file_url
+                )
+                .map((a) => (
+                  <div key={a.id} style={{ marginTop: 20 }}>
+                    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                      Förhandsgranskning
+                    </h4>
 
-                  showPopup("🗑️ Fil raderad.", "success", 3000);
-                  await laddaAdresser();
-                } catch (err) {
-                  console.error(err);
-                  showPopup("👎 Fel vid radering.", "error", 3000);
-                }
-              }}
-              style={{
-                padding: "4px 10px",
-                border: "none",
-                borderRadius: 6,
-                backgroundColor: "#dc2626",
-                color: "#fff",
-                fontSize: 12,
-                cursor: "pointer",
-              }}
-            >
-              Radera fil
-            </button>
-          </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "#4b5563" }}>
+                        {a.file_url.split("/").pop()}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const parts = a.file_url.split("/adresskartor/");
+                            const relativePath = parts[1];
 
-          {a.file_url.toLowerCase().endsWith(".pdf") ? (
-            <iframe
-              src={`${a.file_url}#view=FitH`}
-              title="Karta PDF"
-              style={{
-                width: "100%",
-                height: "70vh",
-                border: "1px solid #d1d5db",
-                borderRadius: 8,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                maxHeight: "70vh",
-                overflow: "auto",
-                border: "1px solid #d1d5db",
-                borderRadius: 8,
-              }}
-            >
-              <img
-                src={a.file_url}
+                            if (relativePath) {
+                              const { error: removeError } = await supabase
+                                .storage
+                                .from("adresskartor")
+                                .remove([relativePath]);
+                              if (removeError) throw removeError;
+                            }
+
+                            const { error: dbError } = await supabase
+                              .from("adresser")
+                              .update({ file_url: null })
+                              .eq("id", a.id);
+                            if (dbError) throw dbError;
+
+                            showPopup("🗑️ Fil raderad.", "success", 3000);
+                            await laddaAdresser();
+                          } catch (err) {
+                            console.error(err);
+                            showPopup("👎 Fel vid radering.", "error", 3000);
+                          }
+                        }}
+                        style={{
+                          padding: "4px 10px",
+                          border: "none",
+                          borderRadius: 6,
+                          backgroundColor: "#dc2626",
+                          color: "#fff",
+                          fontSize: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Radera fil
+                      </button>
+                    </div>
+
+                    {a.file_url.toLowerCase().endsWith(".pdf") ? (
+                      <iframe
+                        src={`${a.file_url}#view=FitH`}
+                        title="Karta PDF"
+                        style={{
+                          width: "100%",
+                          height: "70vh",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          maxHeight: "70vh",
+                          overflow: "auto",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <img
+                          src={a.file_url}
                           alt="Karta"
                           style={{
                             width: "100%",
