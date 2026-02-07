@@ -4186,7 +4186,7 @@ return (
         </button>
       </header>
 
-      {/* popupfönster, radera, edit, rutt, manuell registrering m.m. */}
+      {/* popup – visas mitt på skärmen */}
       {popup && (
         <div
           style={{
@@ -4211,6 +4211,7 @@ return (
         </div>
       )}
 
+      {/* bekräfta-radering */}
       {deleteConfirm && (
         <div
           style={{
@@ -4274,15 +4275,16 @@ return (
         </div>
       )}
 
-      {/* övriga popup-komponenter */}
-      // {visaEditPopup && (/* ...hela editfönstret... */)}
-      // {visaRuttPopup && (/* ...popup för rutt... */)}
-      // {visaManuellPopup && (/* ...popup för manuell registrering... */)}
+      {/* popup-fönster för redigering / rutt / manuell registrering */}
+      {visaEditPopup && <></>}
+      {visaRuttPopup && <></>}
+      {visaManuellPopup && <></>}
 
+      {/* huvudinnehåll från vald flik */}
       {renderContent()}
     </div>
 
-    {/* Navigering längst ned */}
+    {/* fast navigering längst ned */}
     <nav
       style={{
         position: "fixed",
@@ -4298,7 +4300,7 @@ return (
         boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
       }}
     >
-      {/* Rad 1 */}
+      {/* rad 1 */}
       <div
         style={{
           display: "flex",
@@ -4306,21 +4308,35 @@ return (
           marginBottom: 6,
         }}
       >
-        <button onClick={() => setActiveTab("info")} style={{ flex: 1 }}>Info</button>
-        <button onClick={() => setActiveTab("startstop")} style={{ flex: 1 }}>Start/Stop</button>
-        <button onClick={() => setActiveTab("registrera")} style={{ flex: 1 }}>Registrera</button>
+        <button onClick={() => setActiveTab("info")} style={{ flex: 1 }}>
+          Info
+        </button>
+        <button onClick={() => setActiveTab("startstop")} style={{ flex: 1 }}>
+          Start/Stop
+        </button>
+        <button onClick={() => setActiveTab("registrera")} style={{ flex: 1 }}>
+          Registrera
+        </button>
       </div>
 
-      {/* Rad 2 */}
+      {/* rad 2 */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={() => setActiveTab("rutt")} style={{ flex: 1 }}>Rutt</button>
-        <button onClick={() => setActiveTab("karta")} style={{ flex: 1 }}>Karta</button>
-        <button onClick={() => setActiveTab("rapport")} style={{ flex: 1 }}>Veckorapport</button>
-        <button onClick={openRaderaTab} style={{ flex: 1 }}>Radera</button>
+        <button onClick={() => setActiveTab("rutt")} style={{ flex: 1 }}>
+          Rutt
+        </button>
+        <button onClick={() => setActiveTab("karta")} style={{ flex: 1 }}>
+          Karta
+        </button>
+        <button onClick={() => setActiveTab("rapport")} style={{ flex: 1 }}>
+          Veckorapport
+        </button>
+        <button onClick={openRaderaTab} style={{ flex: 1 }}>
+          Radera
+        </button>
       </div>
     </nav>
   </div>
 );
-}  // ← den här avslutande klammern hade saknats
+} // avslutar function App
 
 createRoot(document.getElementById("app")).render(<App />);
