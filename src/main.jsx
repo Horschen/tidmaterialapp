@@ -4693,6 +4693,128 @@ return (
     </div>
   </div>
 )}
+
+      {visaMetodValPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 360,
+      padding: 20,
+      zIndex: 999,
+      textAlign: "center",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+      Starta nytt pass
+    </h3>
+    <p style={{ fontSize: 14, marginBottom: 12 }}>
+      Välj vilket typ av pass du vill starta:
+    </p>
+
+    <select
+      value={valdMetodTemp}
+      onChange={(e) => setValdMetodTemp(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        fontSize: 16,
+        marginBottom: 16,
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option value="hand">För hand</option>
+      <option value="maskin">Maskin</option>
+    </select>
+
+    <div style={{ display: "flex", gap: 8 }}>
+      <button
+        onClick={async () => {
+          const metod = valdMetodTemp;
+          const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
+
+          setVisaMetodValPopup(false);
+          setTeam(metodLabel);
+
+          try {
+            const { data, error } = await supabase
+              .from("tillstand_pass")
+              .insert([
+                {
+                  team_typ: metod,
+                  start_tid: new Date().toISOString(),
+                  aktiv: true,
+                },
+              ])
+              .select()
+              .single();
+
+            if (error) throw error;
+
+            const nyttPass = {
+              id: data.id,
+              startTid: data.start_tid,
+              metod,
+              team_typ: metod,
+            };
+            setAktivtPass(nyttPass);
+            localStorage.setItem(
+              "snöjour_aktivt_pass",
+              JSON.stringify(nyttPass)
+            );
+
+            setSenasteRapportTid(null);
+            setPaus(null);
+            setPausSekUnderIntervall(0);
+
+            setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
+            showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
+          } catch (err) {
+            console.error(err);
+            showPopup("👎 Kunde inte starta passet.", "error", 3000);
+            setStatus("❌ Fel vid start av pass: " + err.message);
+          }
+        }}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+        }}
+      >
+        Starta
+      </button>
+
+      <button
+        onClick={() => setVisaMetodValPopup(false)}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#111827",
+          fontWeight: 500,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
       
       {renderContent()}
     </div>
