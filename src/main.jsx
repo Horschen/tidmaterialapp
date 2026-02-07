@@ -34,10 +34,6 @@ function getCurrentIsoWeekAndYear() {
 
 const { vecka: AKTUELL_VECKA, år: AKTUELLT_ÅR } = getCurrentIsoWeekAndYear();
 
-// Startpunkt-popup för bostadsrutt
-const [visaStartPunktPopup, setVisaStartPunktPopup] = useState(null); // 'uppifrån-ner' eller 'nerifrån-upp'
-const [valdStartAdressId, setValdStartAdressId] = useState("");
-
 // ======= Hjälpfunktion: lösenord per år =======
 function getCurrentYearPassword() {
   const year = new Date().getFullYear();
@@ -372,8 +368,7 @@ function VeckoOversikt({
     </div>
   );
 } // ✅ Stänger VeckoOversikt innan App börjar
-
-      
+    
 // ======= Huvudappen =======
 function App() {
   const [activeTab, setActiveTab] = useState("registrera");
@@ -590,6 +585,10 @@ const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Ma
 const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
 const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
 const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
+
+  // Startpunkt-popup för bostadsrutt
+const [visaStartPunktPopup, setVisaStartPunktPopup] = useState(null); // 'uppifrån-ner' eller 'nerifrån-upp'
+const [valdStartAdressId, setValdStartAdressId] = useState("");
 
   // ======= Arbetspass-översikt state =======
 const [visaPassOversikt, setVisaPassOversikt] = useState(false);
