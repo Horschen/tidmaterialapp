@@ -5008,8 +5008,6 @@ return (
         </button>
       </div>
     </nav>
-  </div>
+ </div>
 );
-}
-
 createRoot(document.getElementById("app")).render(<App />);
