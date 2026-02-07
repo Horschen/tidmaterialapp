@@ -777,61 +777,131 @@ useEffect(() => {
   laddaAdresser();
 }, []);
 
-// ======= Vid app-start: kontrollera aktivt pass =======
+// ======= Vid app-start: kontrollera om aktiva pass finns =======
 useEffect(() => {
-  async function kollaAktivtPass() {
+  async function kollaAktivaPass() {
     try {
-      // 1️⃣ Försök läsa från localStorage
+      // 1️⃣  Kolla localStorage först
       const sparat = localStorage.getItem("snöjour_aktivt_pass");
       if (sparat) {
         const data = JSON.parse(sparat);
-        if (window.confirm(`Ett ${data.team_typ}-pass startades ${formatDatumTid(data.startTid)}. Vill du återuppta det?`)) {
+        const label = data.team_typ === "maskin" ? "Maskin" : "För hand";
+        if (
+          window.confirm(
+            `Ett ${label}-pass startades ${formatDatumTid(
+              data.startTid
+            )}. Vill du återuppta det?`
+          )
+        ) {
           setAktivtPass(data);
-          setStatus("🔄 Återupptog lokalt sparat pass.");
+          setTeam(label);
+          setStatus(`🔄 Återupptog ${label}-pass.`);
           return;
         } else {
           localStorage.removeItem("snöjour_aktivt_pass");
+          // fortsätter och kontrollerar databasen
         }
       }
 
-      // 2️⃣ Om inget lokalt pass finns, fråga databasen
+      // 2️⃣  Hämtar alla aktiva pass (kan vara flera olika typer)
       const { data, error } = await supabase
         .from("tillstand_pass")
         .select("*")
-        .eq("aktiv", true)
-        .eq("team_typ", team === "För hand" ? "hand" : "maskin")
-        .order("start_tid", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq("aktiv", true);
 
       if (error) throw error;
+      if (!data || data.length === 0) return; // inget aktivt pass alls
 
-      if (data) {
-        if (window.confirm(`Ett ${data.team_typ}-pass är aktivt sedan ${formatDatumTid(data.start_tid)}. Vill du återuppta det?`)) {
+      // Dela upp hand och maskin
+      const handPass = data.find((p) => p.team_typ === "hand");
+      const maskinPass = data.find((p) => p.team_typ === "maskin");
+
+      // 🔸 Olika fall
+      if (handPass && !maskinPass) {
+        const ok = window.confirm(
+          `Ett pass för För hand är aktivt sedan ${formatDatumTid(
+            handPass.start_tid
+          )}. Vill du återuppta det, eller skapa ett pass för Maskin?`
+        );
+        if (ok) {
           const aktivt = {
-            id: data.id,
-            startTid: data.start_tid,
-            metod: data.team_typ,
-            team_typ: data.team_typ,
+            id: handPass.id,
+            startTid: handPass.start_tid,
+            metod: "hand",
+            team_typ: "hand",
           };
           setAktivtPass(aktivt);
+          setTeam("För hand");
           localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog pågående pass från databasen.");
+          setStatus("✅ Återupptog För hand‑pass.");
         } else {
-          await supabase
-            .from("tillstand_pass")
-            .update({ aktiv: false })
-            .eq("id", data.id);
-          setStatus("🛑 Tidigare pass stängdes.");
+          setTeam("Maskin");
+          setStatus("👷 Redo att starta Maskin‑pass.");
+        }
+      } else if (maskinPass && !handPass) {
+        const ok = window.confirm(
+          `Ett pass för Maskin är aktivt sedan ${formatDatumTid(
+            maskinPass.start_tid
+          )}. Vill du återuppta det, eller skapa ett pass för För hand?`
+        );
+        if (ok) {
+          const aktivt = {
+            id: maskinPass.id,
+            startTid: maskinPass.start_tid,
+            metod: "maskin",
+            team_typ: "maskin",
+          };
+          setAktivtPass(aktivt);
+          setTeam("Maskin");
+          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+          setStatus("✅ Återupptog Maskin‑pass.");
+        } else {
+          setTeam("För hand");
+          setStatus("👷 Redo att starta För hand‑pass.");
+        }
+      } else if (handPass && maskinPass) {
+        // bägge finns – användaren får välja vilken som ska aktiveras
+        const val = window.prompt(
+          `Det finns två aktiva pass:\n1 = För hand (${formatDatumTid(
+            handPass.start_tid
+          )})\n2 = Maskin (${formatDatumTid(
+            maskinPass.start_tid
+          )})\n\nVilket vill du återuppta?`,
+          "1"
+        );
+        if (val === "1") {
+          const aktivt = {
+            id: handPass.id,
+            startTid: handPass.start_tid,
+            metod: "hand",
+            team_typ: "hand",
+          };
+          setAktivtPass(aktivt);
+          setTeam("För hand");
+          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+          setStatus("✅ Återupptog För hand‑pass.");
+        } else if (val === "2") {
+          const aktivt = {
+            id: maskinPass.id,
+            startTid: maskinPass.start_tid,
+            metod: "maskin",
+            team_typ: "maskin",
+          };
+          setAktivtPass(aktivt);
+          setTeam("Maskin");
+          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+          setStatus("✅ Återupptog Maskin‑pass.");
+        } else {
+          setStatus("ℹ️ Inget pass aktiverades ännu.");
         }
       }
     } catch (err) {
       console.error(err);
-      setStatus("⚠️ Kunde inte kontrollera aktivt pass: " + err.message);
+      setStatus("⚠️ Fel vid kontroll av aktiva pass: " + err.message);
     }
   }
 
-  kollaAktivtPass();
+  kollaAktivaPass();
 }, []);
   
   // === Synka kartaNotering med vald adress ===
