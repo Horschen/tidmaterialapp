@@ -1201,6 +1201,46 @@ async function startaPass() {
     setStatus("❌ Fel vid start av pass: " + err.message);
   }
 }
+
+// ======= Stoppa pass (beständigt via Supabase) =======
+async function stoppaPass() {
+  if (!aktivtPass) {
+    showPopup("👎 Inget aktivt pass.", "error", 3000);
+    setStatus("Inget aktivt pass att stoppa.");
+    return;
+  }
+
+  const sek = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
+  );
+
+  try {
+    // 🔹 Markera som avslutat i databasen
+    const { error } = await supabase
+      .from("tillstand_pass")
+      .update({
+        aktiv: false,
+        sluttid: new Date().toISOString(),
+      })
+      .eq("id", aktivtPass.id);
+
+    if (error) throw error;
+
+    // 🔹 Rensa lokalt
+    setAktivtPass(null);
+    localStorage.removeItem("snöjour_aktivt_pass");
+    setSenasteRapportTid(null);
+    setPaus(null);
+    setPausSekUnderIntervall(0);
+
+    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
+    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 3000);
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+  }
+}
   
   // ======= Start Paus =======
   function startPaus() {
