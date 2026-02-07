@@ -828,6 +828,61 @@ useEffect(() => {
   laddaAdresser();
 }, []);
 
+// ======= Vid app-start: kontrollera aktivt pass =======
+useEffect(() => {
+  async function kollaAktivtPass() {
+    try {
+      // 1️⃣ Försök läsa från localStorage
+      const sparat = localStorage.getItem("snöjour_aktivt_pass");
+      if (sparat) {
+        const data = JSON.parse(sparat);
+        if (window.confirm(`Ett ${data.team_typ}-pass startades ${formatDatumTid(data.startTid)}. Vill du återuppta det?`)) {
+          setAktivtPass(data);
+          setStatus("🔄 Återupptog lokalt sparat pass.");
+          return;
+        } else {
+          localStorage.removeItem("snöjour_aktivt_pass");
+        }
+      }
+
+      // 2️⃣ Om inget lokalt pass finns, fråga databasen
+      const { data, error } = await supabase
+        .from("tillstand_pass")
+        .select("*")
+        .eq("aktiv", true)
+        .order("start_tid", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        if (window.confirm(`Ett ${data.team_typ}-pass är aktivt sedan ${formatDatumTid(data.start_tid)}. Vill du återuppta det?`)) {
+          const aktivt = {
+            id: data.id,
+            startTid: data.start_tid,
+            metod: data.team_typ,
+            team_typ: data.team_typ,
+          };
+          setAktivtPass(aktivt);
+          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
+          setStatus("✅ Återupptog pågående pass från databasen.");
+        } else {
+          await supabase
+            .from("tillstand_pass")
+            .update({ aktiv: false })
+            .eq("id", data.id);
+          setStatus("🛑 Tidigare pass stängdes.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("⚠️ Kunde inte kontrollera aktivt pass: " + err.message);
+    }
+  }
+
+  kollaAktivtPass();
+}, []);
   
   // === Synka kartaNotering med vald adress ===
   useEffect(() => {
@@ -1126,30 +1181,97 @@ async function sparaManuellRapport() {
   }
 }
   
-  // ======= Starta pass =======
-  function startaPass() {
-    if (aktivtPass) {
-      showPopup("👎 Ett pass är redan igång.", "error", 3000);
-      setStatus("Ett pass är redan igång. Stoppa passet först.");
-      return;
-    }
+// ======= Starta pass (beständigt via Supabase) =======
+async function startaPass() {
+  if (aktivtPass) {
+    showPopup("👎 Ett pass är redan igång.", "error", 3000);
+    setStatus("Ett pass är redan igång. Stoppa passet först.");
+    return;
+  }
 
-    const metod = team === "För hand" ? "hand" : "maskin";
-    const nuIso = new Date().toISOString();
-    setAktivtPass({ startTid: nuIso, metod });
+  const metod = team === "För hand" ? "hand" : "maskin";
+
+  try {
+    // 🔹 Skapa nytt pass i databasen
+    const { data, error } = await supabase
+      .from("tillstand_pass")
+      .insert([
+        {
+          team_typ: metod,
+          start_tid: new Date().toISOString(),
+          aktiv: true,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // 🔹 Spara lokalt
+    const nyttPass = {
+      id: data.id,
+      startTid: data.start_tid,
+      metod,
+      team_typ: metod,
+    };
+    setAktivtPass(nyttPass);
+    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat.");
+    setStatus("⏱️ Pass startat och sparat i molnet.");
+    showPopup(
+      "✅ Pass startat – fortsätter även om appen stängs.",
+      "success",
+      3000
+    );
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Kunde inte starta passet.", "error", 3000);
   }
+}
 
-  // ======= Stoppa pass =======
-function stoppaPass() {
+// ======= Stoppa pass (beständigt via Supabase) =======
+async function stoppaPass() {
   if (!aktivtPass) {
     showPopup("👎 Inget aktivt pass.", "error", 3000);
     setStatus("Inget aktivt pass att stoppa.");
     return;
   }
+
+  const sek = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
+  );
+
+  try {
+    // 🔹 Markera som avslutat i databasen
+    const { error } = await supabase
+      .from("tillstand_pass")
+      .update({
+        aktiv: false,
+        sluttid: new Date().toISOString(),
+      })
+      .eq("id", aktivtPass.id);
+
+    if (error) throw error;
+
+    // 🔹 Rensa lokalt
+    setAktivtPass(null);
+    localStorage.removeItem("snöjour_aktivt_pass");
+    setSenasteRapportTid(null);
+    setPaus(null);
+    setPausSekUnderIntervall(0);
+
+    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
+    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 3000);
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+  }
+}
+  
 
   // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
   const sek = Math.max(
