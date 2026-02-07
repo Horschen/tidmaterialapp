@@ -1129,7 +1129,9 @@ async function uppdateraAktivStatus(adressId, nyStatus) {
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select("*")
+    .select(
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, material, maskin, kombinerad, adress_lista, bostad_foretag, uppskattad_tid_min"
+    )
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
