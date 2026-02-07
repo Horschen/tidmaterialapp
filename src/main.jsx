@@ -864,6 +864,25 @@ async function sparaNyAdress() {
   try {
     setStatus("🔍 Söker koordinater...");
 
+    // LÄGG TILL DETTA FÖR DEBUG
+    console.log("Söker adress:", nyAdressForm.adressText);
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+      nyAdressForm.adressText
+    )}&key=${GOOGLE_MAPS_API_KEY}`;
+    console.log("Geocode URL:", geocodeUrl);
+
+    const res = await fetch(geocodeUrl);
+    const data = await res.json();
+    
+    // LÄGG TILL DETTA FÖR DEBUG
+    console.log("Google Maps svar:", data);
+
+    if (!data.results || data.results.length === 0) {
+      showPopup("👎 Kunde inte hitta koordinater för adressen.", "error", 3000);
+      setStatus("❌ Adress hittades inte.");
+      return;
+    }
+
     // Hämta koordinater från Google Maps Geocoding API
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
