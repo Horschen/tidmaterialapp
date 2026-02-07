@@ -409,6 +409,13 @@ function App() {
     );
   }, [passwordPaused]);
 
+  // ======= Arbetspass-översikt state =======
+const [visaPassOversikt, setVisaPassOversikt] = useState(false);
+const [passHistorik, setPassHistorik] = useState([]); // Lista med sparade pass
+const [valtPassId, setValtPassId] = useState(""); // Valt pass för visning
+const [passDetaljer, setPassDetaljer] = useState(null); // Detaljer för valt pass
+const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
+
   // ======= Resterande state =======
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
@@ -587,6 +594,136 @@ const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
 const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
 const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
 
+
+// ======= Hämta lista med alla arbetspass =======
+async function hamtaPassHistorik() {
+  try {
+    const { data, error } = await supabase
+      .from("tillstand_pass")
+      .select("*")
+      .order("start_tid", { ascending: false })
+      .limit(50); // Senaste 50 passen
+
+    if (error) throw error;
+
+    setPassHistorik(data || []);
+    return data;
+  } catch (err) {
+    console.error("Fel vid hämtning av passhistorik:", err);
+    showPopup("👎 Kunde inte hämta passhistorik.", "error", 3000);
+    return [];
+  }
+}
+
+// ======= Hämta detaljer för ett specifikt pass =======
+async function hamtaPassDetaljer(passId) {
+  if (!passId) {
+    setPassDetaljer(null);
+    return;
+  }
+
+  setLaddaPassDetaljer(true);
+
+  try {
+    // Hämta pass-info
+    const { data: passData, error: passError } = await supabase
+      .from("tillstand_pass")
+      .select("*")
+      .eq("id", passId)
+      .single();
+
+    if (passError) throw passError;
+
+    // Hämta logg för detta pass
+    const { data: loggData, error: loggError } = await supabase
+      .from("pass_logg")
+      .select(`
+        *,
+        adresser (id, namn, uppskattad_tid_min)
+      `)
+      .eq("pass_id", passId)
+      .order("ordning", { ascending: true });
+
+    if (loggError) throw loggError;
+
+    // Om ingen logg finns, hämta från rapporter istället
+    let adressLista = loggData || [];
+    
+    if (adressLista.length === 0) {
+      // Fallback: hämta rapporter för detta datum/team
+      const startDatum = passData.start_tid?.split("T")[0];
+      const slutDatum = passData.sluttid?.split("T")[0] || startDatum;
+      
+      const { data: rapportData, error: rapportError } = await supabase
+        .from("rapporter")
+        .select(`
+          *,
+          adresser (id, namn, uppskattad_tid_min)
+        `)
+        .eq("team_namn", passData.team_typ === "hand" ? "För hand" : "Maskin")
+        .gte("datum", startDatum)
+        .lte("datum", slutDatum || startDatum)
+        .order("datum", { ascending: true });
+
+      if (!rapportError && rapportData) {
+        adressLista = rapportData.map((r, idx) => ({
+          ordning: idx + 1,
+          adress_id: r.adress_id,
+          adresser: r.adresser,
+          arbets_tid_sek: (r.arbetstid_min || 0) * 60,
+          transport_tid_sek: 0, // Okänt för gamla rapporter
+          total_tid_sek: (r.arbetstid_min || 0) * 60,
+          uppskattad_arbete_sek: (r.adresser?.uppskattad_tid_min || 10) * 60,
+          ankomst_tid: r.datum,
+        }));
+      }
+    }
+
+    // Beräkna sammanfattning
+    const totalArbeteSek = adressLista.reduce((sum, a) => sum + (a.arbets_tid_sek || 0), 0);
+    const totalTransportSek = adressLista.reduce((sum, a) => sum + (a.transport_tid_sek || 0), 0);
+    const totalTidSek = totalArbeteSek + totalTransportSek;
+
+    const uppskattadArbeteSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_arbete_sek || 600), 0);
+    const uppskattadTransportSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_transport_sek || 300), 0);
+    const uppskattadTotalSek = uppskattadArbeteSek + uppskattadTransportSek;
+
+    const avvikelseSek = totalTidSek - uppskattadTotalSek;
+
+    setPassDetaljer({
+      pass: passData,
+      adresser: adressLista,
+      sammanfattning: {
+        totalArbeteSek,
+        totalTransportSek,
+        totalTidSek,
+        uppskattadArbeteSek,
+        uppskattadTransportSek,
+        uppskattadTotalSek,
+        avvikelseSek,
+        antalAdresser: adressLista.length,
+      },
+    });
+
+  } catch (err) {
+    console.error("Fel vid hämtning av passdetaljer:", err);
+    showPopup("👎 Kunde inte hämta passdetaljer.", "error", 3000);
+    setPassDetaljer(null);
+  } finally {
+    setLaddaPassDetaljer(false);
+  }
+}
+
+// ======= Formatera sekunder till läsbar tid =======
+function formatSekTillLasbar(sek) {
+  if (!sek || sek === 0) return "—";
+  const h = Math.floor(sek / 3600);
+  const m = Math.floor((sek % 3600) / 60);
+  if (h > 0) {
+    return `${h}h ${m}min`;
+  }
+  return `${m} min`;
+}
   
 // ✅ Funktion för att lägga till ny adress (används i adress-admin)
 async function laggTillAdress() {
@@ -961,6 +1098,52 @@ function validateManuellFields() {
 }   // ✅ avslutar validateManuellFields
 
 // ======= Spara rapport (auto-pass eller manuell tid i Registrera-fliken) =======
+// === Logga till pass_logg för spårbarhet ===
+if (aktivtPass && aktivtPass.id) {
+  try {
+    // Räkna ut transport-tid (tid sedan förra rapporten minus arbetstid)
+    const startTid = senasteRapportTid 
+      ? new Date(senasteRapportTid) 
+      : new Date(aktivtPass.startTid);
+    
+    const nuTidObj = new Date();
+    const totalSek = Math.floor((nuTidObj - startTid) / 1000);
+    const arbetsSek = arbetstidMin * 60;
+    const transportSek = Math.max(0, totalSek - arbetsSek - (pausSekUnderIntervall || 0));
+
+    // Hämta uppskattade tider från adress
+    const adressInfo = adresser.find((a) => a.id === Number(valda));
+    const uppskattadArbeteSek = (adressInfo?.uppskattad_tid_min || 10) * 60;
+
+    // Räkna ordning
+    const { count } = await supabase
+      .from("pass_logg")
+      .select("*", { count: "exact", head: true })
+      .eq("pass_id", aktivtPass.id);
+
+    const ordning = (count || 0) + 1;
+
+    await supabase.from("pass_logg").insert([
+      {
+        pass_id: aktivtPass.id,
+        adress_id: Number(valda),
+        ordning: ordning,
+        ankomst_tid: startTid.toISOString(),
+        start_arbete_tid: new Date(nuTidObj.getTime() - arbetsSek * 1000).toISOString(),
+        slut_arbete_tid: nuTidObj.toISOString(),
+        transport_tid_sek: transportSek,
+        arbets_tid_sek: arbetsSek,
+        total_tid_sek: totalSek,
+        uppskattad_arbete_sek: uppskattadArbeteSek,
+        avvikelse_sek: totalSek - uppskattadArbeteSek,
+      },
+    ]);
+  } catch (loggErr) {
+    console.error("Kunde inte logga till pass_logg:", loggErr);
+    // Fortsätt ändå - rapporten är redan sparad
+  }
+}
+  
 async function sparaRapport() {
   if (!validateBeforeSaveFields()) return;
 
@@ -3145,6 +3328,300 @@ function avbrytRadering() {
             Uppdatera översikt
           </button>
 
+{/* === ARBETSPASS-ÖVERSIKT === */}
+<div style={{ marginTop: 16 }}>
+  <button
+    onClick={async () => {
+      setVisaPassOversikt(!visaPassOversikt);
+      if (!visaPassOversikt) {
+        await hamtaPassHistorik();
+      }
+    }}
+    style={{
+      ...secondaryButton,
+      backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
+      color: "#ffffff",
+    }}
+  >
+    {visaPassOversikt ? "🔼 Dölj arbetspass-översikt" : "📋 Arbetspass-översikt"}
+  </button>
+</div>
+
+{visaPassOversikt && (
+  <div
+    style={{
+      marginTop: 16,
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: "#f5f3ff",
+      border: "1px solid #c4b5fd",
+    }}
+  >
+    <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
+      📋 Arbetspass-översikt
+    </h3>
+
+    {/* Dropdown för att välja pass */}
+    <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
+    <select
+      value={valtPassId}
+      onChange={(e) => {
+        setValtPassId(e.target.value);
+        hamtaPassDetaljer(e.target.value);
+      }}
+      style={{
+        ...selectStyle,
+        marginBottom: 16,
+        borderColor: "#c4b5fd",
+      }}
+    >
+      <option value="">-- Välj ett arbetspass --</option>
+      
+      {/* Pågående pass */}
+      {passHistorik
+        .filter((p) => p.aktiv)
+        .map((p) => (
+          <option key={p.id} value={p.id}>
+            🟢 Pågående: {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
+            {new Date(p.start_tid).toLocaleString("sv-SE", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            )
+          </option>
+        ))}
+      
+      {/* Avslutade pass */}
+      {passHistorik
+        .filter((p) => !p.aktiv)
+        .map((p) => (
+          <option key={p.id} value={p.id}>
+            📅 {new Date(p.start_tid).toLocaleDateString("sv-SE")} |{" "}
+            {p.team_typ === "hand" ? "För hand" : "Maskin"}
+            {p.sluttid && ` | ${formatSekTillLasbar(
+              Math.floor((new Date(p.sluttid) - new Date(p.start_tid)) / 1000)
+            )}`}
+          </option>
+        ))}
+    </select>
+
+    {laddaPassDetaljer && (
+      <p style={{ textAlign: "center", color: "#6b7280" }}>
+        Laddar passdetaljer...
+      </p>
+    )}
+
+    {/* Visa passdetaljer */}
+    {passDetaljer && !laddaPassDetaljer && (
+      <div>
+        {/* Sammanfattning */}
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 8,
+            backgroundColor: "#ffffff",
+            border: "1px solid #e5e7eb",
+            marginBottom: 16,
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
+            📅 {new Date(passDetaljer.pass.start_tid).toLocaleDateString("sv-SE")} |{" "}
+            {passDetaljer.pass.team_typ === "hand" ? "För hand" : "Maskin"} |{" "}
+            {passDetaljer.sammanfattning.antalAdresser} adresser
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
+            <div>
+              🚗 Total körtid:{" "}
+              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTransportSek)}</strong>
+            </div>
+            <div style={{ color: "#6b7280" }}>
+              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTransportSek)})
+            </div>
+            
+            <div>
+              🔧 Total arbetstid:{" "}
+              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalArbeteSek)}</strong>
+            </div>
+            <div style={{ color: "#6b7280" }}>
+              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadArbeteSek)})
+            </div>
+            
+            <div style={{ fontWeight: 600, fontSize: 14 }}>
+              ⏱️ Total tid:{" "}
+              <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTidSek)}</strong>
+            </div>
+            <div style={{ color: "#6b7280" }}>
+              (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTotalSek)})
+            </div>
+          </div>
+
+          {/* Avvikelse-indikator */}
+          <div
+            style={{
+              marginTop: 12,
+              padding: "8px 12px",
+              borderRadius: 8,
+              backgroundColor:
+                passDetaljer.sammanfattning.avvikelseSek <= 0
+                  ? "#d1fae5"
+                  : passDetaljer.sammanfattning.avvikelseSek < 600
+                  ? "#fef3c7"
+                  : "#fee2e2",
+              color:
+                passDetaljer.sammanfattning.avvikelseSek <= 0
+                  ? "#065f46"
+                  : passDetaljer.sammanfattning.avvikelseSek < 600
+                  ? "#92400e"
+                  : "#991b1b",
+              fontWeight: 600,
+              fontSize: 14,
+              textAlign: "center",
+            }}
+          >
+            {passDetaljer.sammanfattning.avvikelseSek <= 0 ? (
+              <>✅ {formatSekTillLasbar(Math.abs(passDetaljer.sammanfattning.avvikelseSek))} FÖRE schema</>
+            ) : passDetaljer.sammanfattning.avvikelseSek < 600 ? (
+              <>⚠️ {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} efter schema</>
+            ) : (
+              <>🔴 {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} EFTER schema</>
+            )}
+          </div>
+        </div>
+
+        {/* Adresslista med detaljer */}
+        <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
+          Rutt-detaljer:
+        </h4>
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            overflow: "hidden",
+          }}
+        >
+          {passDetaljer.adresser.map((a, idx) => {
+            const arbetsSek = a.arbets_tid_sek || 0;
+            const transportSek = a.transport_tid_sek || 0;
+            const totalSek = arbetsSek + transportSek;
+            const uppskattadArbeteSek = a.uppskattad_arbete_sek || 600;
+            const uppskattadTransportSek = a.uppskattad_transport_sek || 0;
+            
+            const arbetsAvvikelse = arbetsSek - uppskattadArbeteSek;
+            const transportAvvikelse = transportSek - uppskattadTransportSek;
+
+            return (
+              <div key={a.id || idx}>
+                {/* Transport-separator (om inte första) */}
+                {idx > 0 && transportSek > 0 && (
+                  <div
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "#f3f4f6",
+                      borderTop: "1px dashed #d1d5db",
+                      borderBottom: "1px dashed #d1d5db",
+                      textAlign: "center",
+                      fontSize: 12,
+                      color: "#6b7280",
+                    }}
+                  >
+                    🚗 Körtid: {formatSekTillLasbar(transportSek)}
+                    {uppskattadTransportSek > 0 && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          color: transportAvvikelse <= 0 ? "#059669" : "#dc2626",
+                        }}
+                      >
+                        ({transportAvvikelse <= 0 ? "" : "+"}
+                        {Math.round(transportAvvikelse / 60)} min)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Adress-rad */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    borderBottom: idx < passDetaljer.adresser.length - 1 ? "1px solid #f3f4f6" : "none",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        backgroundColor: "#7c3aed",
+                        color: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: 12,
+                        marginRight: 10,
+                      }}
+                    >
+                      {idx + 1}
+                    </div>
+                    <strong style={{ fontSize: 14 }}>{a.adresser?.namn || "Okänd adress"}</strong>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "#4b5563", marginLeft: 34 }}>
+                    <div>
+                      🔧 Arbetstid: {formatSekTillLasbar(arbetsSek)}
+                      {uppskattadArbeteSek > 0 && (
+                        <span
+                          style={{
+                            marginLeft: 6,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            fontSize: 11,
+                            backgroundColor: arbetsAvvikelse <= 0 ? "#d1fae5" : "#fee2e2",
+                            color: arbetsAvvikelse <= 0 ? "#065f46" : "#991b1b",
+                          }}
+                        >
+                          {arbetsAvvikelse <= 0 ? "✅" : "⚠️"}{" "}
+                          {arbetsAvvikelse <= 0 ? "" : "+"}
+                          {Math.round(arbetsAvvikelse / 60)} min
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ marginTop: 4 }}>
+                      ⏱️ Total: {formatSekTillLasbar(totalSek)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {passDetaljer.adresser.length === 0 && (
+          <p style={{ textAlign: "center", color: "#6b7280", fontStyle: "italic" }}>
+            Ingen detaljerad logg finns för detta pass.
+            <br />
+            <span style={{ fontSize: 12 }}>
+              (Loggning aktiveras automatiskt för nya pass)
+            </span>
+          </p>
+        )}
+      </div>
+    )}
+
+    {!passDetaljer && !laddaPassDetaljer && valtPassId && (
+      <p style={{ textAlign: "center", color: "#6b7280" }}>
+        Kunde inte ladda passdetaljer.
+      </p>
+    )}
+  </div>
+)}
+      
+      
           {visaOversikt && (
             <VeckoOversikt
               data={filtreradeRapporter}
