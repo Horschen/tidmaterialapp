@@ -864,16 +864,6 @@ async function sparaNyAdress() {
   try {
     setStatus("🔍 Söker koordinater...");
 
-    // ======= Spara ny adress =======
-async function sparaNyAdress() {
-  if (!nyAdressForm.adressText?.trim()) {
-    showPopup("👎 Skriv in en adress först.", "error", 3000);
-    return;
-  }
-
-  try {
-    setStatus("🔍 Söker koordinater...");
-
     // Hämta koordinater från Google Maps Geocoding API
     const geocodeRes = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
