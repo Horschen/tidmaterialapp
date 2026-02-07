@@ -5006,6 +5006,9 @@ return (
         </div>
       </>
     )}
+  </div>
+)}     {/* stänger popupens JSX-VILLKOR */}
+
 
   {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
   <nav
@@ -5165,7 +5168,7 @@ return (
       </div>
     </nav>
   </div>
-)}
+)
 }
 
 createRoot(document.getElementById("app")).render(<App />);
