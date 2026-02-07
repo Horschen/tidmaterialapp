@@ -1133,41 +1133,27 @@ async function sparaManuellRapport() {
 
   const metod = manuellTeam === "För hand" ? "hand" : "maskin";
   const syfteText = buildManuellSyfteString();
-
   const tidMin = parseInt(manuellTidMin, 10);
   if (!tidMin || tidMin <= 0) {
-    showPopup(
-      "👎 Ange arbetstid (minuter) för manuell registrering.",
-      "error",
-      3000
-    );
+    showPopup("👎 Ange arbetstid (minuter) för manuell registrering.", "error", 3000);
     setStatus("Ange arbetstid (minuter) för manuell registrering.");
     return;
   }
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
-
-  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
   try {
-    const datePart = manuellDatum;                  // "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
-
-    // 🔸 Spara som lokal tid (utan zonkonvertering)
+    const datePart = manuellDatum;
+    const timePart = manuellTid ? manuellTid : "12:00";
     datumIso = `${datePart}T${timePart}:00`;
-    jobbIso  = datumIso;
-  } catch (e) {
-    showPopup(
-      "👎 Ogiltigt datum eller tid för manuell registrering.",
-      "error",
-      3000
-    );
+    jobbIso = datumIso;
+  } catch {
+    showPopup("👎 Ogiltigt datum eller tid för manuell registrering.", "error", 3000);
     setStatus("Ogiltigt datum/tid för manuell registrering.");
     return;
   }
 
   setStatus("Sparar manuell rapport…");
-
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: datumIso,
@@ -1195,31 +1181,72 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
-  
-  // ======= Starta pass =======
-  function startaPass() {
-    if (aktivtPass) {
-      showPopup("👎 Ett pass är redan igång.", "error", 3000);
-      setStatus("Ett pass är redan igång. Stoppa passet först.");
-      return;
-    }
 
-    const metod = team === "För hand" ? "hand" : "maskin";
-    const nuIso = new Date().toISOString();
-    setAktivtPass({ startTid: nuIso, metod });
+// ======= Starta pass (beständigt) =======
+async function startaPass() {
+  if (aktivtPass) {
+    showPopup("👎 Ett pass är redan igång.", "error", 3000);
+    setStatus("Ett pass är redan igång. Stoppa passet först.");
+    return;
+  }
+
+  const metod = team === "För hand" ? "hand" : "maskin";
+  try {
+    const { data, error } = await supabase
+      .from("tillstand_pass")
+      .insert([{ team_typ: metod, start_tid: new Date().toISOString(), aktiv: true }])
+      .select()
+      .single();
+    if (error) throw error;
+
+    const nyttPass = {
+      id: data.id,
+      startTid: data.start_tid,
+      metod,
+      team_typ: metod,
+    };
+    setAktivtPass(nyttPass);
+    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat.");
+    setStatus("⏱️ Pass startat och sparat i molnet.");
+    showPopup("✅ Pass startat – även vid app‑stängning fortsätter det!", "success", 4000);
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Kunde inte starta passet.", "error", 3000);
   }
+}
 
-  // ======= Stoppa pass =======
-function stoppaPass() {
+// ======= Stoppa pass (beständigt) =======
+async function stoppaPass() {
   if (!aktivtPass) {
     showPopup("👎 Inget aktivt pass.", "error", 3000);
     setStatus("Inget aktivt pass att stoppa.");
     return;
   }
+
+  const sek = Math.max(0, Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000));
+  try {
+    await supabase
+      .from("tillstand_pass")
+      .update({ aktiv: false, sluttid: new Date().toISOString() })
+      .eq("id", aktivtPass.id);
+
+    setAktivtPass(null);
+    localStorage.removeItem("snöjour_aktivt_pass");
+    setSenasteRapportTid(null);
+    setPaus(null);
+    setPausSekUnderIntervall(0);
+
+    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
+    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 4000);
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+  }
+}
 
 // ======= Start Paus =======
 function startPaus() {
@@ -1235,7 +1262,7 @@ function startPaus() {
   }
   const nuIso = new Date().toISOString();
   setPaus({ startTid: nuIso });
-  setStatus("⏸️ Paus startad.");
+  setStatus("⏸️ Paus startad.");
 }
 
 // ======= Stop Paus =======
@@ -1252,6 +1279,7 @@ function stopPaus() {
   setPaus(null);
   setStatus("Paus stoppad (lagras till nästa rapport).");
 }
+  
   
   // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
   const sek = Math.max(
