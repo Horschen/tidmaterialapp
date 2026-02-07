@@ -1158,14 +1158,32 @@ async function stoppaPass() {
   );
 
   try {
-    // 🔹 Markera som avslutat i databasen
-    const { error } = await supabase
-      .from("tillstand_pass")
-      .update({
-        aktiv: false,
-        sluttid: new Date().toISOString(),
-      })
-      .eq("id", aktivtPass.id);
+    let error;
+
+    // Om vi har ett giltigt ID, använd det
+    if (aktivtPass.id && aktivtPass.id !== 0) {
+      const result = await supabase
+        .from("tillstand_pass")
+        .update({
+          aktiv: false,
+          sluttid: new Date().toISOString(),
+        })
+        .eq("id", aktivtPass.id);
+      error = result.error;
+    } else {
+      // Annars, hitta passet baserat på team_typ och aktiv status
+      // Detta gör att ALLA anslutna användare kan stoppa passet
+      const teamTyp = aktivtPass.team_typ || aktivtPass.metod;
+      const result = await supabase
+        .from("tillstand_pass")
+        .update({
+          aktiv: false,
+          sluttid: new Date().toISOString(),
+        })
+        .eq("team_typ", teamTyp)
+        .eq("aktiv", true);
+      error = result.error;
+    }
 
     if (error) throw error;
 
@@ -1181,6 +1199,7 @@ async function stoppaPass() {
   } catch (err) {
     console.error(err);
     showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+    setStatus("❌ Fel vid stopp av pass: " + err.message);
   }
 }
   
