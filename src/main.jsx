@@ -4186,7 +4186,6 @@ return (
         </button>
       </header>
 
-      {/* popup – visas mitt på skärmen */}
       {popup && (
         <div
           style={{
@@ -4211,7 +4210,6 @@ return (
         </div>
       )}
 
-      {/* bekräfta-radering */}
       {deleteConfirm && (
         <div
           style={{
@@ -4275,16 +4273,9 @@ return (
         </div>
       )}
 
-      {/* popup-fönster för redigering / rutt / manuell registrering */}
-      {visaEditPopup && <></>}
-      {visaRuttPopup && <></>}
-      {visaManuellPopup && <></>}
-
-      {/* huvudinnehåll från vald flik */}
       {renderContent()}
     </div>
 
-    {/* fast navigering längst ned */}
     <nav
       style={{
         position: "fixed",
@@ -4300,7 +4291,6 @@ return (
         boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
       }}
     >
-      {/* rad 1 */}
       <div
         style={{
           display: "flex",
@@ -4319,7 +4309,6 @@ return (
         </button>
       </div>
 
-      {/* rad 2 */}
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <button onClick={() => setActiveTab("rutt")} style={{ flex: 1 }}>
           Rutt
@@ -4337,6 +4326,6 @@ return (
     </nav>
   </div>
 );
-} // avslutar function App
+} // ✅ stänger function App
 
 createRoot(document.getElementById("app")).render(<App />);
