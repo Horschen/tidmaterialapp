@@ -875,19 +875,24 @@ async function sparaNyAdress() {
     // DEBUG - kan tas bort senare
     console.log("Google Maps svar:", geocodeData);
 
-    if (!geocodeData.results || geocodeData.results.length === 0) {
-      showPopup("👎 Kunde inte hitta koordinater för adressen.", "error", 3000);
-      setStatus("❌ Adress hittades inte.");
-      return;
+    let lat = null;
+    let lng = null;
+    let gpsUrl = null;
+    let formattedAddress = nyAdressForm.adressText;
+
+    // Försök hämta koordinater om möjligt
+    if (geocodeData.status === "OK" && geocodeData.results && geocodeData.results.length > 0) {
+      lat = geocodeData.results[0].geometry.location.lat;
+      lng = geocodeData.results[0].geometry.location.lng;
+      formattedAddress = geocodeData.results[0].formatted_address;
+      gpsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+      console.log("✅ GPS-koordinater hittades:", lat, lng);
+    } else {
+      console.warn("⚠️ Kunde inte hämta GPS-koordinater, sparar utan:", geocodeData.status);
+      showPopup("⚠️ Adressen sparas utan GPS-koordinater", "warning", 3000);
     }
 
-    const { lat, lng } = geocodeData.results[0].geometry.location;
-    const formattedAddress = geocodeData.results[0].formatted_address;
-
-    // Skapa GPS-URL
-    const gpsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-
-    // Använd angivet namn eller formaterad adress
+    // Använd angivet namn eller adresstext/formaterad adress
     const adressNamn = nyAdressForm.namn?.trim() || formattedAddress;
 
     const nyPosition = Number(nyAdressForm.adress_lista);
