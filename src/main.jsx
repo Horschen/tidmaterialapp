@@ -1141,49 +1141,6 @@ async function startaPass() {
   setVisaMetodValPopup(true);
 }
 
-  // 🟢 Sätt UI‑state direkt – med rätt teamtext
-  setTeam(metodLabel);
-
-  try {
-    // 🔹 Skapa nytt pass i databasen
-    const { data, error } = await supabase
-      .from("tillstand_pass")
-      .insert([
-        {
-          team_typ: metod,
-          start_tid: new Date().toISOString(),
-          aktiv: true,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // 🔹 Spara lokalt
-    const nyttPass = {
-      id: data.id,
-      startTid: data.start_tid,
-      metod,
-      team_typ: metod,
-    };
-    setAktivtPass(nyttPass);
-    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
-
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
-
-    // ✅ Klart
-    setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
-    showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Kunde inte starta passet.", "error", 3000);
-    setStatus("❌ Fel vid start av pass: " + err.message);
-  }
-}
-
 // ======= Stoppa pass (beständigt via Supabase) =======
 async function stoppaPass() {
   if (!aktivtPass) {
