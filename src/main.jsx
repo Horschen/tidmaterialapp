@@ -5006,8 +5006,6 @@ return (
         </div>
       </>
     )}
-  </div>
-)}     {/* stänger popupens JSX-VILLKOR */}
 
   {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
   <nav
