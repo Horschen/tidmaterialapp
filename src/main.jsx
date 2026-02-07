@@ -562,62 +562,7 @@ function App() {
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
   const [nyAdress, setNyAdress] = useState("");
   
-  // ✅ Funktion för att lägga till ny adress (används i adress-admin)
-async function laggTillAdress() {
-  if (!nyAdress?.trim()) {
-    showPopup("👎 Skriv in en adress först.", "error", 3000);
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        nyAdress
-      )}&key=${GOOGLE_MAPS_API_KEY}`
-    );
-    const data = await res.json();
-
-    if (!data.results || data.results.length === 0) {
-      showPopup("👎 Koordinater hittades inte.", "error", 3000);
-      return;
-    }
-
-    const { lat, lng } = data.results[0].geometry.location;
-    const formatted = data.results[0].formatted_address;
-
-    const { error } = await supabase.from("adresser").insert([
-      {
-        namn: formatted,
-        lat,
-        lng,
-        aktiv: true, // blir synlig direkt
-      },
-    ]);
-    if (error) throw error;
-
-    showPopup("👍 Ny adress sparad!", "success", 3000);
-    setNyAdress("");
-    await laddaAdresser();
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
-  }
-}
-
-async function uppdateraAktivStatus(id, nyttVarde) {
-  const { error } = await supabase
-    .from("adresser")
-    .update({ aktiv: nyttVarde })
-    .eq("id", id);
-
-  if (error) {
-    console.error(error);
-    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
-  } else {
-    showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
-    await laddaAdresser();
-  }
-}
+  
   
 // ======= Rutt-flik state =======
 const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
@@ -1181,7 +1126,7 @@ async function sparaManuellRapport() {
   }
 }
   
-// ======= Starta pass (beständigt via Supabase) =======
+// ======= Starta pass (med val av metod) =======
 async function startaPass() {
   if (aktivtPass) {
     showPopup("👎 Ett pass är redan igång.", "error", 3000);
@@ -1189,7 +1134,33 @@ async function startaPass() {
     return;
   }
 
-  const metod = team === "För hand" ? "hand" : "maskin";
+  // 🟡 Steg 1: Fråga användaren vilken metod
+  const val = window.prompt(
+    'Vilken typ av pass vill du starta?\n\nSkriv "1" för För hand\nSkriv "2" för Maskin',
+    "1"
+  );
+
+  if (val === null) {
+    // Användaren avbröt
+    setStatus("Start av passet avbröts.");
+    return;
+  }
+
+  let metod, metodLabel;
+  if (val.trim() === "2") {
+    metod = "maskin";
+    metodLabel = "Maskin";
+  } else if (val.trim() === "1") {
+    metod = "hand";
+    metodLabel = "För hand";
+  } else {
+    showPopup("👎 Ogiltigt val. Ange 1 eller 2.", "error", 3000);
+    setStatus("Start av passet avbröts (fel val).");
+    return;
+  }
+
+  // 🟢 Sätt UI‑state direkt – med rätt teamtext
+  setTeam(metodLabel);
 
   try {
     // 🔹 Skapa nytt pass i databasen
@@ -1220,55 +1191,14 @@ async function startaPass() {
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat och sparat i molnet.");
-    showPopup(
-      "✅ Pass startat – fortsätter även om appen stängs.",
-      "success",
-      3000
-    );
+
+    // ✅ Klart
+    setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
+    showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
   } catch (err) {
     console.error(err);
     showPopup("👎 Kunde inte starta passet.", "error", 3000);
-  }
-}
-
-// ======= Stoppa pass (beständigt via Supabase) =======
-async function stoppaPass() {
-  if (!aktivtPass) {
-    showPopup("👎 Inget aktivt pass.", "error", 3000);
-    setStatus("Inget aktivt pass att stoppa.");
-    return;
-  }
-
-  const sek = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000)
-  );
-
-  try {
-    // 🔹 Markera som avslutat i databasen
-    const { error } = await supabase
-      .from("tillstand_pass")
-      .update({
-        aktiv: false,
-        sluttid: new Date().toISOString(),
-      })
-      .eq("id", aktivtPass.id);
-
-    if (error) throw error;
-
-    // 🔹 Rensa lokalt
-    setAktivtPass(null);
-    localStorage.removeItem("snöjour_aktivt_pass");
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
-
-    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
-    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 3000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
+    setStatus("❌ Fel vid start av pass: " + err.message);
   }
 }
   
