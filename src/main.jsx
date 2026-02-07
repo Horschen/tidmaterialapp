@@ -603,38 +603,19 @@ async function laggTillAdress() {
     showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
   }
 }
-// async function uppdateraAktivStatus(id, nyttVarde) {
-//  const { error } = await supabase
-//    .from("adresser")
-//    .update({ aktiv: nyttVarde })
-//    .eq("id", id);
-//
-//  if (error) {
-//   console.error(error);
-//    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
-//  } else {
-//  showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
-//    await laddaAdresser();
-//  }
-//}
 
-  async function uppdateraAktivStatus(id, nyttVarde) {
-  try {
-    const { error } = await supabase
-      .from("adresser")
-      .update({ aktiv: nyttVarde })
-      .eq("id", id);
+async function uppdateraAktivStatus(id, nyttVarde) {
+  const { error } = await supabase
+    .from("adresser")
+    .update({ aktiv: nyttVarde })
+    .eq("id", id);
 
-    if (error) {
-      console.error(error);
-      showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
-    } else {
-      showPopup("👍 Adressstatus uppdaterad!", "success", 2000);
-      await laddaAdresser();
-    }
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Kunde inte nå servern.", "error", 3000);
+  if (error) {
+    console.error(error);
+    showPopup("👎 Fel vid uppdatering av adressstatus.", "error", 3000);
+  } else {
+    showPopup("👍 Adressstatus uppdaterad.", "success", 2000);
+    await laddaAdresser();
   }
 }
   
@@ -827,57 +808,6 @@ async function laggTillAdress() {
       // ignore
     }
   }, []);
-
-  // ======= Vid app-start: kolla om ett pågående pass redan finns i databasen =======
-useEffect(() => {
-  async function kontrolleraAktivtPass() {
-    try {
-      // 1️⃣ Titta först lokalt
-      const lokalt = localStorage.getItem("snöjour_aktivt_pass");
-      if (lokalt) {
-        const sparat = JSON.parse(lokalt);
-        if (window.confirm(`Ett ${sparat.team_typ}-pass startades kl ${formatDatumTid(sparat.startTid)}.\nVill du återuppta det?`)) {
-          setAktivtPass(sparat);
-          setStatus("⏳ Återupptog lokalt pass från tidigare session.");
-          return;
-        } else {
-          localStorage.removeItem("snöjour_aktivt_pass");
-        }
-      }
-
-      // 2️⃣ Kolla sen i molnet om något aktivt pass finns
-      const { data, error } = await supabase
-        .from("tillstand_pass")
-        .select("*")
-        .eq("aktiv", true)
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (data) {
-        if (window.confirm(`Ett ${data.team_typ}-pass är aktivt sedan ${formatDatumTid(data.start_tid)}.\nVill du återuppta det?`)) {
-          const aktivt = {
-            id: data.id,
-            startTid: data.start_tid,
-            metod: data.team_typ,
-            team_typ: data.team_typ,
-          };
-          setAktivtPass(aktivt);
-          localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(aktivt));
-          setStatus("✅ Återupptog pågående arbetspass från databasen.");
-        } else {
-          await supabase.from("tillstand_pass").update({ aktiv: false }).eq("id", data.id);
-          setStatus("🛑 Tidigare pass stängdes.");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("⚠️ Kunde inte kontrollera pass-status: " + err.message);
-    }
-  }
-
-  kontrolleraAktivtPass();
-}, []);
 
   // ======= Ladda adresser (manuellt eller vid start) =======
 async function laddaAdresser() {
@@ -1133,27 +1063,41 @@ async function sparaManuellRapport() {
 
   const metod = manuellTeam === "För hand" ? "hand" : "maskin";
   const syfteText = buildManuellSyfteString();
+
   const tidMin = parseInt(manuellTidMin, 10);
   if (!tidMin || tidMin <= 0) {
-    showPopup("👎 Ange arbetstid (minuter) för manuell registrering.", "error", 3000);
+    showPopup(
+      "👎 Ange arbetstid (minuter) för manuell registrering.",
+      "error",
+      3000
+    );
     setStatus("Ange arbetstid (minuter) för manuell registrering.");
     return;
   }
 
   const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
+
+  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
   try {
-    const datePart = manuellDatum;
-    const timePart = manuellTid ? manuellTid : "12:00";
+    const datePart = manuellDatum;                  // "YYYY-MM-DD"
+    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
+
+    // 🔸 Spara som lokal tid (utan zonkonvertering)
     datumIso = `${datePart}T${timePart}:00`;
-    jobbIso = datumIso;
-  } catch {
-    showPopup("👎 Ogiltigt datum eller tid för manuell registrering.", "error", 3000);
+    jobbIso  = datumIso;
+  } catch (e) {
+    showPopup(
+      "👎 Ogiltigt datum eller tid för manuell registrering.",
+      "error",
+      3000
+    );
     setStatus("Ogiltigt datum/tid för manuell registrering.");
     return;
   }
 
   setStatus("Sparar manuell rapport…");
+
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: datumIso,
@@ -1181,106 +1125,32 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
+  
+  // ======= Starta pass =======
+  function startaPass() {
+    if (aktivtPass) {
+      showPopup("👎 Ett pass är redan igång.", "error", 3000);
+      setStatus("Ett pass är redan igång. Stoppa passet först.");
+      return;
+    }
 
-// ======= Starta pass (beständigt) =======
-async function startaPass() {
-  if (aktivtPass) {
-    showPopup("👎 Ett pass är redan igång.", "error", 3000);
-    setStatus("Ett pass är redan igång. Stoppa passet först.");
-    return;
-  }
-
-  const metod = team === "För hand" ? "hand" : "maskin";
-  try {
-    const { data, error } = await supabase
-      .from("tillstand_pass")
-      .insert([{ team_typ: metod, start_tid: new Date().toISOString(), aktiv: true }])
-      .select()
-      .single();
-    if (error) throw error;
-
-    const nyttPass = {
-      id: data.id,
-      startTid: data.start_tid,
-      metod,
-      team_typ: metod,
-    };
-    setAktivtPass(nyttPass);
-    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
-
+    const metod = team === "För hand" ? "hand" : "maskin";
+    const nuIso = new Date().toISOString();
+    setAktivtPass({ startTid: nuIso, metod });
     setSenasteRapportTid(null);
     setPaus(null);
     setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat och sparat i molnet.");
-    showPopup("✅ Pass startat – även vid app‑stängning fortsätter det!", "success", 4000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Kunde inte starta passet.", "error", 3000);
+    setStatus("⏱️ Pass startat.");
   }
-}
 
-// ======= Stoppa pass (beständigt) =======
-async function stoppaPass() {
+  // ======= Stoppa pass =======
+function stoppaPass() {
   if (!aktivtPass) {
     showPopup("👎 Inget aktivt pass.", "error", 3000);
     setStatus("Inget aktivt pass att stoppa.");
     return;
   }
 
-  const sek = Math.max(0, Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000));
-  try {
-    await supabase
-      .from("tillstand_pass")
-      .update({ aktiv: false, sluttid: new Date().toISOString() })
-      .eq("id", aktivtPass.id);
-
-    setAktivtPass(null);
-    localStorage.removeItem("snöjour_aktivt_pass");
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
-
-    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
-    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 4000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
-  }
-}
-
-// ======= Start Paus =======
-function startPaus() {
-  if (!aktivtPass) {
-    showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
-    setStatus("Inget aktivt pass att pausa.");
-    return;
-  }
-  if (paus) {
-    showPopup("👎 Paus är redan igång.", "error", 3000);
-    setStatus("En paus är redan igång.");
-    return;
-  }
-  const nuIso = new Date().toISOString();
-  setPaus({ startTid: nuIso });
-  setStatus("⏸️ Paus startad.");
-}
-
-// ======= Stop Paus =======
-function stopPaus() {
-  if (!paus) {
-    showPopup("👎 Ingen paus är igång.", "error", 3000);
-    setStatus("Ingen paus att stoppa.");
-    return;
-  }
-  const nu = new Date();
-  const start = new Date(paus.startTid);
-  const diffSek = Math.max(Math.floor((nu - start) / 1000), 0);
-  setPausSekUnderIntervall((prev) => prev + diffSek);
-  setPaus(null);
-  setStatus("Paus stoppad (lagras till nästa rapport).");
-}
-  
-  
   // vi tar fortfarande ut totaltid, men utan 30‑sekunderskontroll
   const sek = Math.max(
     0,
@@ -1294,78 +1164,37 @@ function stopPaus() {
   setStatus(`Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
 }
 
-  // ======= Starta pass (uppdaterad med beständig lagring) =======
-async function startaPass() {
-  if (aktivtPass) {
-    showPopup("👎 Ett pass är redan igång.", "error", 3000);
-    setStatus("Ett pass är redan igång. Stoppa passet först.");
-    return;
+  // ======= Start Paus =======
+  function startPaus() {
+    if (!aktivtPass) {
+      showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
+      setStatus("Inget aktivt pass att pausa.");
+      return;
+    }
+    if (paus) {
+      showPopup("👎 Paus är redan igång.", "error", 3000);
+      setStatus("En paus är redan igång.");
+      return;
+    }
+    const nuIso = new Date().toISOString();
+    setPaus({ startTid: nuIso });
+    setStatus("⏸️ Paus startad.");
   }
 
-  const metod = team === "För hand" ? "hand" : "maskin";
-
-  try {
-    // 🔹 Skapa nytt pass i databasen
-    const { data, error } = await supabase
-      .from("tillstand_pass")
-      .insert([{ team_typ: metod, start_tid: new Date().toISOString(), aktiv: true }])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // 🔹 Spara lokalt och i minnet
-    const nyttPass = {
-      id: data.id,
-      startTid: data.start_tid,
-      metod,
-      team_typ: metod,
-    };
-    setAktivtPass(nyttPass);
-    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
-
-    setSenasteRapportTid(null);
+  // ======= Stop Paus =======
+  function stopPaus() {
+    if (!paus) {
+      showPopup("👎 Ingen paus är igång.", "error", 3000);
+      setStatus("Ingen paus att stoppa.");
+      return;
+    }
+    const nu = new Date();
+    const start = new Date(paus.startTid);
+    const diffSek = Math.max(Math.floor((nu - start) / 1000), 0);
+    setPausSekUnderIntervall((prev) => prev + diffSek);
     setPaus(null);
-    setPausSekUnderIntervall(0);
-    setStatus("⏱️ Pass startat och sparat i molnet.");
-    showPopup("✅ Pass startat – även vid app‑stängning fortsätter det!", "success", 4000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Kunde inte starta passet.", "error", 3000);
+    setStatus("Paus stoppad (lagras till nästa rapport).");
   }
-}
-
-// ======= Stoppa pass (uppdaterad med lagring) =======
-async function stoppaPass() {
-  if (!aktivtPass) {
-    showPopup("👎 Inget aktivt pass.", "error", 3000);
-    setStatus("Inget aktivt pass att stoppa.");
-    return;
-  }
-
-  const sek = Math.max(0, Math.floor((Date.now() - new Date(aktivtPass.startTid)) / 1000));
-
-  try {
-    // 🔹 Uppdatera i databasen
-    await supabase
-      .from("tillstand_pass")
-      .update({ aktiv: false, sluttid: new Date().toISOString() })
-      .eq("id", aktivtPass.id);
-
-    // 🔹 Rensa lokalt
-    setAktivtPass(null);
-    localStorage.removeItem("snöjour_aktivt_pass");
-    setSenasteRapportTid(null);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
-
-    setStatus(`✅ Pass stoppat (${formatSekTillHhMmSs(sek)} totalt).`);
-    showPopup("🟥 Pass stoppat och markerat som avslutat.", "success", 4000);
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid stopp av pass.", "error", 3000);
-  }
-}
 
   // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
   const veckansRapporter = rapporter.filter((r) => {
@@ -4187,28 +4016,29 @@ return (
       </header>
 
       {popup && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 9999,
-            padding: "24px 32px",
-            borderRadius: 24,
-            border: `2px solid ${popupStyle.borderColor}`,
-            backgroundColor: popupStyle.backgroundColor,
-            color: popupStyle.color,
-            fontSize: 20,
-            fontWeight: 600,
-            textAlign: "center",
-            maxWidth: "80%",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          {popup.text}
-        </div>
-      )}
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      // 🔼 Lägg den ovanför allt annat:
+      zIndex: 9999,
+      padding: "24px 32px",
+      borderRadius: 24,
+      border: `2px solid ${popupStyle.borderColor}`,
+      backgroundColor: popupStyle.backgroundColor,
+      color: popupStyle.color,
+      fontSize: 20,
+      fontWeight: 600,
+      textAlign: "center",
+      maxWidth: "80%",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+    }}
+  >
+    {popup.text}
+  </div>
+)}
 
       {deleteConfirm && (
         <div
@@ -4273,9 +4103,584 @@ return (
         </div>
       )}
 
+      {visaEditPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 150,
+      backgroundColor: "#ffffff",
+      border: "2px solid #2563eb",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+      Editera rapport
+    </h3>
+
+    <select
+      value={valdaEditId || ""}
+      onChange={(e) => onChangeValdEditId(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      {editRapporter.map((r) => (
+        <option key={r.id} value={r.id}>
+          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "grid", gap: 8 }}>
+      <label>
+        Datum:
+        <input
+          type="date"
+          value={editForm.datum}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, datum: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+<label>
+  Tid:
+  <input
+    type="time"
+    value={editForm.tid || ""}
+    onChange={(e) =>
+      setEditForm((f) => ({ ...f, tid: e.target.value }))
+    }
+    style={{
+      width: "100%",
+      padding: "8px",
+      borderRadius: 8,
+      border: "1px solid #d1d5db",
+    }}
+  />
+</label>
+      
+      <label>
+        Arbetstid (minuter):
+        <input
+          type="number"
+          value={editForm.arbetstid_min}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, arbetstid_min: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        />
+      </label>
+
+      <label>
+        Arbetstyp:
+        <select
+          value={editForm.team_namn}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, team_namn: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option>För hand</option>
+          <option>Maskin</option>
+        </select>
+      </label>
+
+      <label>
+        Antal anställda:
+        <select
+          value={editForm.antal_anstallda}
+          onChange={(e) =>
+            setEditForm((f) => ({
+              ...f,
+              antal_anstallda: Number(e.target.value),
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Grus (kg):
+        <select
+          value={editForm.sand_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, sand_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {[...Array(51)].map((_, i) => (
+            <option key={i} value={i}>
+              {i}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Salt (kg):
+        <select
+          value={editForm.salt_kg}
+          onChange={(e) =>
+            setEditForm((f) => ({ ...f, salt_kg: Number(e.target.value) }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <option value="0">0</option>
+          {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+            <option key={v} value={v}>{v}</option>
+          ))}
+        </select>
+      </label>
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        flexWrap: "wrap",
+        marginTop: 12,
+      }}
+    >
+      {[
+        ["syfteOversyn", "Översyn"],
+        ["syfteRojning", "Röjning"],
+        ["syfteSaltning", "Saltning"],
+        ["syfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={editForm[key]}
+            onChange={(e) =>
+              setEditForm((f) => ({ ...f, [key]: e.target.checked }))
+            }
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: 16,
+  }}
+>
+  {/* ✅ Vänster: Spara */}
+  <button
+    onClick={sparaEditRapport}
+    style={{
+      flex: 1,
+      marginRight: 6,
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#16a34a",
+      color: "#fff",
+      fontWeight: 600,
+    }}
+  >
+    Spara
+  </button>
+
+  {/* ➡️ Mitten: Avbryt */}
+  <button
+    onClick={() => setVisaEditPopup(false)}
+    style={{
+      flex: 1,
+      margin: "0 6px",
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#fbbf24",
+      color: "#78350f",
+      fontWeight: 600,
+    }}
+  >
+    Avbryt
+  </button>
+
+  {/* 🗑️ Höger: Radera */}
+  <button
+    onClick={() => raderaEnRapport(valdaEditId)}
+    style={{
+      flex: 1,
+      marginLeft: 6,
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Radera
+  </button>
+</div>
+  </div>
+)}
+
+      {visaRuttPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 140,
+      backgroundColor: "#ffffff",
+      border: "2px solid #10b981",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      padding: 20,
+      maxHeight: "80vh",
+      overflowY: "auto",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#065f46" }}>
+      Välj adresser för rutt
+    </h3>
+    <p style={{ fontSize: 13, color: "#6b7280" }}>
+      Markera de adresser du vill köra. Google optimerar ordningen.
+    </p>
+
+    {valjbaraRuttAdresser.map((a) => (
+      <label
+        key={a.id}
+        style={{
+          display: "block",
+          marginBottom: 8,
+          fontSize: 14,
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={a.vald}
+          onChange={(e) => toggleRuttAdress(a.id, e.target.checked)}
+          style={{ marginRight: 8 }}
+        />
+        {a.namn}
+      </label>
+    ))}
+
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+  <button
+    onClick={sparaPlaneradRutt}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#f59e0b",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    💾 Spara som planerad rutt
+  </button>
+  <button
+    onClick={stangRuttPopup}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Avbryt
+  </button>
+</div>
+  </div>
+)}
+      
+{visaManuellPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#ffffff",
+      border: "2px solid #facc15",
+      borderRadius: 12,
+      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+      padding: 24,
+      zIndex: 120,
+      width: "90%",
+      maxWidth: 420,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#854d0e" }}>
+      Manuell registrering
+    </h3>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Adress</label>
+<select
+  value={manuellAdressId}
+  onChange={(e) => setManuellAdressId(e.target.value)}
+  style={{
+    width: "100%",
+    marginBottom: 12,
+    padding: "8px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+    backgroundColor: "#f9fafb",
+  }}
+>
+  <option value="">-- Välj adress --</option>
+  {sortAdresser(adresser).map((a) => (
+    <option key={a.id} value={a.id}>
+      {a.namn}
+    </option>
+  ))}
+</select>
+ 
+    <label style={{ display: "block", marginBottom: 6 }}>Arbetstyp</label>
+    <select
+      value={manuellTeam}
+      onChange={(e) => setManuellTeam(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      <option>För hand</option>
+      <option>Maskin</option>
+    </select>
+
+    <label style={{ display: "block", marginBottom: 6 }}>Antal anställda</label>
+    <select
+      value={manuellAntalAnstallda}
+      onChange={(e) => setManuellAntalAnstallda(Number(e.target.value))}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#f9fafb",
+      }}
+    >
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+      {[
+        ["manSyfteOversyn", "Översyn"],
+        ["manSyfteRojning", "Röjning"],
+        ["manSyfteSaltning", "Saltning"],
+        ["manSyfteGrusning", "Grusning"],
+      ].map(([key, label]) => (
+        <label key={key} style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={eval(key)}
+            onChange={(e) => {
+              switch (key) {
+                case "manSyfteOversyn":
+                  setManSyfteOversyn(e.target.checked);
+                  break;
+                case "manSyfteRojning":
+                  setManSyfteRojning(e.target.checked);
+                  break;
+                case "manSyfteSaltning":
+                  setManSyfteSaltning(e.target.checked);
+                  break;
+                case "manSyfteGrusning":
+                  setManSyfteGrusning(e.target.checked);
+                  break;
+              }
+            }}
+            style={{ marginRight: 4 }}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
+
+    <label>Datum:</label>
+    <input
+      type="date"
+      value={manuellDatum}
+      onChange={(e) => setManuellDatum(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Tid:</label>
+<input
+  type="time"
+  value={manuellTid || ""}
+  onChange={(e) => setManuellTid(e.target.value)}
+  style={{
+    width: "100%",
+    marginBottom: 12,
+    padding: "8px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+  }}
+/>
+
+    
+    <label>Arbetstid (minuter)</label>
+    <input
+      type="number"
+      value={manuellTidMin}
+      onChange={(e) => setManuellTidMin(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    />
+
+    <label>Grus (kg)</label>
+    <select
+      value={manuellSand}
+      onChange={(e) => setManuellSand(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 12,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {[...Array(51)].map((_, i) => (
+        <option key={i} value={i}>
+          {i}
+        </option>
+      ))}
+    </select>
+
+    <label>Salt (kg)</label>
+    <select
+      value={manuellSalt}
+      onChange={(e) => setManuellSalt(e.target.value)}
+      style={{
+        width: "100%",
+        marginBottom: 16,
+        padding: "8px",
+        borderRadius: 8,
+        border: "1px solid #d1d5db",
+      }}
+    >
+      <option value="0">0</option>
+      {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+    </select>
+
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <button
+        onClick={sparaManuellRapport}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Spara manuellt
+      </button>
+      <button
+        onClick={closeManuellPopup}
+        style={{
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          fontWeight: 600,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+      
       {renderContent()}
     </div>
 
+    {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
     <nav
       style={{
         position: "fixed",
@@ -4291,6 +4696,7 @@ return (
         boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
       }}
     >
+      {/* Rad 1: Info + Start/Stop + Registrera */}
       <div
         style={{
           display: "flex",
@@ -4298,34 +4704,141 @@ return (
           marginBottom: 6,
         }}
       >
-        <button onClick={() => setActiveTab("info")} style={{ flex: 1 }}>
+        <button
+          onClick={() => setActiveTab("info")}
+          style={{
+            flex: 1,
+            marginRight: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "info" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
           Info
         </button>
-        <button onClick={() => setActiveTab("startstop")} style={{ flex: 1 }}>
+
+        <button
+          onClick={() => setActiveTab("startstop")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "startstop" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
           Start/Stop
         </button>
-        <button onClick={() => setActiveTab("registrera")} style={{ flex: 1 }}>
+
+        <button
+          onClick={() => setActiveTab("registrera")}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 6px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "registrera" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
           Registrera
         </button>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <button onClick={() => setActiveTab("rutt")} style={{ flex: 1 }}>
-          Rutt
-        </button>
-        <button onClick={() => setActiveTab("karta")} style={{ flex: 1 }}>
-          Karta
-        </button>
-        <button onClick={() => setActiveTab("rapport")} style={{ flex: 1 }}>
+      {/* Rad 2: Karta + Veckorapport + Radera */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <button
+  onClick={() => setActiveTab("rutt")}
+  style={{
+    flex: 1,
+    marginRight: 4,
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #10b981",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "rutt" ? "#10b981" : "#d1fae5",
+    color: activeTab === "rutt" ? "#ffffff" : "#065f46",
+  }}
+>
+  Rutt
+</button>
+<button
+  onClick={() => setActiveTab("karta")}
+  style={{
+    flex: 1,
+    margin: "0 4px",
+    padding: "10px 4px",
+    borderRadius: 999,
+    border: "1px solid #facc15",
+    fontSize: 13,
+    fontWeight: 600,
+    backgroundColor:
+      activeTab === "karta" ? "#facc15" : "#fef08a",
+    color: "#78350f",
+  }}
+>
+  Karta
+</button>
+        
+        <button
+          onClick={() => setActiveTab("rapport")}
+          style={{
+            flex: 1,
+            margin: "0 4px",
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #facc15",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "rapport" ? "#facc15" : "#fef08a",
+            color: "#78350f",
+          }}
+        >
           Veckorapport
         </button>
-        <button onClick={openRaderaTab} style={{ flex: 1 }}>
+        <button
+          onClick={openRaderaTab}
+          style={{
+            flex: 1,
+            marginLeft: 4,
+            padding: "10px 4px",
+            borderRadius: 999,
+            border: "1px solid #ef4444",
+            fontSize: 13,
+            fontWeight: 600,
+            backgroundColor:
+              activeTab === "radera" ? "#ef4444" : "#fecaca",
+            color: activeTab === "radera" ? "#ffffff" : "#7f1d1d",
+          }}
+        >
           Radera
         </button>
       </div>
     </nav>
   </div>
 );
-} // ✅ stänger function App
+}
 
 createRoot(document.getElementById("app")).render(<App />);
