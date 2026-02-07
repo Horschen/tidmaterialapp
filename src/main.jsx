@@ -1075,11 +1075,11 @@ async function sparaManuellRapport() {
     return;
   }
 
-  const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
-
-   // 🟡 Popup-för val av pass-typ (läggs till här)
+  // 🟡 Popup-för val av pass-typ (läggs till här)
   const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
   const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
+  
+  const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
 
   // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
