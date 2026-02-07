@@ -757,14 +757,13 @@ async function sparaEditAdress() {
       .from("adresser")
       .update({
         namn: editAdressData.namn,
-        aktiv: editAdressData.aktiv,
-        material: editAdressData.material,
-        maskin: editAdressData.maskin,
-        kombinerad: editAdressData.kombinerad,
-        adress_lista: nyLista || null,
-        adresslista_sortering: nyLista || null, // Uppdatera båda för kompatibilitet
-        Bostad_Företag: editAdressData.Bostad_Företag,
-        uppskattad_tid_min: Number(editAdressData.uppskattad_tid_min) || 10,
+  aktiv: editAdressData.aktiv,
+  material: editAdressData.material,
+  maskin: editAdressData.maskin,
+  kombinerad: editAdressData.kombinerad,
+  adresslista_sortering: Number(editAdressData.adress_lista), // Vi mappar formulärets fält till rätt kolumn
+  Bostad_Företag: editAdressData.Bostad_Företag,
+  uppskattad_tid_min: Number(editAdressData.uppskattad_tid_min) || 10,
       })
       .eq("id", editAdressData.id);
 
@@ -900,17 +899,16 @@ async function sparaNyAdress() {
     const { error } = await supabase.from("adresser").insert([
       {
         namn: adressNamn,
-        lat,
-        lng,
-        gps_url: gpsUrl,
-        aktiv: nyAdressForm.aktiv,
-        material: nyAdressForm.material,
-        maskin: nyAdressForm.maskin,
-        kombinerad: nyAdressForm.kombinerad,
-        adress_lista: nyPosition || null,
-        adresslista_sortering: nyPosition || null,
-        Bostad_Företag: nyAdressForm.Bostad_Företag,
-        uppskattad_tid_min: Number(nyAdressForm.uppskattad_tid_min) || 10,
+  lat,
+  lng,
+  gps_url: gpsUrl,
+  aktiv: nyAdressForm.aktiv,
+  material: nyAdressForm.material,
+  maskin: nyAdressForm.maskin,
+  kombinerad: nyAdressForm.kombinerad,
+  adresslista_sortering: Number(nyAdressForm.adress_lista), // Mappa här med
+  Bostad_Företag: nyAdressForm.Bostad_Företag,
+  uppskattad_tid_min: Number(nyAdressForm.uppskattad_tid_min) || 10,
       },
     ]);
 
@@ -1129,9 +1127,7 @@ async function uppdateraAktivStatus(adressId, nyStatus) {
 async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
-    .select(
-      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, material, maskin, kombinerad, bostad_foretag, uppskattad_tid_min"
-    )
+    .select("id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, material, maskin, kombinerad, Bostad_Företag, uppskattad_tid_min")
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
