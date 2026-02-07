@@ -559,9 +559,24 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   const [status, setStatus] = useState("");
   const [filterMetod, setFilterMetod] = useState("alla");
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState("");
   const [ruttKortider, setRuttKortider] = useState([]); // Körtider från Google Maps
   
+  
+  // Adress-admin state
+const [visaAdressEditPopup, setVisaAdressEditPopup] = useState(false);
+const [visaNyAdressPopup, setVisaNyAdressPopup] = useState(false);
+const [editAdressData, setEditAdressData] = useState(null);
+const [nyAdressForm, setNyAdressForm] = useState({
+  namn: "",
+  adressText: "",
+  aktiv: true,
+  material: "Grus",
+  maskin: false,
+  kombinerad: false,
+  adress_lista: "",
+  Bostad_Företag: "Bostad",
+  uppskattad_tid_min: 10,
+});
   
 // ======= Rutt-flik state =======
 const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
@@ -701,45 +716,274 @@ async function hamtaPassDetaljer(passId) {
   }
 }
   
-// ✅ Funktion för att lägga till ny adress (används i adress-admin)
-async function laggTillAdress() {
-  if (!nyAdress?.trim()) {
-    showPopup("👎 Skriv in en adress först.", "error", 3000);
+// ======= Öppna Edit-popup för en adress =======
+function openEditAdressPopup(adress) {
+  setEditAdressData({
+    id: adress.id,
+    namn: adress.namn || "",
+    aktiv: adress.aktiv ?? true,
+    material: adress.material || "Grus",
+    maskin: adress.maskin ?? false,
+    kombinerad: adress.kombinerad ?? false,
+    adress_lista: adress.adress_lista ?? adress.adresslista_sortering ?? "",
+    Bostad_Företag: adress.Bostad_Företag || "Bostad",
+    uppskattad_tid_min: adress.uppskattad_tid_min ?? 10,
+  });
+  setVisaAdressEditPopup(true);
+}
+
+// ======= Spara editerad adress =======
+async function sparaEditAdress() {
+  if (!editAdressData || !editAdressData.id) {
+    showPopup("👎 Ingen adress vald.", "error", 3000);
+    return;
+  }
+
+  const nyLista = Number(editAdressData.adress_lista);
+  
+  // Hämta nuvarande adress för att se om adress_lista ändrats
+  const nuvarandeAdress = adresser.find((a) => a.id === editAdressData.id);
+  const gammalLista = nuvarandeAdress?.adress_lista ?? nuvarandeAdress?.adresslista_sortering ?? 0;
+
+  try {
+    setStatus("Sparar adress...");
+
+    // Om adress_lista har ändrats, justera andra adresser
+    if (nyLista && nyLista !== gammalLista) {
+      await justeraAdressListaNumrering(editAdressData.id, nyLista, gammalLista);
+    }
+
+    const { error } = await supabase
+      .from("adresser")
+      .update({
+        namn: editAdressData.namn,
+        aktiv: editAdressData.aktiv,
+        material: editAdressData.material,
+        maskin: editAdressData.maskin,
+        kombinerad: editAdressData.kombinerad,
+        adress_lista: nyLista || null,
+        adresslista_sortering: nyLista || null, // Uppdatera båda för kompatibilitet
+        Bostad_Företag: editAdressData.Bostad_Företag,
+        uppskattad_tid_min: Number(editAdressData.uppskattad_tid_min) || 10,
+      })
+      .eq("id", editAdressData.id);
+
+    if (error) throw error;
+
+    showPopup("👍 Adress uppdaterad!", "success", 3000);
+    setStatus("✅ Adress sparad.");
+    setVisaAdressEditPopup(false);
+    setEditAdressData(null);
+    await laddaAdresser();
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid sparning av adress.", "error", 3000);
+    setStatus("❌ Fel: " + err.message);
+  }
+}
+
+// ======= Justera adress_lista numrering vid ändring =======
+async function justeraAdressListaNumrering(adressId, nyPosition, gammalPosition) {
+  try {
+    // Hämta alla adresser sorterade efter adress_lista
+    const { data: allaAdresser, error: fetchError } = await supabase
+      .from("adresser")
+      .select("id, adress_lista, adresslista_sortering")
+      .order("adress_lista", { ascending: true });
+
+    if (fetchError) throw fetchError;
+
+    // Filtrera bort den adress vi redigerar
+    const andraAdresser = allaAdresser.filter((a) => a.id !== adressId);
+
+    // Om vi flyttar till en lägre position (uppåt i listan)
+    if (nyPosition < gammalPosition) {
+      // Flytta alla adresser mellan nyPosition och gammalPosition ett steg ner
+      for (const adress of andraAdresser) {
+        const nuvarande = adress.adress_lista ?? adress.adresslista_sortering ?? 0;
+        if (nuvarande >= nyPosition && nuvarande < gammalPosition) {
+          await supabase
+            .from("adresser")
+            .update({
+              adress_lista: nuvarande + 1,
+              adresslista_sortering: nuvarande + 1,
+            })
+            .eq("id", adress.id);
+        }
+      }
+    }
+    // Om vi flyttar till en högre position (nedåt i listan)
+    else if (nyPosition > gammalPosition) {
+      // Flytta alla adresser mellan gammalPosition och nyPosition ett steg upp
+      for (const adress of andraAdresser) {
+        const nuvarande = adress.adress_lista ?? adress.adresslista_sortering ?? 0;
+        if (nuvarande > gammalPosition && nuvarande <= nyPosition) {
+          await supabase
+            .from("adresser")
+            .update({
+              adress_lista: nuvarande - 1,
+              adresslista_sortering: nuvarande - 1,
+            })
+            .eq("id", adress.id);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Fel vid justering av numrering:", err);
+  }
+}
+
+// ======= Öppna popup för ny adress =======
+function openNyAdressPopup() {
+  // Hitta nästa lediga nummer för adress_lista
+  const maxNummer = adresser.reduce((max, a) => {
+    const num = a.adress_lista ?? a.adresslista_sortering ?? 0;
+    return num > max ? num : max;
+  }, 0);
+
+  setNyAdressForm({
+    namn: "",
+    adressText: "",
+    aktiv: true,
+    material: "Grus",
+    maskin: false,
+    kombinerad: false,
+    adress_lista: maxNummer + 1,
+    Bostad_Företag: "Bostad",
+    uppskattad_tid_min: 10,
+  });
+  setVisaNyAdressPopup(true);
+}
+
+// ======= Spara ny adress =======
+async function sparaNyAdress() {
+  if (!nyAdressForm.adressText?.trim()) {
+    showPopup("👎 Skriv in en adress först.", "error", 3000);
     return;
   }
 
   try {
+    setStatus("🔍 Söker koordinater...");
+
+    // Hämta koordinater från Google Maps Geocoding API
     const res = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-        nyAdress
+        nyAdressForm.adressText
       )}&key=${GOOGLE_MAPS_API_KEY}`
     );
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
-      showPopup("👎 Koordinater hittades inte.", "error", 3000);
+      showPopup("👎 Kunde inte hitta koordinater för adressen.", "error", 3000);
+      setStatus("❌ Adress hittades inte.");
       return;
     }
 
     const { lat, lng } = data.results[0].geometry.location;
-    const formatted = data.results[0].formatted_address;
+    const formattedAddress = data.results[0].formatted_address;
+
+    // Skapa GPS-URL
+    const gpsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+
+    // Använd angivet namn eller formaterad adress
+    const adressNamn = nyAdressForm.namn?.trim() || formattedAddress;
+
+    const nyPosition = Number(nyAdressForm.adress_lista);
+
+    // Justera befintliga adresser om den nya positionen redan används
+    if (nyPosition) {
+      await justeraVidNyAdress(nyPosition);
+    }
+
+    setStatus("💾 Sparar adress...");
 
     const { error } = await supabase.from("adresser").insert([
       {
-        namn: formatted,
+        namn: adressNamn,
         lat,
         lng,
-        aktiv: true, // blir synlig direkt
+        gps_url: gpsUrl,
+        aktiv: nyAdressForm.aktiv,
+        material: nyAdressForm.material,
+        maskin: nyAdressForm.maskin,
+        kombinerad: nyAdressForm.kombinerad,
+        adress_lista: nyPosition || null,
+        adresslista_sortering: nyPosition || null,
+        Bostad_Företag: nyAdressForm.Bostad_Företag,
+        uppskattad_tid_min: Number(nyAdressForm.uppskattad_tid_min) || 10,
       },
     ]);
+
     if (error) throw error;
 
-    showPopup("👍 Ny adress sparad!", "success", 3000);
-    setNyAdress("");
+    showPopup("👍 Ny adress sparad!", "success", 3000);
+    setStatus("✅ Adress tillagd.");
+    setVisaNyAdressPopup(false);
+    setNyAdressForm({
+      namn: "",
+      adressText: "",
+      aktiv: true,
+      material: "Grus",
+      maskin: false,
+      kombinerad: false,
+      adress_lista: "",
+      Bostad_Företag: "Bostad",
+      uppskattad_tid_min: 10,
+    });
     await laddaAdresser();
   } catch (err) {
     console.error(err);
-    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
+    showPopup("👎 Fel vid sparning av adress.", "error", 3000);
+    setStatus("❌ Fel: " + err.message);
+  }
+}
+
+// ======= Justera numrering vid ny adress =======
+async function justeraVidNyAdress(nyPosition) {
+  try {
+    const { data: allaAdresser, error: fetchError } = await supabase
+      .from("adresser")
+      .select("id, adress_lista, adresslista_sortering")
+      .gte("adress_lista", nyPosition)
+      .order("adress_lista", { ascending: false });
+
+    if (fetchError) throw fetchError;
+
+    // Flytta alla adresser på nyPosition och högre ett steg ner
+    for (const adress of allaAdresser || []) {
+      const nuvarande = adress.adress_lista ?? adress.adresslista_sortering ?? 0;
+      await supabase
+        .from("adresser")
+        .update({
+          adress_lista: nuvarande + 1,
+          adresslista_sortering: nuvarande + 1,
+        })
+        .eq("id", adress.id);
+    }
+  } catch (err) {
+    console.error("Fel vid justering av numrering:", err);
+  }
+}
+
+// ======= Uppdatera aktiv-status (behålls för bakåtkompatibilitet) =======
+async function uppdateraAktivStatus(adressId, nyStatus) {
+  try {
+    const { error } = await supabase
+      .from("adresser")
+      .update({ aktiv: nyStatus })
+      .eq("id", adressId);
+
+    if (error) throw error;
+
+    showPopup(
+      nyStatus ? "👍 Adress aktiverad." : "👍 Adress inaktiverad.",
+      "success",
+      2000
+    );
+    await laddaAdresser();
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid uppdatering.", "error", 3000);
   }
 }
   
@@ -886,7 +1130,8 @@ async function laddaAdresser() {
   const { data, error } = await supabase
     .from("adresser")
     .select(
-      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv")
+      "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, material, maskin, kombinerad, adress_lista, Bostad_Företag, uppskattad_tid_min"
+    )
     .order("adresslista_sortering", { ascending: true });
 
   if (error) {
@@ -2757,16 +3002,16 @@ function avbrytRadering() {
   Öppna karta för vald adress
 </button>
 
-{/* 🧭 Administrera adresser */}
+{/* 🧭 Administrera Adresser */}
 <button
   onClick={() => setVisaAdressAdmin((v) => !v)}
   style={{
     ...primaryButton,
-    backgroundColor: "#f59e0b", // gul
+    backgroundColor: "#f59e0b",
     marginTop: 8,
   }}
 >
-  {visaAdressAdmin ? "Stäng adress-admin" : "Administrera adresser"}
+  {visaAdressAdmin ? "Stäng Adress-Admin" : "Administrera Adresser"}
 </button>
 
 {visaAdressAdmin && (
@@ -2779,71 +3024,88 @@ function avbrytRadering() {
       boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
     }}
   >
-    <h3 style={{ fontSize: 16, marginBottom: 8 }}>Adress‑admin</h3>
+    <h3 style={{ fontSize: 16, marginBottom: 8 }}>Adress-Admin</h3>
     <p style={{ fontSize: 13, color: "#6b7280", marginTop: 0 }}>
-      Här kan du aktivera eller dölja adresser i appens menyer.
+      Klicka på "Editera" för att ändra en adress, eller "Lägg till ny adress" för att skapa en ny.
     </p>
 
-    {adresser.map((a) => (
-      <label
-        key={a.id}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          marginBottom: 6,
-          gap: 8,
-          fontSize: 14,
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={a.aktiv ?? true}
-          onChange={(e) => uppdateraAktivStatus(a.id, e.target.checked)}
-        />
-        <span style={{ flex: 1 }}>{a.namn}</span>
-        <span
+    {/* Lista över adresser */}
+    <div style={{ marginTop: 12, maxHeight: 400, overflowY: "auto" }}>
+      {adresser.map((a) => (
+        <div
+          key={a.id}
           style={{
-            fontSize: 12,
-            color: a.aktiv ? "#16a34a" : "#dc2626",
-            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 12px",
+            marginBottom: 6,
+            borderRadius: 8,
+            backgroundColor: a.aktiv ? "#f0fdf4" : "#fef2f2",
+            border: a.aktiv ? "1px solid #86efac" : "1px solid #fecaca",
           }}
         >
-          {a.aktiv ? "Synlig" : "Dold"}
-        </span>
-      </label>
-    ))}
-
-    {/* Lägg till ny adress */}
-    <div style={{ marginTop: 20 }}>
-      <h4 style={{ fontSize: 15, marginBottom: 6 }}>Lägg till ny adress</h4>
-      <input
-        type="text"
-        value={nyAdress}
-        onChange={(e) => setNyAdress(e.target.value)}
-        placeholder="Skriv gatuadress eller plats"
-        style={{
-          width: "100%",
-          padding: "8px 10px",
-          borderRadius: 8,
-          border: "1px solid #d1d5db",
-          marginBottom: 8,
-        }}
-      />
-      <button
-        onClick={laggTillAdress}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          fontWeight: 600,
-          width: "100%",
-        }}
-      >
-        ➕ Spara ny adress
-      </button>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 500 }}>
+              {a.adress_lista ?? a.adresslista_sortering ?? "-"}. {a.namn}
+            </div>
+            <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
+              {a.Bostad_Företag || "—"} | {a.material || "—"} | 
+              {a.maskin ? " Maskin ✓" : " Maskin ✗"} | 
+              {a.kombinerad ? " Komb ✓" : " Komb ✗"} | 
+              {a.uppskattad_tid_min || 10} min
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 11,
+                padding: "2px 6px",
+                borderRadius: 4,
+                backgroundColor: a.aktiv ? "#dcfce7" : "#fee2e2",
+                color: a.aktiv ? "#166534" : "#991b1b",
+                fontWeight: 600,
+              }}
+            >
+              {a.aktiv ? "Aktiv" : "Inaktiv"}
+            </span>
+            <button
+              onClick={() => openEditAdressPopup(a)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: "none",
+                backgroundColor: "#3b82f6",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Editera
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
+
+    {/* Knapp för att lägga till ny adress */}
+    <button
+      onClick={openNyAdressPopup}
+      style={{
+        marginTop: 16,
+        padding: "12px 16px",
+        borderRadius: 999,
+        border: "none",
+        backgroundColor: "#16a34a",
+        color: "#fff",
+        fontWeight: 600,
+        width: "100%",
+        fontSize: 14,
+      }}
+    >
+      ➕ Lägg till ny adress
+    </button>
   </div>
 )}
 
@@ -5601,6 +5863,547 @@ return (
     </div>
   </div>
 )}
+
+{/* ===== EDIT ADRESS POPUP ===== */}
+{visaAdressEditPopup && editAdressData && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 200,
+      backgroundColor: "#ffffff",
+      border: "2px solid #3b82f6",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      maxHeight: "85vh",
+      overflowY: "auto",
+      padding: 20,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#1d4ed8" }}>
+      Editera Adress
+    </h3>
+
+    <div style={{ display: "grid", gap: 12 }}>
+      {/* Namn */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Adressnamn:</span>
+        <input
+          type="text"
+          value={editAdressData.namn}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({ ...prev, namn: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+      </label>
+
+      {/* Aktiv/Inaktiv */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Status:</span>
+        <select
+          value={editAdressData.aktiv ? "true" : "false"}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              aktiv: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Aktiv Adress</option>
+          <option value="false">Inaktiv Adress</option>
+        </select>
+      </label>
+
+      {/* Bostad/Företag */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Typ:</span>
+        <select
+          value={editAdressData.Bostad_Företag}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              Bostad_Företag: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="Bostad">Bostad</option>
+          <option value="Företag">Företag</option>
+        </select>
+      </label>
+
+      {/* Material */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Material:</span>
+        <select
+          value={editAdressData.material}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({ ...prev, material: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="Grus">Grus</option>
+          <option value="Salt">Salt</option>
+        </select>
+      </label>
+
+      {/* Maskin */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Maskin möjlig:</span>
+        <select
+          value={editAdressData.maskin ? "true" : "false"}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              maskin: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Ja</option>
+          <option value="false">Nej</option>
+        </select>
+      </label>
+
+      {/* Kombinerad */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Kombinerad:</span>
+        <select
+          value={editAdressData.kombinerad ? "true" : "false"}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              kombinerad: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Ja</option>
+          <option value="false">Nej</option>
+        </select>
+      </label>
+
+      {/* Adress-lista nummer */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Sorteringsnummer (adress_lista):
+        </span>
+        <input
+          type="number"
+          value={editAdressData.adress_lista}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              adress_lista: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+        <span style={{ fontSize: 11, color: "#6b7280" }}>
+          Ändrar du detta nummer justeras övriga adresser automatiskt.
+        </span>
+      </label>
+
+      {/* Uppskattad tid */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Uppskattad arbetstid (minuter):
+        </span>
+        <input
+          type="number"
+          value={editAdressData.uppskattad_tid_min}
+          onChange={(e) =>
+            setEditAdressData((prev) => ({
+              ...prev,
+              uppskattad_tid_min: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+      </label>
+    </div>
+
+    {/* Knappar */}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 20,
+        gap: 8,
+      }}
+    >
+      <button
+        onClick={sparaEditAdress}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+        }}
+      >
+        Spara
+      </button>
+      <button
+  onClick={() => {
+    setVisaAdressEditPopup(false);
+    setEditAdressData(null);
+  }}
+  style={{
+    flex: 1,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#fbbf24",
+    color: "#78350f",
+    fontWeight: 600,
+  }}
+>
+  Avbryt
+</button>
+    </div>
+  </div>
+)}
+
+{/* ===== NY ADRESS POPUP ===== */}
+{visaNyAdressPopup && (
+  <div
+    style={{
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 200,
+      backgroundColor: "#ffffff",
+      border: "2px solid #16a34a",
+      borderRadius: 12,
+      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+      width: "90%",
+      maxWidth: 420,
+      maxHeight: "85vh",
+      overflowY: "auto",
+      padding: 20,
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}
+  >
+    <h3 style={{ marginTop: 0, fontSize: 18, color: "#166534" }}>
+      Lägg till ny adress
+    </h3>
+
+    <div style={{ display: "grid", gap: 12 }}>
+      {/* Gatuadress för geokodning */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Gatuadress (för GPS-koordinater):
+        </span>
+        <input
+          type="text"
+          value={nyAdressForm.adressText}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({ ...prev, adressText: e.target.value }))
+          }
+          placeholder="T.ex. Storgatan 1, Stockholm"
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+        <span style={{ fontSize: 11, color: "#6b7280" }}>
+          Adressen skickas till Google Maps för att hämta koordinater automatiskt.
+        </span>
+      </label>
+
+      {/* Valfritt namn */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Valfritt namn (visas i listor):
+        </span>
+        <input
+          type="text"
+          value={nyAdressForm.namn}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({ ...prev, namn: e.target.value }))
+          }
+          placeholder="Lämna tomt för att använda gatuadressen"
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+      </label>
+
+      {/* Aktiv/Inaktiv */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Status:</span>
+        <select
+          value={nyAdressForm.aktiv ? "true" : "false"}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              aktiv: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Aktiv Adress</option>
+          <option value="false">Inaktiv Adress</option>
+        </select>
+      </label>
+
+      {/* Bostad/Företag */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Typ:</span>
+        <select
+          value={nyAdressForm.Bostad_Företag}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              Bostad_Företag: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="Bostad">Bostad</option>
+          <option value="Företag">Företag</option>
+        </select>
+      </label>
+
+      {/* Material */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Material:</span>
+        <select
+          value={nyAdressForm.material}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({ ...prev, material: e.target.value }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="Grus">Grus</option>
+          <option value="Salt">Salt</option>
+        </select>
+      </label>
+
+      {/* Maskin */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Maskin möjlig:</span>
+        <select
+          value={nyAdressForm.maskin ? "true" : "false"}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              maskin: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Ja</option>
+          <option value="false">Nej</option>
+        </select>
+      </label>
+
+      {/* Kombinerad */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>Kombinerad:</span>
+        <select
+          value={nyAdressForm.kombinerad ? "true" : "false"}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              kombinerad: e.target.value === "true",
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        >
+          <option value="true">Ja</option>
+          <option value="false">Nej</option>
+        </select>
+      </label>
+
+      {/* Adress-lista nummer */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Sorteringsnummer (adress_lista):
+        </span>
+        <input
+          type="number"
+          value={nyAdressForm.adress_lista}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              adress_lista: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+        <span style={{ fontSize: 11, color: "#6b7280" }}>
+          Om numret redan finns justeras övriga adresser automatiskt nedåt.
+        </span>
+      </label>
+
+      {/* Uppskattad tid */}
+      <label>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>
+          Uppskattad arbetstid (minuter):
+        </span>
+        <input
+          type="number"
+          value={nyAdressForm.uppskattad_tid_min}
+          onChange={(e) =>
+            setNyAdressForm((prev) => ({
+              ...prev,
+              uppskattad_tid_min: e.target.value,
+            }))
+          }
+          style={{
+            width: "100%",
+            padding: "8px",
+            borderRadius: 8,
+            border: "1px solid #d1d5db",
+            marginTop: 4,
+          }}
+        />
+      </label>
+    </div>
+
+    {/* Knappar */}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 20,
+        gap: 8,
+      }}
+    >
+      <button
+        onClick={sparaNyAdress}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#16a34a",
+          color: "#fff",
+          fontWeight: 600,
+        }}
+      >
+        Spara adress
+      <button
+  onClick={() => setVisaNyAdressPopup(false)}
+  style={{
+    flex: 1,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#fbbf24",
+    color: "#78350f",
+    fontWeight: 600,
+  }}
+>
+  Avbryt
+</button>
+    </div>
+  </div>
+)}
+      
       
       {renderContent()}
     </div>
