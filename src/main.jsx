@@ -424,6 +424,37 @@ const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
 
   const [adresser, setAdresser] = useState([]);
+
+  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
+  const veckansRapporter = rapporter.filter((r) => {
+    const d = new Date(r.datum);
+    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    const år = tmp.getUTCFullYear();
+
+    const veckaOK =
+      !filtreradVecka || Number(filtreradVecka) === Number(vecka);
+    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
+
+    return veckaOK && årOK;
+  });
+
+  const filtreradeRapporter = veckansRapporter.filter((r) => {
+    const metodOK =
+      filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
+    return metodOK;
+  });
+
+  const totalMaskinMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "maskin")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  const totalHandMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "hand")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
   
   // 🟡 Popup‑för val av pass‑typ
 const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
@@ -1416,37 +1447,6 @@ async function stoppaPass() {
     setPaus(null);
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
-   
-  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
-  const veckansRapporter = rapporter.filter((r) => {
-    const d = new Date(r.datum);
-    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-    const år = tmp.getUTCFullYear();
-
-    const veckaOK =
-      !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
-
-    return veckaOK && årOK;
-  });
-
-  const filtreradeRapporter = veckansRapporter.filter((r) => {
-    const metodOK =
-      filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
-    return metodOK;
-  });
-
-  const totalMaskinMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "maskin")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-
-  const totalHandMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "hand")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
