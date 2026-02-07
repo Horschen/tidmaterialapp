@@ -1211,7 +1211,7 @@ async function stoppaPass() {
   // 🟡 Popup-för val av pass-typ (läggs till här)
   const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
   const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
-  }
+
   
   // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
   const veckansRapporter = rapporter.filter((r) => {
