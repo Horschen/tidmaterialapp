@@ -575,7 +575,7 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   const [filterMetod, setFilterMetod] = useState("alla");
   const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
   const [nyAdress, setNyAdress] = useState("");
-  
+  const [ruttKortider, setRuttKortider] = useState([]); // Körtider från Google Maps
   
   
 // ======= Rutt-flik state =======
@@ -1878,7 +1878,7 @@ const secondaryButton = {
 };
 
 // ======= RUTT-FUNKTIONER =======
-
+  
 // Ladda aktiv rutt från databasen (utan nested relation)
 async function laddaAktivRutt() {
   console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
@@ -1937,6 +1937,67 @@ async function laddaVantandeRutt() {
   }
 }
 
+// ======= Hämta körtider från Google Maps =======
+async function hamtaKortiderForRutt(adressLista) {
+  if (!adressLista || adressLista.length < 2) {
+    return [];
+  }
+
+  // Filtrera bort adresser utan GPS
+  const medGPS = adressLista.filter((a) => a.lat && a.lng);
+  
+  if (medGPS.length < 2) {
+    console.warn("För få adresser med GPS för att beräkna körtider");
+    return [];
+  }
+
+  const kortider = [];
+
+  try {
+    // Hämta körtid mellan varje par av adresser
+    for (let i = 0; i < medGPS.length - 1; i++) {
+      const origin = `${medGPS[i].lat},${medGPS[i].lng}`;
+      const destination = `${medGPS[i + 1].lat},${medGPS[i + 1].lng}`;
+
+      const url = `/api/distance?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
+        const element = data.rows[0].elements[0];
+        kortider.push({
+          from_id: medGPS[i].id,
+          to_id: medGPS[i + 1].id,
+          from_namn: medGPS[i].namn,
+          to_namn: medGPS[i + 1].namn,
+          duration_sek: element.duration.value,
+          duration_text: element.duration.text,
+          distance_m: element.distance.value,
+          distance_text: element.distance.text,
+        });
+      } else {
+        console.warn(`Kunde inte hämta körtid: ${medGPS[i].namn} → ${medGPS[i + 1].namn}`);
+        kortider.push({
+          from_id: medGPS[i].id,
+          to_id: medGPS[i + 1].id,
+          from_namn: medGPS[i].namn,
+          to_namn: medGPS[i + 1].namn,
+          duration_sek: 300, // Fallback: 5 min
+          duration_text: "~5 min",
+          distance_m: 0,
+          distance_text: "Okänt",
+        });
+      }
+    }
+
+    return kortider;
+  } catch (err) {
+    console.error("Fel vid hämtning av körtider:", err);
+    return [];
+  }
+}
+  
 // Öppna popup för att välja adresser till rutt
 function oppnaRuttPopup() {
   setValjbaraRuttAdresser(
@@ -3371,11 +3432,22 @@ function avbrytRadering() {
   const totalAdresser = ruttAdresser.length;
   const avklaradeAntal = ruttAdresser.filter((r) => r.avklarad).length;
 
-  // Beräkna uppskattad total tid för rutten
-  const uppskattadTotalMin = ruttAdresser.reduce((sum, r) => {
+  // Beräkna uppskattad arbetstid (från databasen)
+  const uppskattadArbeteMin = ruttAdresser.reduce((sum, r) => {
     const adress = adresser.find((a) => a.id === r.adress_id);
     return sum + (adress?.uppskattad_tid_min || 10);
   }, 0);
+
+  // Beräkna körtid (från Google Maps)
+  const uppskattadTransportSek = ruttKortider.reduce((sum, k) => sum + (k.duration_sek || 0), 0);
+  const uppskattadTransportMin = Math.round(uppskattadTransportSek / 60);
+
+  // Total tid
+  const uppskattadTotalMin = uppskattadArbeteMin + uppskattadTransportMin;
+
+  // Total körsträcka
+  const totalDistansM = ruttKortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
+  const totalDistansKm = (totalDistansM / 1000).toFixed(1);
 
   // ======= Fasta rutter: Uppifrån-Ner / Nerifrån-Upp =======
   async function aktiveraBostadsrutt(riktning) {
@@ -3418,21 +3490,37 @@ function avbrytRadering() {
 
       await laddaAktivRutt();
 
+      // === Hämta körtider från Google Maps ===
+      setRuttStatus("Beräknar körtider via Google Maps...");
+      const kortider = await hamtaKortiderForRutt(data);
+      setRuttKortider(kortider);
+
       const riktningText = riktning === "uppifrån-ner" 
         ? "Uppifrån → Ner" 
         : "Nerifrån → Upp";
       
-      // Beräkna uppskattad tid
-      const totalMin = data.reduce((sum, a) => sum + (a.uppskattad_tid_min || 10), 0);
+      // Beräkna uppskattad arbetstid (från databasen)
+      const totalArbeteMin = data.reduce((sum, a) => sum + (a.uppskattad_tid_min || 10), 0);
+      
+      // Beräkna total körtid (från Google Maps)
+      const totalTransportSek = kortider.reduce((sum, k) => sum + (k.duration_sek || 0), 0);
+      const totalTransportMin = Math.round(totalTransportSek / 60);
+      
+      // Total tid
+      const totalMin = totalArbeteMin + totalTransportMin;
       const timmar = Math.floor(totalMin / 60);
       const minuter = totalMin % 60;
 
+      // Total körsträcka
+      const totalDistansM = kortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
+      const totalDistansKm = (totalDistansM / 1000).toFixed(1);
+
       showPopup(
-        `👍 ${riktningText}: ${data.length} bostäder\n⏱️ Ca ${timmar}h ${minuter}min`, 
+        `👍 ${riktningText}: ${data.length} bostäder\n🚗 ${totalDistansKm} km körsträcka\n⏱️ Ca ${timmar}h ${minuter}min totalt`, 
         "success", 
-        4000
+        5000
       );
-      setRuttStatus(`✅ Rutt aktiverad: ${riktningText} (${data.length} adresser)`);
+      setRuttStatus(`✅ Rutt aktiverad: ${riktningText}`);
 
     } catch (err) {
       console.error(err);
@@ -3466,23 +3554,34 @@ function avbrytRadering() {
       )}
 
       {totalAdresser > 0 && (
-        <div
-          style={{
-            padding: "12px 16px",
-            borderRadius: 12,
-            backgroundColor: "#fef3c7",
-            color: "#92400e",
-            marginBottom: 12,
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
-          <div style={{ fontSize: 12, fontWeight: 400, marginTop: 4 }}>
-            ⏱️ Uppskattad tid: {formatTid(uppskattadTotalMin)}
-          </div>
-        </div>
-      )}
+  <div
+    style={{
+      padding: "12px 16px",
+      borderRadius: 12,
+      backgroundColor: "#fef3c7",
+      color: "#92400e",
+      marginBottom: 12,
+      fontSize: 14,
+      fontWeight: 600,
+    }}
+  >
+    📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
+    
+    {ruttKortider.length > 0 && (
+      <div style={{ fontSize: 12, fontWeight: 400, marginTop: 6 }}>
+        🚗 Körsträcka: {totalDistansKm} km ({formatTid(uppskattadTransportMin)})
+      </div>
+    )}
+    
+    <div style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>
+      🔧 Arbetstid: {formatTid(uppskattadArbeteMin)}
+    </div>
+    
+    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4, color: "#065f46" }}>
+      ⏱️ Total uppskattad tid: {formatTid(uppskattadTotalMin)}
+    </div>
+  </div>
+)}
 
       {nastaAdress && (
         <div
@@ -3518,31 +3617,31 @@ function avbrytRadering() {
             onClick={() => aktiveraBostadsrutt("uppifrån-ner")}
             style={{
               flex: 1,
-              padding: "12px 16px",
+              padding: "12px 8px",
               borderRadius: 999,
               border: "none",
               backgroundColor: "#22c55e",
               color: "#ffffff",
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: 13,
             }}
           >
-            ⬇️ Uppifrån-Ner
+            ⬇️ Uppifrån-Ner Bostad
           </button>
           <button
             onClick={() => aktiveraBostadsrutt("nerifrån-upp")}
             style={{
               flex: 1,
-              padding: "12px 16px",
+              padding: "12px 8px",
               borderRadius: 999,
               border: "none",
               backgroundColor: "#16a34a",
               color: "#ffffff",
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: 13,
             }}
           >
-            ⬆️ Nerifrån-Upp
+            ⬆️ Nerifrån-Upp Bostad
           </button>
         </div>
       </div>
@@ -3664,6 +3763,7 @@ function avbrytRadering() {
               const harGPS = r.adresser?.lat && r.adresser?.lng;
               const adressData = adresser.find((a) => a.id === r.adress_id);
               const uppskattadMin = adressData?.uppskattad_tid_min || 10;
+              const kortid = ruttKortider.find((k) => k.from_id === r.adress_id);
               
               return (
                 <div
@@ -3717,8 +3817,19 @@ function avbrytRadering() {
                   <div style={{ flex: 1, fontSize: 14 }}>
                     <strong>{r.adresser?.namn}</strong>
                     <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                      ⏱️ ~{uppskattadMin} min
-                    </div>
+                   🔧 Arbete: ~{uppskattadMin} min
+                   {(() => {
+                   const kortid = ruttKortider.find((k) => k.from_id === r.adress_id);
+                   if (kortid) {
+                  return (
+                  <span style={{ marginLeft: 8 }}>
+                  🚗 → {kortid.duration_text} ({kortid.distance_text})
+                 </span>
+                );
+                }
+                return null;
+                })()}
+                </div>
                     {!harGPS && (
                       <span style={{ fontSize: 11, color: "#dc2626" }}>
                         (Ingen GPS)
