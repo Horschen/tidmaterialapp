@@ -387,27 +387,27 @@ function VeckoOversikt({
       
 // ======= Huvudappen =======
 function App() {
-  // ======= 1️⃣ ALLA useState FÖRST =======
   const [activeTab, setActiveTab] = useState("registrera");
 
-  // 🟢 Läs sparat pausläge direkt innan något ritas
+  // 🟢 Läs sparat pausläge direkt innan något ritas
   const initialPaused =
     typeof localStorage !== "undefined" &&
     localStorage.getItem("snöjour_password_paused") === "true";
   const [passwordPaused, setPasswordPaused] = useState(initialPaused);
 
-  // 🟢 Om lösenord är pausat: börja som inloggad direkt
+  // 🟢 Om lösenord är pausat: börja som inloggad direkt
   const [isAuthenticated, setIsAuthenticated] = useState(initialPaused);
 
-  // 🟢 Fältet i login‑formuläret
+  // 🟢 Fältet i login‑formuläret
   const [loginPassword, setLoginPassword] = useState("");
 
-  // ======= Arbetspass-översikt state =======
-  const [visaPassOversikt, setVisaPassOversikt] = useState(false);
-  const [passHistorik, setPassHistorik] = useState([]);
-  const [valtPassId, setValtPassId] = useState("");
-  const [passDetaljer, setPassDetaljer] = useState(null);
-  const [laddaPassDetaljer, setLaddaPassDetaljer] = useState(false);
+  // 🟢 Skriv in/uppdatera värdet i localStorage varje gång det ändras
+  useEffect(() => {
+    localStorage.setItem(
+      "snöjour_password_paused",
+      passwordPaused ? "true" : "false"
+    );
+  }, [passwordPaused]);
 
   // ======= Resterande state =======
   const [rapporter, setRapporter] = useState([]);
@@ -419,30 +419,69 @@ function App() {
   const [adresser, setAdresser] = useState([]);
   
   // 🟡 Popup‑för val av pass‑typ
-  const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
-  const [valdMetodTemp, setValdMetodTemp] = useState("hand");
+const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
+const [valdMetodTemp, setValdMetodTemp] = useState("hand"); // standard: hand
 
   // Popup för anslutning till aktivt pass
-  const [aktivPassPopup, setAktivPassPopup] = useState(null);
+const [aktivPassPopup, setAktivPassPopup] = useState(null);
+/* struktur:
+   null                      → ingen popup
+   {typ:"hand", start:"2026-01-10T12:00:00", steg:1}   → Visa fråga "För hand pågår..."
+   {typ:"maskin", start:"…",  steg:1}                  → Visa fråga "Maskin pågår..."
+   {steg:2, val:"hand"}                                → Visa fråga "Vill du starta maskin?"
+   {lista:[…]}                                         → flera pass finns
+*/
 
   // Rapportinmatning (Registrera-fliken)
   const [valda, setValda] = useState("");
   const [arbetstid, setArbetstid] = useState("");
-  const [team, setTeam] = useState("För hand");
+  const [team, setTeam] = useState("För hand");
   const [antalAnstallda, setAntalAnstallda] = useState(1);
   const [sand, setSand] = useState(0);
   const [salt, setSalt] = useState(0);
 
   // Pass (auto-tid)
-  const [aktivtPass, setAktivtPass] = useState(null);
+  const [aktivtPass, setAktivtPass] = useState(null); // { startTid, metod }
   const [senasteRapportTid, setSenasteRapportTid] = useState(null);
 
   // Paus
-  const [paus, setPaus] = useState(null);
-  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0);
+  const [paus, setPaus] = useState(null); // { startTid } när paus pågår
+  const [pausSekUnderIntervall, setPausSekUnderIntervall] = useState(0); // total paus (sek) för aktuell adress/resa
 
   // Timer för pass / paus
   const [nuTid, setNuTid] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNuTid(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Primär timer: total pass-tid
+  const passTotalSek =
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
+        )
+      : 0;
+
+  // Sekundär timer: tid sedan senaste adress (eller pass-start om första)
+  const pågåendePassSek =
+    aktivtPass != null
+      ? Math.max(
+          0,
+          Math.floor(
+            (nuTid -
+              new Date(senasteRapportTid || aktivtPass.startTid)) /
+              1000
+          )
+        )
+      : 0;
+
+  // Pågående paus (sekunder sedan Start Paus)
+  const pågåendePausSek =
+    paus != null
+      ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
+      : 0;
 
   // Syften (auto/registrera)
   const [syfteOversyn, setSyfteOversyn] = useState(false);
@@ -450,10 +489,20 @@ function App() {
   const [syfteSaltning, setSyfteSaltning] = useState(false);
   const [syfteGrusning, setSyfteGrusning] = useState(false);
 
+  function buildSyfteString() {
+    const delar = [];
+    if (syfteOversyn) delar.push("Översyn");
+    if (syfteRojning) delar.push("Röjning");
+    if (syfteSaltning) delar.push("Saltning");
+    if (syfteGrusning) delar.push("Grusning");
+    return delar.join(", ");
+  }
+
   // Manuell registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
-  const [manuellTeam, setManuellTeam] = useState("För hand");
-  const [manuellAntalAnstallda, setManuellAntalAnstallda] = useState(1);
+  const [manuellTeam, setManuellTeam] = useState("För hand");
+  const [manuellAntalAnstallda, setManuellAntalAnstallda] =
+    useState(1);
   const [manuellDatum, setManuellDatum] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -467,262 +516,6 @@ function App() {
   const [visaManuellPopup, setVisaManuellPopup] = useState(false);
   const [manuellTid, setManuellTid] = useState("");
 
-  // Editera-rapport popup
-  const [visaEditPopup, setVisaEditPopup] = useState(false);
-  const [editAdressId, setEditAdressId] = useState(null);
-  const [editRapporter, setEditRapporter] = useState([]);
-  const [valdaEditId, setValdaEditId] = useState(null);
-  const [editForm, setEditForm] = useState({
-    datum: "",
-    tid: "",
-    arbetstid_min: "",
-    sand_kg: "",
-    salt_kg: "",
-    syfteOversyn: false,
-    syfteRojning: false,
-    syfteSaltning: false,
-    syfteGrusning: false,
-    antal_anstallda: 1,
-    team_namn: "För hand",
-  });
-
-  // Kartflik
-  const [kartaAdressId, setKartaAdressId] = useState("");
-  const [kartaNotering, setKartaNotering] = useState("");
-  const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
-  const [status, setStatus] = useState("");
-  const [filterMetod, setFilterMetod] = useState("alla");
-  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
-  const [nyAdress, setNyAdress] = useState("");
-
-  // ======= Rutt-flik state =======
-  const [ruttAdresser, setRuttAdresser] = useState([]);
-  const [visaRuttPopup, setVisaRuttPopup] = useState(false);
-  const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]);
-  const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null);
-  const [ruttStatus, setRuttStatus] = useState("");
-  const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]);
-  const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
-  const [ruttKortider, setRuttKortider] = useState([]);
-
-  // Popup-notis
-  const [popup, setPopup] = useState(null);
-
-  // Delete-confirm popup
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-  // Radera-flik state
-  const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
-  const [raderaMånad, setRaderaMånad] = useState("");
-  const [raderaPågår, setRaderaPågår] = useState(false);
-  const [raderaUnlocked, setRaderaUnlocked] = useState(false);
-
-  // ======= 2️⃣ BERÄKNADE VÄRDEN =======
-  
-  // Primär timer: total pass-tid
-  const passTotalSek =
-    aktivtPass != null
-      ? Math.max(
-          0,
-          Math.floor((nuTid - new Date(aktivtPass.startTid)) / 1000)
-        )
-      : 0;
-
-  // Sekundär timer: tid sedan senaste adress
-  const pågåendePassSek =
-    aktivtPass != null
-      ? Math.max(
-          0,
-          Math.floor(
-            (nuTid - new Date(senasteRapportTid || aktivtPass.startTid)) / 1000
-          )
-        )
-      : 0;
-
-  // Pågående paus (sekunder)
-  const pågåendePausSek =
-    paus != null
-      ? Math.max(0, Math.floor((nuTid - new Date(paus.startTid)) / 1000))
-      : 0;
-
-  // Filtrera rapporter på vecka/år/metod
-  const veckansRapporter = rapporter.filter((r) => {
-    const d = new Date(r.datum);
-    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
-    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
-    const år = tmp.getUTCFullYear();
-
-    const veckaOK = !filtreradVecka || Number(filtreradVecka) === Number(vecka);
-    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
-
-    return veckaOK && årOK;
-  });
-
-  const filtreradeRapporter = veckansRapporter.filter((r) => {
-    const metodOK = filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
-    return metodOK;
-  });
-
-  const totalMaskinMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "maskin")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-
-  const totalHandMin = veckansRapporter
-    .filter((r) => r.arbetssatt === "hand")
-    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-
-  // ======= 3️⃣ useEffect HOOKS =======
-  
-  // Skriv in/uppdatera värdet i localStorage varje gång det ändras
-  useEffect(() => {
-    localStorage.setItem(
-      "snöjour_password_paused",
-      passwordPaused ? "true" : "false"
-    );
-  }, [passwordPaused]);
-
-  // Timer för pass / paus
-  useEffect(() => {
-    const id = setInterval(() => setNuTid(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Varning vid stängning/uppdatering om pass är aktivt
-  useEffect(() => {
-    function handleBeforeUnload(e) {
-      if (aktivtPass) {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
-      }
-      return undefined;
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [aktivtPass]);
-
-  // Spara/Läs pass-state i localStorage
-  useEffect(() => {
-    const payload = {
-      aktivtPass,
-      senasteRapportTid,
-      paus,
-      pausSekUnderIntervall,
-      team,
-      antalAnstallda,
-    };
-    try {
-      localStorage.setItem("snöjour_pass_state", JSON.stringify(payload));
-    } catch (_) {}
-  }, [aktivtPass, senasteRapportTid, paus, pausSekUnderIntervall, team, antalAnstallda]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("snöjour_pass_state");
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data && data.aktivtPass && data.aktivtPass.startTid) {
-        setAktivtPass(data.aktivtPass);
-        setSenasteRapportTid(data.senasteRapportTid || null);
-        setPaus(data.paus || null);
-        setPausSekUnderIntervall(data.pausSekUnderIntervall || 0);
-        if (data.team) setTeam(data.team);
-        if (data.antalAnstallda) setAntalAnstallda(data.antalAnstallda);
-        setStatus("⏱️ Återupptog pågående pass från tidigare session.");
-      }
-    } catch (_) {}
-  }, []);
-
-  // Ladda adresser vid start
-  useEffect(() => {
-    laddaAdresser();
-  }, []);
-
-  // Ladda rutter vid start (efter inloggning)
-  useEffect(() => {
-    if (isAuthenticated) {
-      laddaAktivRutt();
-      laddaVantandeRutt();
-    }
-  }, [isAuthenticated]);
-
-  // Synka kartaNotering med vald adress
-  useEffect(() => {
-    if (!kartaAdressId) {
-      setKartaNotering("");
-      setKartaNoteringEditing(false);
-      return;
-    }
-    const vald = adresser.find(
-      (a) => a.id === Number(kartaAdressId) || String(a.id) === String(kartaAdressId)
-    );
-    if (vald) {
-      setKartaNotering(vald.karta_notering || "");
-    } else {
-      setKartaNotering("");
-    }
-    setKartaNoteringEditing(false);
-  }, [kartaAdressId, adresser]);
-
-  // Vid app-start: kontrollera om aktiva pass finns
-  useEffect(() => {
-    async function kollaAktivaPass() {
-      try {
-        const { data, error } = await supabase
-          .from("tillstand_pass")
-          .select("*")
-          .eq("aktiv", true);
-
-        if (error) throw error;
-        if (!data || data.length === 0) return;
-
-        const handPass = data.find((p) => p.team_typ === "hand");
-        const maskinPass = data.find((p) => p.team_typ === "maskin");
-
-        if (handPass && maskinPass) {
-          setAktivPassPopup({
-            lista: [
-              { typ: "hand", start: handPass.start_tid },
-              { typ: "maskin", start: maskinPass.start_tid },
-            ],
-          });
-          return;
-        }
-
-        if (handPass && !maskinPass) {
-          setAktivPassPopup({ typ: "hand", start: handPass.start_tid, steg: 1 });
-        } else if (maskinPass && !handPass) {
-          setAktivPassPopup({ typ: "maskin", start: maskinPass.start_tid, steg: 1 });
-        }
-      } catch (err) {
-        console.error(err);
-        setStatus("⚠️ Fel vid kontroll av aktiva pass: " + err.message);
-      }
-    }
-
-    kollaAktivaPass();
-  }, []);
-
-  // ======= 4️⃣ HJÄLPFUNKTIONER =======
-
-  function showPopup(text, type = "success", durationMs = 4000) {
-    setPopup({ text, type });
-    setTimeout(() => setPopup(null), durationMs);
-  }
-
-  function buildSyfteString() {
-    const delar = [];
-    if (syfteOversyn) delar.push("Översyn");
-    if (syfteRojning) delar.push("Röjning");
-    if (syfteSaltning) delar.push("Saltning");
-    if (syfteGrusning) delar.push("Grusning");
-    return delar.join(", ");
-  }
-
   function buildManuellSyfteString() {
     const delar = [];
     if (manSyfteOversyn) delar.push("Översyn");
@@ -734,7 +527,7 @@ function App() {
 
   function resetManuellForm() {
     setManuellAdressId("");
-    setManuellTeam("För hand");
+    setManuellTeam("För hand");
     setManuellAntalAnstallda(1);
     setManuellDatum(new Date().toISOString().slice(0, 10));
     setManuellTidMin("");
@@ -756,207 +549,96 @@ function App() {
     resetManuellForm();
   }
 
-  // Formatera sekunder till läsbar tid
-  function formatSekTillLasbar(sek) {
-    if (!sek || sek === 0) return "—";
-    const h = Math.floor(sek / 3600);
-    const m = Math.floor((sek % 3600) / 60);
-    if (h > 0) {
-      return `${h}h ${m}min`;
-    }
-    return `${m} min`;
+  // Editera-rapport popup
+  const [visaEditPopup, setVisaEditPopup] = useState(false);
+  const [editAdressId, setEditAdressId] = useState(null);
+  const [editRapporter, setEditRapporter] = useState([]);
+  const [valdaEditId, setValdaEditId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    datum: "",
+    arbetstid_min: "",
+    sand_kg: "",
+    salt_kg: "",
+    syfteOversyn: false,
+    syfteRojning: false,
+    syfteSaltning: false,
+    syfteGrusning: false,
+    antal_anstallda: 1,
+    team_namn: "För hand",
+  });
+
+  // Kartflik
+  const [kartaAdressId, setKartaAdressId] = useState("");
+  const [kartaNotering, setKartaNotering] = useState(""); // textfält för instruktioner
+  const [kartaNoteringEditing, setKartaNoteringEditing] = useState(false);
+  const [status, setStatus] = useState("");
+  const [filterMetod, setFilterMetod] = useState("alla");
+  const [visaAdressAdmin, setVisaAdressAdmin] = useState(false);
+  const [nyAdress, setNyAdress] = useState("");
+  const [ruttKortider, setRuttKortider] = useState([]); // Körtider från Google Maps
+  
+  
+// ======= Rutt-flik state =======
+const [ruttAdresser, setRuttAdresser] = useState([]); // Lista med {adress_id, ordning, avklarad}
+const [visaRuttPopup, setVisaRuttPopup] = useState(false);
+const [valjbaraRuttAdresser, setValjbaraRuttAdresser] = useState([]); // För checkboxar i popup
+const [ruttVagbeskrivning, setRuttVagbeskrivning] = useState(null); // Google Maps route data
+const [ruttStatus, setRuttStatus] = useState(""); // Status för rutt-fliken
+const [vantandeRuttAdresser, setVantandeRuttAdresser] = useState([]); // Planerad rutt
+const [visaAktiveraRuttKnapp, setVisaAktiveraRuttKnapp] = useState(false);
+
+  
+// ✅ Funktion för att lägga till ny adress (används i adress-admin)
+async function laggTillAdress() {
+  if (!nyAdress?.trim()) {
+    showPopup("👎 Skriv in en adress först.", "error", 3000);
+    return;
   }
 
-  // ======= 5️⃣ ASYNC FUNKTIONER =======
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        nyAdress
+      )}&key=${GOOGLE_MAPS_API_KEY}`
+    );
+    const data = await res.json();
 
-  // Ladda adresser
-  async function laddaAdresser() {
-    const { data, error } = await supabase
-      .from("adresser")
-      .select(
-        "id, namn, gps_url, maskin_mojlig, lat, lng, adresslista_sortering, file_url, karta_notering, aktiv, uppskattad_tid_min, Bostad_Företag"
-      )
-      .order("adresslista_sortering", { ascending: true });
-
-    if (error) {
-      setStatus("❌ " + error.message);
-    } else {
-      setAdresser(sortAdresser(data || []));
-    }
-  }
-
-  // Ladda aktiv rutt från databasen
-  async function laddaAktivRutt() {
-    console.log("🔄 laddaAktivRutt() körs...");
-
-    const { data: ruttData, error: ruttError } = await supabase
-      .from("aktiv_rutt")
-      .select("*")
-      .order("ordning", { ascending: true });
-
-    if (ruttError) {
-      console.error("❌ Fel vid laddning av rutt:", ruttError);
-      setRuttStatus("❌ Kunde inte ladda rutt: " + ruttError.message);
+    if (!data.results || data.results.length === 0) {
+      showPopup("👎 Koordinater hittades inte.", "error", 3000);
       return;
     }
 
-    const { data: adresserData, error: adresserError } = await supabase
-      .from("adresser")
-      .select("id, namn, lat, lng");
+    const { lat, lng } = data.results[0].geometry.location;
+    const formatted = data.results[0].formatted_address;
 
-    if (adresserError) {
-      console.error("❌ Fel vid laddning av adresser:", adresserError);
-      setRuttStatus("❌ Kunde inte ladda adresser: " + adresserError.message);
-      return;
-    }
+    const { error } = await supabase.from("adresser").insert([
+      {
+        namn: formatted,
+        lat,
+        lng,
+        aktiv: true, // blir synlig direkt
+      },
+    ]);
+    if (error) throw error;
 
-    const adresserMap = {};
-    adresserData.forEach((a) => {
-      adresserMap[a.id] = a;
-    });
-
-    const ruttMedAdresser = ruttData.map((r) => ({
-      ...r,
-      adresser: adresserMap[r.adress_id] || null,
-    }));
-
-    console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
-    setRuttAdresser(ruttMedAdresser);
-    setRuttStatus("");
+    showPopup("👍 Ny adress sparad!", "success", 3000);
+    setNyAdress("");
+    await laddaAdresser();
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid sparning/geokodning.", "error", 3000);
   }
-
-  // Ladda väntande rutt
-  async function laddaVantandeRutt() {
-    const { data, error } = await supabase
-      .from("vantande_rutt")
-      .select("*");
-
-    if (error) {
-      console.error("❌ Fel vid laddning av väntande rutt:", error);
-    } else {
-      console.log("📋 Väntande rutt laddad:", data);
-      setVantandeRuttAdresser(data || []);
-      setVisaAktiveraRuttKnapp(data && data.length > 0);
-    }
-  }
-
-  // Hämta lista med alla arbetspass
-  async function hamtaPassHistorik() {
-    try {
-      const { data, error } = await supabase
-        .from("tillstand_pass")
-        .select("*")
-        .order("start_tid", { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      setPassHistorik(data || []);
-      return data;
-    } catch (err) {
-      console.error("Fel vid hämtning av passhistorik:", err);
-      showPopup("👎 Kunde inte hämta passhistorik.", "error", 3000);
-      return [];
-    }
-  }
-
-  // Hämta detaljer för ett specifikt pass
-  async function hamtaPassDetaljer(passId) {
-    if (!passId) {
-      setPassDetaljer(null);
-      return;
-    }
-
-    setLaddaPassDetaljer(true);
-
-    try {
-      const { data: passData, error: passError } = await supabase
-        .from("tillstand_pass")
-        .select("*")
-        .eq("id", passId)
-        .single();
-
-      if (passError) throw passError;
-
-      const { data: loggData, error: loggError } = await supabase
-        .from("pass_logg")
-        .select(`*, adresser (id, namn, uppskattad_tid_min)`)
-        .eq("pass_id", passId)
-        .order("ordning", { ascending: true });
-
-      if (loggError) throw loggError;
-
-      let adressLista = loggData || [];
-
-      if (adressLista.length === 0) {
-        const startDatum = passData.start_tid?.split("T")[0];
-        const slutDatum = passData.sluttid?.split("T")[0] || startDatum;
-
-        const { data: rapportData, error: rapportError } = await supabase
-          .from("rapporter")
-          .select(`*, adresser (id, namn, uppskattad_tid_min)`)
-          .eq("team_namn", passData.team_typ === "hand" ? "För hand" : "Maskin")
-          .gte("datum", startDatum)
-          .lte("datum", slutDatum || startDatum)
-          .order("datum", { ascending: true });
-
-        if (!rapportError && rapportData) {
-          adressLista = rapportData.map((r, idx) => ({
-            ordning: idx + 1,
-            adress_id: r.adress_id,
-            adresser: r.adresser,
-            arbets_tid_sek: (r.arbetstid_min || 0) * 60,
-            transport_tid_sek: 0,
-            total_tid_sek: (r.arbetstid_min || 0) * 60,
-            uppskattad_arbete_sek: (r.adresser?.uppskattad_tid_min || 10) * 60,
-            ankomst_tid: r.datum,
-          }));
-        }
-      }
-
-      const totalArbeteSek = adressLista.reduce((sum, a) => sum + (a.arbets_tid_sek || 0), 0);
-      const totalTransportSek = adressLista.reduce((sum, a) => sum + (a.transport_tid_sek || 0), 0);
-      const totalTidSek = totalArbeteSek + totalTransportSek;
-
-      const uppskattadArbeteSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_arbete_sek || 600), 0);
-      const uppskattadTransportSek = adressLista.reduce((sum, a) => sum + (a.uppskattad_transport_sek || 300), 0);
-      const uppskattadTotalSek = uppskattadArbeteSek + uppskattadTransportSek;
-
-      const avvikelseSek = totalTidSek - uppskattadTotalSek;
-
-      setPassDetaljer({
-        pass: passData,
-        adresser: adressLista,
-        sammanfattning: {
-          totalArbeteSek,
-          totalTransportSek,
-          totalTidSek,
-          uppskattadArbeteSek,
-          uppskattadTransportSek,
-          uppskattadTotalSek,
-          avvikelseSek,
-          antalAdresser: adressLista.length,
-        },
-      });
-    } catch (err) {
-      console.error("Fel vid hämtning av passdetaljer:", err);
-      showPopup("👎 Kunde inte hämta passdetaljer.", "error", 3000);
-      setPassDetaljer(null);
-    } finally {
-      setLaddaPassDetaljer(false);
-    }
-  }
-
-// ======= Formatera sekunder till läsbar tid =======
-function formatSekTillLasbar(sek) {
-  if (!sek || sek === 0) return "—";
-  const h = Math.floor(sek / 3600);
-  const m = Math.floor((sek % 3600) / 60);
-  if (h > 0) {
-    return `${h}h ${m}min`;
-  }
-  return `${m} min`;
 }
+  
+  // Popup-notis
+  const [popup, setPopup] = useState(null);
+  function showPopup(text, type = "success", durationMs = 4000) {
+    setPopup({ text, type });
+    setTimeout(() => setPopup(null), durationMs);
+  }
+
+  // Delete-confirm popup
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Radera-flik state
   const [raderaÅr, setRaderaÅr] = useState(String(AKTUELLT_ÅR));
@@ -1319,93 +1001,49 @@ async function sparaRapport() {
     arbetstidMin = manu * (antalAnstallda || 1);
   }
 
-  // — Tidsstämplar —
-  let nuIso;
-  try {
-    const nu = new Date();
-    const y = nu.getFullYear();
-    const m = String(nu.getMonth() + 1).padStart(2, "0");
-    const d = String(nu.getDate()).padStart(2, "0");
-    const h = String(nu.getHours()).padStart(2, "0");
-    const min = String(nu.getMinutes()).padStart(2, "0");
+ // — Tidsstämplar —
+// Bygg tidsstämpel i lokal tid (samma logik som manuell registrering & editering)
+let nuIso;
+try {
+  const nu = new Date();
+  const y = nu.getFullYear();
+  const m = String(nu.getMonth() + 1).padStart(2, "0");
+  const d = String(nu.getDate()).padStart(2, "0");
+  const h = String(nu.getHours()).padStart(2, "0");
+  const min = String(nu.getMinutes()).padStart(2, "0");
 
-    nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
-  } catch {
-    showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
-    setStatus("Ogiltig tidsstämpel vid sparning.");
-    return;
-  }
+  // 🔸 Skapar lokal tid utan "Z" så Supabase tolkar tiden korrekt (ex. 09:00 visas som 09:00)
+  nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
+} catch {
+  showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
+  setStatus("Ogiltig tidsstämpel vid sparning.");
+  return;
+}
 
-  const jobbtidIso = nuIso;
+const jobbtidIso = nuIso;
 
-  setStatus("Sparar...");
+setStatus("Sparar...");
 
-  const { error } = await supabase.from("rapporter").insert([
-    {
-      datum: nuIso,
-      jobb_tid: jobbtidIso,
-      adress_id: valda,
-      arbetstid_min: arbetstidMin,
-      team_namn: team,
-      arbetssatt: metod,
-      sand_kg: parseInt(sand, 10) || 0,
-      salt_kg: parseInt(salt, 10) || 0,
-      syfte: syfteText,
-      antal_anstallda: antalAnstallda,
-      skyddad: true,
-    },
-  ]);
+const { error } = await supabase.from("rapporter").insert([
+  {
+    datum: nuIso,
+    jobb_tid: jobbtidIso,
+    adress_id: valda,
+    arbetstid_min: arbetstidMin,
+    team_namn: team,
+    arbetssatt: metod,
+    sand_kg: parseInt(sand, 10) || 0,
+    salt_kg: parseInt(salt, 10) || 0,
+    syfte: syfteText,
+    antal_anstallda: antalAnstallda,
+    skyddad: true,
+  },
+]);
 
   if (error) {
     setStatus("❌ " + error.message);
     showPopup("👎 Fel vid sparning", "error", 3000);
     return;
-  }
-
-  // === Logga till pass_logg för spårbarhet (om pass är aktivt) ===
-  if (aktivtPass && aktivtPass.id && aktivtPass.id !== 0) {
-    try {
-      // Räkna ut transport-tid (tid sedan förra rapporten minus arbetstid)
-      const startTid = senasteRapportTid 
-        ? new Date(senasteRapportTid) 
-        : new Date(aktivtPass.startTid);
-      
-      const nuTidObj = new Date();
-      const totalSek = Math.floor((nuTidObj - startTid) / 1000);
-      const arbetsSek = arbetstidMin * 60;
-      const transportSek = Math.max(0, totalSek - arbetsSek - (pausSekUnderIntervall || 0));
-
-      // Hämta uppskattade tider från adress
-      const adressInfo = adresser.find((a) => a.id === Number(valda));
-      const uppskattadArbeteSek = (adressInfo?.uppskattad_tid_min || 10) * 60;
-
-      // Räkna ordning
-      const { count } = await supabase
-        .from("pass_logg")
-        .select("*", { count: "exact", head: true })
-        .eq("pass_id", aktivtPass.id);
-
-      const ordning = (count || 0) + 1;
-
-      await supabase.from("pass_logg").insert([
-        {
-          pass_id: aktivtPass.id,
-          adress_id: Number(valda),
-          ordning: ordning,
-          ankomst_tid: startTid.toISOString(),
-          start_arbete_tid: new Date(nuTidObj.getTime() - arbetsSek * 1000).toISOString(),
-          slut_arbete_tid: nuTidObj.toISOString(),
-          transport_tid_sek: transportSek,
-          arbets_tid_sek: arbetsSek,
-          total_tid_sek: totalSek,
-          uppskattad_arbete_sek: uppskattadArbeteSek,
-          avvikelse_sek: totalSek - uppskattadArbeteSek,
-        },
-      ]);
-    } catch (loggErr) {
-      console.error("Kunde inte logga till pass_logg:", loggErr);
-      // Fortsätt ändå - rapporten är redan sparad
-    }
   }
 
   // — Lyckad sparning —
@@ -1419,12 +1057,11 @@ async function sparaRapport() {
   setAntalAnstallda(1);
   setSenasteRapportTid(nuIso);
 
+  // Nu är await inne i async-funktionen
   await bockAvAdressIRutt(valda);
 
   setPaus(null);
   setPausSekUnderIntervall(0);
-}
-  
 }   // ✅ avslutar sparaRapport
   
 // ======= Spara manuell rapport (popup) =======
@@ -1597,6 +1234,37 @@ async function stoppaPass() {
     setPaus(null);
     setStatus("Paus stoppad (lagras till nästa rapport).");
   }
+   
+  // ======= Filtrera rapporter på vecka/år/metod + total maskin/hand-tid =======
+  const veckansRapporter = rapporter.filter((r) => {
+    const d = new Date(r.datum);
+    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    const vecka = Math.ceil(((tmp - yearStart) / 86400000 + 1) / 7);
+    const år = tmp.getUTCFullYear();
+
+    const veckaOK =
+      !filtreradVecka || Number(filtreradVecka) === Number(vecka);
+    const årOK = !filtreratÅr || Number(filtreratÅr) === Number(år);
+
+    return veckaOK && årOK;
+  });
+
+  const filtreradeRapporter = veckansRapporter.filter((r) => {
+    const metodOK =
+      filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
+    return metodOK;
+  });
+
+  const totalMaskinMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "maskin")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+  const totalHandMin = veckansRapporter
+    .filter((r) => r.arbetssatt === "hand")
+    .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
@@ -2210,11 +1878,12 @@ const secondaryButton = {
 };
 
 // ======= RUTT-FUNKTIONER =======
-
-// Ladda aktiv rutt från databasen
-async function laddaAktivRutt() {
-  console.log("🔄 laddaAktivRutt() körs...");
   
+// Ladda aktiv rutt från databasen (utan nested relation)
+async function laddaAktivRutt() {
+  console.log("🔄 laddaAktivRutt() körs..."); // DEBUG
+  
+  // Hämta rutt-data
   const { data: ruttData, error: ruttError } = await supabase
     .from("aktiv_rutt")
     .select("*")
@@ -2226,6 +1895,7 @@ async function laddaAktivRutt() {
     return;
   }
 
+  // Hämta alla adresser
   const { data: adresserData, error: adresserError } = await supabase
     .from("adresser")
     .select("id, namn, lat, lng");
@@ -2236,6 +1906,7 @@ async function laddaAktivRutt() {
     return;
   }
 
+  // Merga data manuellt
   const adresserMap = {};
   adresserData.forEach((a) => {
     adresserMap[a.id] = a;
@@ -2248,10 +1919,10 @@ async function laddaAktivRutt() {
 
   console.log("✅ Uppdaterar ruttAdresser med:", ruttMedAdresser);
   setRuttAdresser(ruttMedAdresser);
-  setRuttStatus("");
+  setRuttStatus(""); // Rensa felmeddelande
 }
 
-// Ladda väntande rutt
+// ======= Ladda väntande rutt =======
 async function laddaVantandeRutt() {
   const { data, error } = await supabase
     .from("vantande_rutt")
@@ -3341,465 +3012,172 @@ function avbrytRadering() {
         Veckorapport
       </h2>
             
-      {/* Gula ovala rutor för total tider */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 12,
-        }}
-      >
-        <div
-          style={{
-            padding: "6px 12px",
-            borderRadius: 999,
-            backgroundColor: "#facc15",
-            color: "#854d0e",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Total Maskin Tid:{" "}
-          <span style={{ fontFamily: "monospace" }}>
-            {formatTid(totalMaskinMin)}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: "6px 12px",
-            borderRadius: 999,
-            backgroundColor: "#facc15",
-            color: "#854d0e",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Total Man Tid:{" "}
-          <span style={{ fontFamily: "monospace" }}>
-            {formatTid(totalHandMin)}
-          </span>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
-        <div>
-          <label style={labelStyle}>Vecka</label>
-          <input
-            type="number"
-            min="1"
-            max="52"
-            value={filtreradVecka}
-            onChange={(e) => setFiltreradVecka(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div>
-          <label style={labelStyle}>År</label>
-          <input
-            type="number"
-            min="2020"
-            max="2100"
-            value={filtreratÅr}
-            onChange={(e) => setFiltreratÅr(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-      </div>
-
-      <button
-        onClick={() => {
-          const nu = getCurrentIsoWeekAndYear();
-          const aktuellVecka = Number(filtreradVecka) || nu.vecka;
-          const aktuelltÅr = Number(filtreratÅr) || nu.år;
-
-          let prevVecka = aktuellVecka - 1;
-          let prevÅr = aktuelltÅr;
-
-          if (prevVecka < 1) {
-            prevVecka = 52;
-            prevÅr = aktuelltÅr - 1;
-          }
-
-          setFiltreradVecka(String(prevVecka));
-          setFiltreratÅr(String(prevÅr));
-        }}
-        style={{
-          ...secondaryButton,
-          marginTop: 4,
-          marginBottom: 4,
-        }}
-      >
-        Föregående vecka
-      </button>
-
-      <button
-        onClick={() => {
-          const { vecka, år } = getCurrentIsoWeekAndYear();
-          setFiltreradVecka(String(vecka));
-          setFiltreratÅr(String(år));
-        }}
-        style={{
-          ...secondaryButton,
-          marginTop: 4,
-          marginBottom: 8,
-        }}
-      >
-        Denna vecka
-      </button>
-
-      <label style={labelStyle}>Filtrera på metod</label>
-      <select
-        value={filterMetod}
-        onChange={(e) => setFilterMetod(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="alla">Alla</option>
-        <option value="hand">Endast För hand</option>
-        <option value="maskin">Endast Maskin</option>
-      </select>
-
-      <button
-        style={{ ...secondaryButton, marginTop: 12 }}
-        onClick={hamtaRapporter}
-      >
-        Uppdatera översikt
-      </button>
-
-      {/* === ARBETSPASS-ÖVERSIKT === */}
-      <div style={{ marginTop: 16 }}>
-        <button
-          onClick={async () => {
-            setVisaPassOversikt(!visaPassOversikt);
-            if (!visaPassOversikt) {
-              await hamtaPassHistorik();
-            }
-          }}
-          style={{
-            ...secondaryButton,
-            backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
-            color: "#ffffff",
-          }}
-        >
-          {visaPassOversikt ? "🔼 Dölj arbetspass-översikt" : "📋 Arbetspass-översikt"}
-        </button>
-      </div>
-
-      {visaPassOversikt && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            borderRadius: 12,
-            backgroundColor: "#f5f3ff",
-            border: "1px solid #c4b5fd",
-          }}
-        >
-          <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
-            📋 Arbetspass-översikt
-          </h3>
-
-          {/* Dropdown för att välja pass */}
-          <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
-          <select
-            value={valtPassId}
-            onChange={(e) => {
-              setValtPassId(e.target.value);
-              hamtaPassDetaljer(e.target.value);
-            }}
+          {/* Gula ovala rutor för total tider */}
+          <div
             style={{
-              ...selectStyle,
-              marginBottom: 16,
-              borderColor: "#c4b5fd",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 12,
             }}
           >
-            <option value="">-- Välj ett arbetspass --</option>
-            
-            {/* Pågående pass */}
-            {passHistorik
-              .filter((p) => p.aktiv)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  🟢 Pågående: {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
-                  {new Date(p.start_tid).toLocaleString("sv-SE", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  )
-                </option>
-              ))}
-            
-            {/* Avslutade pass */}
-            {passHistorik
-              .filter((p) => !p.aktiv)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  📅 {new Date(p.start_tid).toLocaleDateString("sv-SE")} |{" "}
-                  {p.team_typ === "hand" ? "För hand" : "Maskin"}
-                  {p.sluttid && ` | ${formatSekTillLasbar(
-                    Math.floor((new Date(p.sluttid) - new Date(p.start_tid)) / 1000)
-                  )}`}
-                </option>
-              ))}
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Maskin Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalMaskinMin)}
+              </span>
+            </div>
+            <div
+              style={{
+                padding: "6px 12px",
+                borderRadius: 999,
+                backgroundColor: "#facc15",
+                color: "#854d0e",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Total Man Tid:{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {formatTid(totalHandMin)}
+              </span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Vecka</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={filtreradVecka}
+                onChange={(e) => setFiltreradVecka(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>År</label>
+              <input
+                type="number"
+                min="2020"
+                max="2100"
+                value={filtreratÅr}
+                onChange={(e) => setFiltreratÅr(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              const nu = getCurrentIsoWeekAndYear();
+              const aktuellVecka = Number(filtreradVecka) || nu.vecka;
+              const aktuelltÅr = Number(filtreratÅr) || nu.år;
+
+              let prevVecka = aktuellVecka - 1;
+              let prevÅr = aktuelltÅr;
+
+              if (prevVecka < 1) {
+                prevVecka = 52;
+                prevÅr = aktuelltÅr - 1;
+              }
+
+              setFiltreradVecka(String(prevVecka));
+              setFiltreratÅr(String(prevÅr));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 4,
+            }}
+          >
+            Föregående vecka
+          </button>
+
+          <button
+            onClick={() => {
+              const { vecka, år } = getCurrentIsoWeekAndYear();
+              setFiltreradVecka(String(vecka));
+              setFiltreratÅr(String(år));
+            }}
+            style={{
+              ...secondaryButton,
+              marginTop: 4,
+              marginBottom: 8,
+            }}
+          >
+            Denna vecka
+          </button>
+
+          <label style={labelStyle}>Filtrera på metod</label>
+          <select
+            value={filterMetod}
+            onChange={(e) => setFilterMetod(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="alla">Alla</option>
+            <option value="hand">Endast För hand</option>
+            <option value="maskin">Endast Maskin</option>
           </select>
 
-          {laddaPassDetaljer && (
-            <p style={{ textAlign: "center", color: "#6b7280" }}>
-              Laddar passdetaljer...
+          <button
+            style={{ ...secondaryButton, marginTop: 12 }}
+            onClick={hamtaRapporter}
+          >
+            Uppdatera översikt
+          </button>
+
+          {visaOversikt && (
+            <VeckoOversikt
+              data={filtreradeRapporter}
+              onSkickaEmail={skickaVeckorapportEmail}
+              onExportCSV={exportVeckorapportCSV}
+              filtreradVecka={filtreradVecka}
+              filtreratÅr={filtreratÅr}
+              filterMetod={filterMetod}
+              onOpenManuell={openManuellPopup}
+              onToggleSkyddad={toggleSkyddadForAdress}
+              onOpenEdit={openEditPopupForAdress}
+            />
+          )}
+
+          {status && (
+            <p
+              style={{
+                marginTop: 8,
+                fontSize: 13,
+                color: status.startsWith("✅")
+                  ? "#16a34a"
+                  : status.startsWith("❌")
+                  ? "#dc2626"
+                  : "#4b5563",
+                textAlign: "center",
+              }}
+            >
+              {status}
             </p>
           )}
-
-          {/* Visa passdetaljer */}
-          {passDetaljer && !laddaPassDetaljer && (
-            <div>
-              {/* Sammanfattning */}
-              <div
-                style={{
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                  📅 {new Date(passDetaljer.pass.start_tid).toLocaleDateString("sv-SE")} |{" "}
-                  {passDetaljer.pass.team_typ === "hand" ? "För hand" : "Maskin"} |{" "}
-                  {passDetaljer.sammanfattning.antalAdresser} adresser
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
-                  <div>
-                    🚗 Total körtid:{" "}
-                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTransportSek)}</strong>
-                  </div>
-                  <div style={{ color: "#6b7280" }}>
-                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTransportSek)})
-                  </div>
-                  
-                  <div>
-                    🔧 Total arbetstid:{" "}
-                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalArbeteSek)}</strong>
-                  </div>
-                  <div style={{ color: "#6b7280" }}>
-                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadArbeteSek)})
-                  </div>
-                  
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    ⏱️ Total tid:{" "}
-                    <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTidSek)}</strong>
-                  </div>
-                  <div style={{ color: "#6b7280" }}>
-                    (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTotalSek)})
-                  </div>
-                </div>
-
-                {/* Avvikelse-indikator */}
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    backgroundColor:
-                      passDetaljer.sammanfattning.avvikelseSek <= 0
-                        ? "#d1fae5"
-                        : passDetaljer.sammanfattning.avvikelseSek < 600
-                        ? "#fef3c7"
-                        : "#fee2e2",
-                    color:
-                      passDetaljer.sammanfattning.avvikelseSek <= 0
-                        ? "#065f46"
-                        : passDetaljer.sammanfattning.avvikelseSek < 600
-                        ? "#92400e"
-                        : "#991b1b",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textAlign: "center",
-                  }}
-                >
-                  {passDetaljer.sammanfattning.avvikelseSek <= 0 ? (
-                    <>✅ {formatSekTillLasbar(Math.abs(passDetaljer.sammanfattning.avvikelseSek))} FÖRE schema</>
-                  ) : passDetaljer.sammanfattning.avvikelseSek < 600 ? (
-                    <>⚠️ {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} efter schema</>
-                  ) : (
-                    <>🔴 {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} EFTER schema</>
-                  )}
-                </div>
-              </div>
-
-              {/* Adresslista med detaljer */}
-              <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
-                Rutt-detaljer:
-              </h4>
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  overflow: "hidden",
-                }}
-              >
-                {passDetaljer.adresser.map((a, idx) => {
-                  const arbetsSek = a.arbets_tid_sek || 0;
-                  const transportSek = a.transport_tid_sek || 0;
-                  const totalSek = arbetsSek + transportSek;
-                  const uppskattadArbeteSek = a.uppskattad_arbete_sek || 600;
-                  const uppskattadTransportSek = a.uppskattad_transport_sek || 0;
-                  
-                  const arbetsAvvikelse = arbetsSek - uppskattadArbeteSek;
-                  const transportAvvikelse = transportSek - uppskattadTransportSek;
-
-                  return (
-                    <div key={a.id || idx}>
-                      {/* Transport-separator (om inte första) */}
-                      {idx > 0 && transportSek > 0 && (
-                        <div
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#f3f4f6",
-                            borderTop: "1px dashed #d1d5db",
-                            borderBottom: "1px dashed #d1d5db",
-                            textAlign: "center",
-                            fontSize: 12,
-                            color: "#6b7280",
-                          }}
-                        >
-                          🚗 Körtid: {formatSekTillLasbar(transportSek)}
-                          {uppskattadTransportSek > 0 && (
-                            <span
-                              style={{
-                                marginLeft: 8,
-                                color: transportAvvikelse <= 0 ? "#059669" : "#dc2626",
-                              }}
-                            >
-                              ({transportAvvikelse <= 0 ? "" : "+"}
-                              {Math.round(transportAvvikelse / 60)} min)
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Adress-rad */}
-                      <div
-                        style={{
-                          padding: "12px 16px",
-                          borderBottom: idx < passDetaljer.adresser.length - 1 ? "1px solid #f3f4f6" : "none",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-                          <div
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: "50%",
-                              backgroundColor: "#7c3aed",
-                              color: "#ffffff",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontWeight: 700,
-                              fontSize: 12,
-                              marginRight: 10,
-                            }}
-                          >
-                            {idx + 1}
-                          </div>
-                          <strong style={{ fontSize: 14 }}>{a.adresser?.namn || "Okänd adress"}</strong>
-                        </div>
-
-                        <div style={{ fontSize: 12, color: "#4b5563", marginLeft: 34 }}>
-                          <div>
-                            🔧 Arbetstid: {formatSekTillLasbar(arbetsSek)}
-                            {uppskattadArbeteSek > 0 && (
-                              <span
-                                style={{
-                                  marginLeft: 6,
-                                  padding: "2px 6px",
-                                  borderRadius: 4,
-                                  fontSize: 11,
-                                  backgroundColor: arbetsAvvikelse <= 0 ? "#d1fae5" : "#fee2e2",
-                                  color: arbetsAvvikelse <= 0 ? "#065f46" : "#991b1b",
-                                }}
-                              >
-                                {arbetsAvvikelse <= 0 ? "✅" : "⚠️"}{" "}
-                                {arbetsAvvikelse <= 0 ? "" : "+"}
-                                {Math.round(arbetsAvvikelse / 60)} min
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ marginTop: 4 }}>
-                            ⏱️ Total: {formatSekTillLasbar(totalSek)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {passDetaljer.adresser.length === 0 && (
-                <p style={{ textAlign: "center", color: "#6b7280", fontStyle: "italic" }}>
-                  Ingen detaljerad logg finns för detta pass.
-                  <br />
-                  <span style={{ fontSize: 12 }}>
-                    (Loggning aktiveras automatiskt för nya pass)
-                  </span>
-                </p>
-              )}
-            </div>
-          )}
-
-          {!passDetaljer && !laddaPassDetaljer && valtPassId && (
-            <p style={{ textAlign: "center", color: "#6b7280" }}>
-              Kunde inte ladda passdetaljer.
-            </p>
-          )}
-        </div>
-      )}
-      
-      {visaOversikt && (
-        <VeckoOversikt
-          data={filtreradeRapporter}
-          onSkickaEmail={skickaVeckorapportEmail}
-          onExportCSV={exportVeckorapportCSV}
-          filtreradVecka={filtreradVecka}
-          filtreratÅr={filtreratÅr}
-          filterMetod={filterMetod}
-          onOpenManuell={openManuellPopup}
-          onToggleSkyddad={toggleSkyddadForAdress}
-          onOpenEdit={openEditPopupForAdress}
-        />
-      )}
-
-      {status && (
-        <p
-          style={{
-            marginTop: 8,
-            fontSize: 13,
-            color: status.startsWith("✅")
-              ? "#16a34a"
-              : status.startsWith("❌")
-              ? "#dc2626"
-              : "#4b5563",
-            textAlign: "center",
-          }}
-        >
-          {status}
-        </p>
-      )}
-    </section>
-  );
-}
+        </section>
+      );
+    }
 
     if (activeTab === "radera") {
       return (
@@ -4713,7 +4091,7 @@ if (activeTab === "info") {
       );
     }
     return null;
-  
+  }
 
   const popupStyle =
     popup && popup.type === "error"
@@ -6044,7 +5422,7 @@ return (
       </div>
     </nav>
   </div>
-);
+)
 }
 
 createRoot(document.getElementById("app")).render(<App />);
