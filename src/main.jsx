@@ -939,64 +939,6 @@ async function sparaNyAdress() {
   }
 }
 
-    const { lat, lng } = data.results[0].geometry.location;
-    const formattedAddress = data.results[0].formatted_address;
-
-    // Skapa GPS-URL
-    const gpsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
-
-    // Använd angivet namn eller formaterad adress
-    const adressNamn = nyAdressForm.namn?.trim() || formattedAddress;
-
-    const nyPosition = Number(nyAdressForm.adress_lista);
-
-    // Justera befintliga adresser om den nya positionen redan används
-    if (nyPosition) {
-      await justeraVidNyAdress(nyPosition);
-    }
-
-    setStatus("💾 Sparar adress...");
-
-    const { error } = await supabase.from("adresser").insert([
-      {
-        namn: adressNamn,
-  lat,
-  lng,
-  gps_url: gpsUrl,
-  aktiv: nyAdressForm.aktiv,
-  material: nyAdressForm.material,
-  maskin: nyAdressForm.maskin,
-  kombinerad: nyAdressForm.kombinerad,
-  adresslista_sortering: Number(nyAdressForm.adress_lista), // Mappa här med
-  Bostad_Företag: nyAdressForm.Bostad_Företag,
-  uppskattad_tid_min: Number(nyAdressForm.uppskattad_tid_min) || 10,
-      },
-    ]);
-
-    if (error) throw error;
-
-    showPopup("👍 Ny adress sparad!", "success", 3000);
-    setStatus("✅ Adress tillagd.");
-    setVisaNyAdressPopup(false);
-    setNyAdressForm({
-      namn: "",
-      adressText: "",
-      aktiv: true,
-      material: "Grus",
-      maskin: false,
-      kombinerad: false,
-      adress_lista: "",
-      Bostad_Företag: "Bostad",
-      uppskattad_tid_min: 10,
-    });
-    await laddaAdresser();
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid sparning av adress.", "error", 3000);
-    setStatus("❌ Fel: " + err.message);
-  }
-}
-
 // ======= Justera numrering vid ny adress =======
 async function justeraVidNyAdress(nyPosition) {
   try {
