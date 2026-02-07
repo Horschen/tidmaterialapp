@@ -602,7 +602,7 @@ async function hamtaPassHistorik() {
       .from("tillstand_pass")
       .select("*")
       .order("start_tid", { ascending: false })
-      .limit(50); // Senaste 50 passen
+      .limit(50);
 
     if (error) throw error;
 
@@ -615,7 +615,6 @@ async function hamtaPassHistorik() {
   }
 }
 
-// ======= Hämta detaljer för ett specifikt pass =======
 // ======= Hämta detaljer för ett specifikt pass =======
 async function hamtaPassDetaljer(passId) {
   if (!passId) {
