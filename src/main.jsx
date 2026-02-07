@@ -196,23 +196,8 @@ function VeckoOversikt({
         </h2>
 
         <div style={{ display: "flex", gap: 8 }}>
-          {/* 🔄 Uppdatera data */}
-          <button
-            onClick={() => window.location.reload()}
-            title="Uppdatera data"
-            style={{
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-              background: "#ffffff",
-              fontSize: 16,
-              cursor: "pointer",
-            }}
-          >
-            🔄
-          </button>
-
-          {/* 📋 Manuell registrering */}
+          
+          {/* 📋 Manuell Registrering */}
           <button
             onClick={onOpenManuell}
             style={{
@@ -225,7 +210,7 @@ function VeckoOversikt({
               fontWeight: 600,
             }}
           >
-            Manuell registrering
+            Manuell Registrering
           </button>
 
           {/* ✉️ / 💾 */}
@@ -498,7 +483,7 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
     return delar.join(", ");
   }
 
-  // Manuell registrering (Veckorapport – popup)
+  // Manuell Registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
   const [manuellAntalAnstallda, setManuellAntalAnstallda] =
@@ -3289,7 +3274,7 @@ function avbrytRadering() {
                 marginTop: 0,
               }}
             >
-              {visaPassOversikt ? "🔼 Dölj arbetspass-översikt" : "📋 Arbetspass-översikt"}
+              {visaPassOversikt ? "🔼 Dölj Arbetspass-Översikt" : "📋 Arbetspass-Översikt"}
             </button>
           </div>
 
@@ -3304,7 +3289,7 @@ function avbrytRadering() {
               }}
             >
               <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
-                📋 Arbetspass-översikt
+                📋 Arbetspass-Översikt
               </h3>
 
               <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
@@ -4284,102 +4269,128 @@ if (activeTab === "info") {
       <h2
         style={{
           fontSize: 20,
-              marginTop: 0,
-              marginBottom: 12,
-            }}
-          >
-            Om SnöJour‑appen
-          </h2>
+          marginTop: 0,
+          marginBottom: 12,
+        }}
+      >
+        Om SnöJour‑appen
+      </h2>
 
-          <p style={{ fontSize: 14, lineHeight: 1.5 }}>
-            Den här webappen används för att registrera, följa upp och exportera arbetstider
-            och materialåtgång under snöjouren. Nedan hittar du en snabbguide till de olika
-            flikarna och hur funktionerna fungerar i bakgrunden.
-          </p>
+      <p style={{ fontSize: 14, lineHeight: 1.5 }}>
+        Den här webappen används för att registrera, följa upp och exportera arbetstider
+        och materialåtgång under snöjouren. Nedan hittar du en snabbguide till de olika
+        flikarna och hur funktionerna fungerar i bakgrunden.
+      </p>
 
-          <h3 style={{ marginTop: 16 }}>🕓 Start / Stop</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            Här startar och stoppar du ditt arbetspass. När du trycker <strong>Starta passet, </strong>
-            sparas starttiden lokalt i din webbläsare och en timer börjar räkna din effektiva
-            arbetstid. Du kan när som helst pausa via <strong>Start Paus</strong>
-            – då registreras ingen arbetstid. När du trycker <strong>Stop Paus</strong> sparas
-            hur länge du stod på paus, och den tiden dras automatiskt bort från rapporten när
-            du sparar ett jobb i fliken "Registrera". <br />Trycker du
-            <strong> Stoppa passet</strong> avslutas tidsmätningen helt och timern nollställs.
-          </p>
+      <h3 style={{ marginTop: 16 }}>🕓 Start / Stop</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Här startar och stoppar du ditt arbetspass. När du trycker <strong>Starta passet, </strong>
+        sparas starttiden lokalt i din webbläsare och en timer börjar räkna din effektiva
+        arbetstid. Du kan när som helst pausa via <strong>Start Paus</strong>
+        – då registreras ingen arbetstid. När du trycker <strong>Stop Paus</strong> sparas
+        hur länge du stod på paus, och den tiden dras automatiskt bort från rapporten när
+        du sparar ett jobb i fliken "Registrera". <br />Trycker du
+        <strong> Stoppa passet</strong> avslutas tidsmätningen helt och timern nollställs.
+      </p>
 
-          <h3 style={{ marginTop: 16 }}>📝 Registrera</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            Här registrerar du dina jobb under ett pass. Välj en <strong>adress</strong>,
-            <strong> arbetssätt (För hand / Maskin)</strong>, antal anställda och vilket
-            <strong> syfte</strong> (t.ex. Översyn / Röjning / Saltning / Grusning) arbetet hade.
-            När du sparar en rapport medan passet är igång beräknas arbetstiden automatiskt.
-            Du kan också ange tid manuellt om ingen timer är aktiv. <br />
-            Timern överst visar hur länge du arbetat sedan förra rapporten,
-            inklusive aktuell pausstatus. Paustiden lagras separat och dras av vid nästa sparning.
-            <br />
-            Behöver du lägga till en rapport i efterhand väljer du knappen
-            <strong> Manuell registrering</strong> i "Veckorapport"‑fliken – den fungerar
-            precis som registreringsvyn men utan aktiv timer.
-            <h4 style={{ marginTop: 16 }}>👷‍♂️ Teamets arbetsgång (enkelt förklarat)</h4>
-<p style={{ fontSize: 14, lineHeight: 1.6 }}>
-  <strong>Så här fungerar ett arbetspass när flera i laget jobbar samtidigt:</strong><br /><br />
-  
-  1️⃣ <strong>Lagledaren</strong> (en person i laget) trycker <strong>Starta passet</strong>.<br />
-  👉 Det startar klockan för hela arbetsperioden.
-  <br /><br />
-  
-  2️⃣ <strong>Samma person</strong> registrerar <strong>första adressen</strong>.<br />
-  👉 Appen använder den tiden som grund när den räknar fram första jobbets minuter.
-  <br /><br />
-  
-  3️⃣ <strong>Alla i laget</strong> kan därefter lägga in sina egna adresser utan att starta eget pass.<br />
-  👉 Varje rapport hamnar automatiskt rätt i databasen och summeras korrekt i veckorapporten.
-  <br /><br />
-  
-  4️⃣ Om laget tar <strong>paus (t.ex. frukost)</strong>: lagledaren trycker <strong>Start Paus</strong> och sedan <strong>Stop Paus</strong> när ni är igång igen.<br />
-  👉 Annars tror appen att ni fortsatt jobba under pausen – tiden till nästa adress skulle då bli för lång.
-  <br /><br />
-  
-  5️⃣ När dagen är klar: samma person trycker <strong>Stoppa passet</strong>.<br />
-  👉 Timern nollställs och appen är redo för nästa arbetsdag.
-  <br /><br />
-  
-  <em>Enkelt uttryckt:</em> Det räcker att <strong>en person</strong> i laget startar/stoppar passet och styr pauserna – resten registrerar bara adresser.  
-  Då håller appen tiderna rätt och veckan summeras perfekt 🌟
-</p>
-          </p>
-<p style={{ fontSize: 14, lineHeight: 1.6 }}>
-  💡 <strong>Flera team samtidigt:</strong><br />
-  Ibland arbetar två team parallellt på olika arbetsplatser under samma period — 
-  ett med <strong>För hand</strong> och ett med <strong>Maskin</strong>.
-  Appen skiljer automatiskt dessa rapporter åt genom fältet <em>Arbetstyp</em>.
-  När du väljer <strong>För hand</strong> eller <strong>Maskin</strong> sparas
-  rapporten separat, och i Veckorapporten summeras tider, material och syften
-  var för sig beroende på arbetssättet.
-  <br /><br />
-  Det innebär att två team kan registrera sina jobb samtidigt utan att datan
-  blandas ihop — totalen för veckan visar både
-  <strong> Total Man Tid</strong> (för hand) och
-  <strong> Total Maskin Tid</strong> (maskin), vilket ger en korrekt och tydlig
-  sammanställning.
-</p>
-          
-          <h3 style={{ marginTop: 16 }}>🗺️ Karta</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            Under fliken <strong>Karta</strong> kan du snabbt öppna GPS‑positionen (om den finns)
-            för en utvald adress. Välj adress i listan och tryck
-            <strong> "Öppna karta för vald adress"</strong>. Kartlänken öppnas i ny flik
-            i exempelvis Google Maps.
-          </p>
-          <h3 style={{ marginTop: 16 }}>🚗 Rutt (optimerad körordning)</h3>
+      <h3 style={{ marginTop: 16 }}>📝 Registrera</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Här registrerar du dina jobb under ett pass. Välj en <strong>adress</strong>,
+        <strong> arbetssätt (För hand / Maskin)</strong>, antal anställda och vilket
+        <strong> syfte</strong> (t.ex. Översyn / Röjning / Saltning / Grusning) arbetet hade.
+        När du sparar en rapport medan passet är igång beräknas arbetstiden automatiskt.
+        Du kan också ange tid manuellt om ingen timer är aktiv. <br />
+        Timern överst visar hur länge du arbetat sedan förra rapporten,
+        inklusive aktuell pausstatus. Paustiden lagras separat och dras av vid nästa sparning.
+        <br />
+        Behöver du lägga till en rapport i efterhand väljer du knappen
+        <strong> Manuell Registrering</strong> i "Veckorapport"‑fliken – den fungerar
+        precis som registreringsvyn men utan aktiv timer.
+      </p>
+      
+      <h4 style={{ marginTop: 16 }}>👷‍♂️ Teamets arbetsgång (enkelt förklarat)</h4>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        <strong>Så här fungerar ett arbetspass när flera i laget jobbar samtidigt:</strong><br /><br />
+        
+        1️⃣ <strong>Lagledaren</strong> (en person i laget) trycker <strong>Starta passet</strong>.<br />
+        👉 Det startar klockan för hela arbetsperioden.
+        <br /><br />
+        
+        2️⃣ <strong>Samma person</strong> registrerar <strong>första adressen</strong>.<br />
+        👉 Appen använder den tiden som grund när den räknar fram första jobbets minuter.
+        <br /><br />
+        
+        3️⃣ <strong>Alla i laget</strong> kan därefter lägga in sina egna adresser utan att starta eget pass.<br />
+        👉 Varje rapport hamnar automatiskt rätt i databasen och summeras korrekt i veckorapporten.
+        <br /><br />
+        
+        4️⃣ Om laget tar <strong>paus (t.ex. frukost)</strong>: lagledaren trycker <strong>Start Paus</strong> och sedan <strong>Stop Paus</strong> när ni är igång igen.<br />
+        👉 Annars tror appen att ni fortsatt jobba under pausen – tiden till nästa adress skulle då bli för lång.
+        <br /><br />
+        
+        5️⃣ När dagen är klar: samma person trycker <strong>Stoppa passet</strong>.<br />
+        👉 Timern nollställs och appen är redo för nästa arbetsdag.
+        <br /><br />
+        
+        <em>Enkelt uttryckt:</em> Det räcker att <strong>en person</strong> i laget startar/stoppar passet och styr pauserna – resten registrerar bara adresser.  
+        Då håller appen tiderna rätt och veckan summeras perfekt 🌟
+      </p>
+      
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        💡 <strong>Flera team samtidigt:</strong><br />
+        Ibland arbetar två team parallellt på olika arbetsplatser under samma period — 
+        ett med <strong>För hand</strong> och ett med <strong>Maskin</strong>.
+        Appen skiljer automatiskt dessa rapporter åt genom fältet <em>Arbetstyp</em>.
+        När du väljer <strong>För hand</strong> eller <strong>Maskin</strong> sparas
+        rapporten separat, och i Veckorapporten summeras tider, material och syften
+        var för sig beroende på arbetssättet.
+        <br /><br />
+        Det innebär att två team kan registrera sina jobb samtidigt utan att datan
+        blandas ihop — totalen för veckan visar både
+        <strong> Total Man Tid</strong> (för hand) och
+        <strong> Total Maskin Tid</strong> (maskin), vilket ger en korrekt och tydlig
+        sammanställning.
+      </p>
+      
+      <h3 style={{ marginTop: 16 }}>🗺️ Karta</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Under fliken <strong>Karta</strong> kan du snabbt öppna GPS‑positionen (om den finns)
+        för en utvald adress. Välj adress i listan och tryck
+        <strong> "Öppna karta för vald adress"</strong>. Kartlänken öppnas i ny flik
+        i exempelvis Google Maps.
+      </p>
+      
+      <h3 style={{ marginTop: 16 }}>🚗 Rutt (optimerad körordning)</h3>
 <p style={{ fontSize: 14, lineHeight: 1.6 }}>
   <strong>Rutt-funktionen</strong> hjälper dig att planera och köra så effektivt som möjligt
   genom att automatiskt beräkna den <strong>kortaste vägen</strong> mellan alla adresser.
   Google Maps optimerar ordningen åt dig baserat på avstånd och restid.
   <br /><br />
   
-  <strong>📋 Så här planerar du en rutt (före passet):</strong><br />
+  <strong>🏠 Fasta bostadsrutter (snabbval):</strong><br />
+  I Rutt-fliken finns två gröna snabbknappar för bostäder:<br /><br />
+  
+  <strong>⬇️ Uppifrån-Ner Bostad:</strong><br />
+  Hämtar alla adresser märkta som "Bostad" i databasen och sorterar dem i 
+  <strong> stigande ordning</strong> efter kolumnen <em>adresslista_sortering</em>.
+  Det betyder att adressen med lägst sorteringsnummer kommer först. 
+  Perfekt om din rutt börjar i norr och slutar i söder, eller om du vill följa 
+  listan "uppifrån och ner" som den är sparad i systemet.
+  <br /><br />
+  
+  <strong>⬆️ Nerifrån-Upp Bostad:</strong><br />
+  Hämtar samma bostadsadresser men sorterar dem i <strong>fallande ordning</strong> 
+  – alltså den med högst sorteringsnummer först. Använd denna om du börjar 
+  i söder och kör norrut, eller vill köra listan "nerifrån och upp".
+  <br /><br />
+  
+  Båda knapparna visar efteråt:<br />
+  • Antal bostäder i rutten<br />
+  • Total körsträcka (km) från Google Maps<br />
+  • Uppskattad total tid (arbete + transport)<br />
+  <br />
+  
+  <strong>📋 Planera egen rutt (före passet):</strong><br />
   1. Gå till fliken <strong>Rutt</strong><br />
   2. Tryck <strong>"Välj adresser & planera rutt"</strong><br />
   3. Kryssa i alla adresser du ska köra under passet<br />
@@ -4398,6 +4409,13 @@ if (activeTab === "info") {
   
   <strong>📍 Arbeta enligt rutten:</strong><br />
   – Högst upp i <strong>Rutt</strong>-fliken ser du <strong>"🚗 Nästa stopp"</strong> – dit ska du åka nu<br />
+  – Under rutt-listan visas en <strong>tidssummering</strong> med:<br />
+  &nbsp;&nbsp;• 🚗 <strong>Körsträcka:</strong> Total körsträcka i km och uppskattad körtid<br />
+  &nbsp;&nbsp;• 🔧 <strong>Arbetstid:</strong> Summa av uppskattad arbetstid för alla adresser<br />
+  &nbsp;&nbsp;• ⏱️ <strong>Total uppskattad tid:</strong> Körtid + arbetstid = hur lång tid rutten beräknas ta<br />
+  – Varje adress i listan visar:<br />
+  &nbsp;&nbsp;• 🔧 Uppskattad arbetstid för just den adressen<br />
+  &nbsp;&nbsp;• 🚗 Körtid och avstånd till <em>nästa</em> adress<br />
   – Gå till <strong>Registrera</strong>-fliken och fyll i uppgifter för jobbet<br />
   – När du sparar rapporten bockas adressen automatiskt av i rutten (✅)<br />
   – Nästa adress i ordningen visas direkt som "Nästa stopp"<br />
@@ -4442,55 +4460,147 @@ if (activeTab === "info") {
   <em>...och så vidare tills alla 8 stopp är klara!</em>
 </p>
 
-<h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
+<h4 style={{ marginTop: 16 }}>⚙️ Hur Rutt-funktionen fungerar (tekniskt)</h4>
+<p style={{ fontSize: 14, lineHeight: 1.6 }}>
+  <strong>Så beräknas tiderna i Rutt-funktionen:</strong><br /><br />
+  
+  <strong>1. Fasta bostadsrutter (snabbval):</strong><br />
+  • När du trycker <strong>⬇️ Uppifrån-Ner Bostad</strong> eller <strong>⬆️ Nerifrån-Upp Bostad</strong>
+  hämtas alla adresser från databasen som har <code>Bostad_Företag = "Bostad"</code> och <code>aktiv = true</code>.<br />
+  • Adresserna sorteras efter kolumnen <code>adresslista_sortering</code> – stigande för "Uppifrån-Ner", 
+  fallande för "Nerifrån-Upp".<br />
+  • Rutten sparas direkt i <code>aktiv_rutt</code>-tabellen utan GPS-optimering (ordningen följer sorteringen).<br />
+  • Därefter anropas Google Maps Distance Matrix API för att hämta <strong>körtider</strong> mellan varje adresspar.<br />
+  <br />
+  
+  <strong>2. Planerad rutt (manuellt val):</strong><br />
+  • Valda adresser sparas i <code>vantande_rutt</code>-tabellen.<br />
+  • Vid aktivering hämtas GPS-position (om tillåtet).<br />
+  • Google Directions API anropas med <code>optimize:true</code> för att hitta kortaste vägen.<br />
+  • Adresser <strong>utan GPS-koordinater</strong> sorteras inte av Google utan läggs sist i rutten.<br />
+  • Den optimerade rutten sparas i <code>aktiv_rutt</code>-tabellen.<br />
+  <br />
+  
+  <strong>3. Tidsberäkning:</strong><br />
+  • <strong>Uppskattad arbetstid per adress:</strong> Hämtas från kolumnen <code>uppskattad_tid_min</code> 
+  i <code>adresser</code>-tabellen. Om värdet saknas används 10 minuter som standard.<br />
+  • <strong>Körtid mellan adresser:</strong> Hämtas från Google Maps Distance Matrix API och sparas i 
+  <code>ruttKortider</code>-listan. Varje post innehåller:<br />
+  &nbsp;&nbsp;– <code>duration_sek</code>: Körtid i sekunder<br />
+  &nbsp;&nbsp;– <code>duration_text</code>: Läsbar körtid (t.ex. "5 min")<br />
+  &nbsp;&nbsp;– <code>distance_m</code>: Avstånd i meter<br />
+  &nbsp;&nbsp;– <code>distance_text</code>: Läsbart avstånd (t.ex. "3.2 km")<br />
+  • <strong>Total uppskattad tid:</strong> Summan av alla arbetstider + summan av alla körtider.<br />
+  <br />
+  
+  <strong>4. Avbockning av adresser:</strong><br />
+  • När du sparar en rapport i <strong>Registrera</strong>-fliken anropas funktionen <code>bockAvAdressIRutt()</code>.<br />
+  • Denna funktion uppdaterar <code>aktiv_rutt</code>-tabellen och sätter <code>avklarad = true</code> för den adressen.<br />
+  • Rutt-listan uppdateras automatiskt och visar nästa ej avklarade adress som "Nästa stopp".<br />
+  <br />
+  
+  <strong>5. Rutt-informationen visas:</strong><br />
+  • I Rutt-fliken visas en gul ruta med:<br />
+  &nbsp;&nbsp;– 📍 Antal avklarade / totalt antal adresser<br />
+  &nbsp;&nbsp;– 🚗 Total körsträcka och körtid<br />
+  &nbsp;&nbsp;– 🔧 Total uppskattad arbetstid<br />
+  &nbsp;&nbsp;– ⏱️ Total uppskattad tid (arbete + transport)<br />
+  • Varje adress i listan visar sin egen arbetstid och körtid till nästa stopp.<br />
+  • Avklarade adresser visas med grön bakgrund och ✅.
+</p>
 
-          <h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            Här får du en översikt vecka för vecka. Välj vecka och år för att filtrera,
-            och tryck sedan <strong>Uppdatera översikt</strong>. Du kan också snabbt
-            hoppa mellan veckor med knapparna
-            <strong> "Föregående vecka"</strong> och <strong>"Denna vecka"</strong>. <br /><br />
-            De gula ovalerna på toppen visar <strong>Total Maskin‑tid</strong> respektive
-            <strong> Total Man‑tid</strong> (tiden räknas ihop för alla rapporter av respektive typ).
-            <br /><br />
-            I Veckkoöversikten visas adresser som rappoerats under en vecka. Har flera jobb registrerats mot
-            samma adress så ser man det i kolumnen "Antal Jobb". 
-            Notera att "Antal jobb", "Total tid", förbrukning av "Grus" och "Sand" samt "Arbetssyftet" 
-            summeras automatiskt mot samma adress i den veckan. D.v.s en total summering.
-            
-            – Klicka på <strong>Editera</strong> för att ändra en befintlig rapport
-            (t.ex. justera tid eller material). Ändringen uppdaterar den valda posten
-            direkt i databasen. Man kan även hitta här de senast 3 registrerade poster mot denna adress. 
-            Titta på datum för att välja din rätta tid att ändra.<br />
-            – Kryssrutan i början av raden markerar raden som
-            <strong> Skyddad</strong>, vilket betyder att den inte kan raderas.
-            Kryssar du ur skyddet blir rapporten möjlig att ta bort.
-            <br /><br />
-            Du kan ladda ner data som <strong>CSV</strong> eller skicka
-            <strong> Veckorapport via e‑post</strong> direkt.  
-            Knappen <strong>Manuell registrering</strong> öppnar ett formulär
-            där du manuellt kan lägga in en rapport för vald adress.
-          </p>
+      <h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Här får du en översikt vecka för vecka. Välj vecka och år för att filtrera,
+        och tryck sedan <strong>Uppdatera översikt</strong>. Du kan också snabbt
+        hoppa mellan veckor med knapparna
+        <strong> "Föregående vecka"</strong> och <strong>"Denna vecka"</strong>. <br /><br />
+        De gula ovalerna på toppen visar <strong>Total Maskin‑tid</strong> respektive
+        <strong> Total Man‑tid</strong> (tiden räknas ihop för alla rapporter av respektive typ).
+        <br /><br />
+        I Veckoöversikten visas adresser som rapporterats under en vecka. Har flera jobb registrerats mot
+        samma adress så ser man det i kolumnen "Antal Jobb". 
+        Notera att "Antal jobb", "Total tid", förbrukning av "Grus" och "Salt" samt "Arbetssyftet" 
+        summeras automatiskt mot samma adress i den veckan. D.v.s en total summering.
+        <br /><br />
+        – Kryssrutan i början av raden markerar raden som
+        <strong> Skyddad</strong>, vilket betyder att den inte kan raderas.
+        Kryssar du ur skyddet blir rapporten möjlig att ta bort.
+        <br /><br />
+        Du kan ladda ner data som <strong>CSV</strong> eller skicka
+        <strong> Veckorapport via e‑post</strong> direkt.  
+        Knappen <strong>Manuell Registrering</strong> öppnar ett formulär
+        där du manuellt kan lägga in en rapport för vald adress.
+      </p>
 
-          <h3 style={{ marginTop: 16, color: "#b91c1c" }}>🗑️ Radera</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-            I fliken <strong>Radera</strong> kan du ta bort gamla rapporter efter år och valfri månad.
-            Du anger vilket <strong>år</strong> (och eventuellt månad) som ska rensas.
-            Endast rapporter som <strong>inte</strong> är markerade som skyddade raderas.
-            Skyddade rader (kryssrutan i veckoöversikten) ignoreras alltid vid radering.
-            När du bekräftar visas en sammanfattning och du får frågan "Är du säker"
-            innan något tas bort permanent.
-          </p>
+      <h4 style={{ marginTop: 16 }}>✏️ Editera-funktionen</h4>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        I Veckoöversikten finns en <strong>Editera</strong>-knapp på varje rad. 
+        Klicka på den för att öppna ett popup-fönster där du kan ändra en befintlig rapport.
+        <br /><br />
+        <strong>Vad du kan göra i Editera:</strong><br />
+        • <strong>Välj rapport:</strong> Dropdown-menyn visar de 14 senaste rapporterna för denna adress. 
+        Välj rätt datum/tid för den post du vill ändra.<br />
+        • <strong>Ändra datum och tid:</strong> Justera när jobbet utfördes.<br />
+        • <strong>Ändra arbetstid:</strong> Korrigera antal minuter om det blev fel.<br />
+        • <strong>Ändra arbetstyp:</strong> Byt mellan "För hand" och "Maskin".<br />
+        • <strong>Ändra antal anställda:</strong> Korrigera om fel antal registrerades.<br />
+        • <strong>Ändra material:</strong> Justera Grus (kg) och Salt (kg).<br />
+        • <strong>Ändra syfte:</strong> Kryssa i/ur Översyn, Röjning, Saltning, Grusning.<br />
+        • <strong>Spara:</strong> Grön knapp – sparar dina ändringar till databasen.<br />
+        • <strong>Avbryt:</strong> Gul knapp – stänger utan att spara.<br />
+        • <strong>Radera:</strong> Röd knapp – tar bort rapporten permanent (kräver lösenord).<br />
+        <br />
+        <strong>💡 Tips:</strong> Om du har registrerat fel adress kan du inte ändra adressen – 
+        radera istället rapporten och skapa en ny via "Manuell Registrering".
+      </p>
 
-          <h3 style={{ marginTop: 20 }}>💡 Tips</h3>
-          <ul style={{ fontSize: 14, lineHeight: 1.5 }}>
-            <li>Appen sparar pågående pass lokalt, så du kan uppdatera sidan utan att tappa tid.</li>
-            <li>Alla tider sparas i minuter – timmar visas bara som formaterad vy.</li>
-            <li>Inloggningslösenordet ändras automatiskt varje år (Jour+årtal).</li>
-          </ul>
-        </section>
-      );
-    }
+      <h4 style={{ marginTop: 16 }}>📋 Arbetspass-Översikt</h4>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        I Veckorapport-fliken finns knappen <strong>"📋 Arbetspass-Översikt"</strong> som 
+        öppnar en detaljerad vy över alla genomförda arbetspass.
+        <br /><br />
+        <strong>Vad du ser i Arbetspass-Översikt:</strong><br />
+        • <strong>Välj arbetspass:</strong> En dropdown med alla pass, sorterade efter datum. 
+        Pågående pass visas med 🟢, avslutade med 📅.<br />
+        • <strong>Sammanfattning:</strong> Total körtid, total arbetstid och total tid för valt pass.<br />
+        • <strong>Beräknad vs faktisk tid:</strong> Jämför uppskattad tid mot verklig tid.<br />
+        • <strong>Avvikelse-indikator:</strong> Visar om passet var före (✅ grön), 
+        nära (⚠️ gul) eller efter (🔴 röd) schema.<br />
+        • <strong>Rutt-detaljer:</strong> Lista över alla adresser i passet med arbetstid och 
+        körtid mellan varje stopp.<br />
+        <br />
+        <strong>Så tolkar du avvikelsen:</strong><br />
+        • <strong>✅ FÖRE schema:</strong> Passet gick snabbare än uppskattat – bra jobbat!<br />
+        • <strong>⚠️ Nära schema:</strong> Mindre än 10 minuters avvikelse – helt OK.<br />
+        • <strong>🔴 EFTER schema:</strong> Passet tog längre tid än beräknat. 
+        Kan bero på väder, extra arbete eller trafikförhållanden.<br />
+        <br />
+        <strong>💡 Användning:</strong> Arbetspass-Översikten hjälper dig att analysera hur 
+        effektiva olika pass har varit, identifiera adresser som tar längre tid än förväntat, 
+        och förbättra framtida tidsuppskattningar.
+      </p>
+
+      <h3 style={{ marginTop: 16, color: "#b91c1c" }}>🗑️ Radera</h3>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        I fliken <strong>Radera</strong> kan du ta bort gamla rapporter efter år och valfri månad.
+        Du anger vilket <strong>år</strong> (och eventuellt månad) som ska rensas.
+        Endast rapporter som <strong>inte</strong> är markerade som skyddade raderas.
+        Skyddade rader (kryssrutan i veckoöversikten) ignoreras alltid vid radering.
+        När du bekräftar visas en sammanfattning och du får frågan "Är du säker"
+        innan något tas bort permanent.
+      </p>
+
+      <h3 style={{ marginTop: 20 }}>💡 Tips</h3>
+      <ul style={{ fontSize: 14, lineHeight: 1.5 }}>
+        <li>Appen sparar pågående pass lokalt, så du kan uppdatera sidan utan att tappa tid.</li>
+        <li>Alla tider sparas i minuter – timmar visas bara som formaterad vy.</li>
+        <li>Inloggningslösenordet ändras automatiskt varje år (Jour+årtal).</li>
+        <li>Använd 🔄-knappen uppe till höger för att uppdatera data på vilken flik som helst.</li>
+      </ul>
+    </section>
+  );
+}
     return null;
   }
 
@@ -4648,48 +4758,65 @@ return (
       }}
     >
       <header
-        style={{
-          marginBottom: 8,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <h1
-            style={{
-              fontSize: 20,
-              marginBottom: 2,
-              textAlign: "left",
-            }}
-          >
-            Tid & Material – SnöJour
-          </h1>
-          <p
-            style={{
-              fontSize: 12,
-              color: "#6b7280",
-              margin: 0,
-            }}
-          >
-            Mobilvy – användarvänlig för iPhone
-          </p>
-        </div>
-        <button
-          onClick={delaApp}
-          style={{
-            flexShrink: 0,
-            padding: "6px 10px",
-            borderRadius: 999,
-            border: "1px solid #d1d5db",
-            backgroundColor: "#ffffff",
-            fontSize: 12,
-          }}
-        >
-          Dela
-        </button>
-      </header>
+  style={{
+    marginBottom: 8,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+  }}
+>
+  <div style={{ flex: 1 }}>
+    <h1
+      style={{
+        fontSize: 20,
+        marginBottom: 2,
+        textAlign: "left",
+      }}
+    >
+      Tid & Material – SnöJour
+    </h1>
+    <p
+      style={{
+        fontSize: 12,
+        color: "#6b7280",
+        margin: 0,
+      }}
+    >
+      Mobilvy – användarvänlig för iPhone
+    </p>
+  </div>
+  <div style={{ display: "flex", gap: 4 }}>
+    <button
+      onClick={() => window.location.reload()}
+      title="Uppdatera sidan"
+      style={{
+        flexShrink: 0,
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#ffffff",
+        fontSize: 14,
+        cursor: "pointer",
+      }}
+    >
+      🔄
+    </button>
+    <button
+      onClick={delaApp}
+      style={{
+        flexShrink: 0,
+        padding: "6px 10px",
+        borderRadius: 999,
+        border: "1px solid #d1d5db",
+        backgroundColor: "#ffffff",
+        fontSize: 12,
+      }}
+    >
+      Dela
+    </button>
+  </div>
+</header>
 
       {popup && (
   <div
