@@ -5004,27 +5004,27 @@ return (
             Nej
           </button>
         </div>
-     </>
+      </>
     )}
   </div>
-)}
-    
-    {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
-    <nav
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: "#fffbea",
-        borderTop: "1px solid #e5e7eb",
-        padding: "8px 12px",
-        maxWidth: 520,
-        margin: "0 auto",
-        boxSizing: "border-box",
-        boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
-      }}
-    >
+)}     {/* <-- stänger popupens JSX-villkor korrekt */}
+
+  {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+  <nav
+    style={{
+      position: "fixed",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: "#fffbea",
+      borderTop: "1px solid #e5e7eb",
+      padding: "8px 12px",
+      maxWidth: 520,
+      margin: "0 auto",
+      boxSizing: "border-box",
+      boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
+    }}
+  >
       {/* Rad 1: Info + Start/Stop + Registrera */}
       <div
         style={{
