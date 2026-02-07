@@ -5007,7 +5007,7 @@ return (
       </>
     )}
   </div>
-)     {/* <-- stänger popupens JSX-VILLKOR (inte hela return) */}
+)
 
   {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
   <nav
