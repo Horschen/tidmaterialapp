@@ -2636,6 +2636,19 @@ async function rensaRutt() {
   }
 }
 
+// ======= Steg 1: Öppna popup för att välja startpunkt =======
+function initieraBostadsrutt(riktning) {
+  setValdStartAdressId(""); // Nollställ valet
+  setVisaStartPunktPopup(riktning);
+}
+
+// ======= Steg 2: Kör beräkningen efter att startpunkt valts =======
+async function korBostadsruttBerakning() {
+  const riktning = visaStartPunktPopup;
+  const startAdress = adresser.find((a) => String(a.id) === String(valdStartAdressId));
+
+  setVisaStartPunktPopup(null); // Stäng popup
+  
 // ====== RADERA-FUNKTIONER =======
 async function raderaRapporter() {
   if (!raderaÅr) {
@@ -4107,20 +4120,7 @@ function avbrytRadering() {
   const totalDistansM = ruttKortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
   const totalDistansKm = (totalDistansM / 1000).toFixed(1);
 
-  // ======= Steg 1: Öppna popup för att välja startpunkt =======
-function initieraBostadsrutt(riktning) {
-  setValdStartAdressId(""); // Nollställ valet
-  setVisaStartPunktPopup(riktning);
-}
-
-// ======= Steg 2: Kör beräkningen efter att startpunkt valts =======
-async function korBostadsruttBerakning() {
-  const riktning = visaStartPunktPopup;
-  const startAdress = adresser.find((a) => String(a.id) === String(valdStartAdressId));
-
-  setVisaStartPunktPopup(null); // Stäng popup
-
-  try {
+    try {
     setRuttStatus(`Hämtar bostadsadresser (${riktning})...`);
 
     // 1. Hämta endast aktiva bostäder som INTE börjar med "Start"
