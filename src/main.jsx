@@ -4232,126 +4232,6 @@ function avbrytRadering() {
   const totalDistansM = ruttKortider.reduce((sum, k) => sum + (k.distance_m || 0), 0);
   const totalDistansKm = (totalDistansM / 1000).toFixed(1);
 
-    try {
-    setRuttStatus(`Hämtar bostadsadresser (${riktning})...`);
-
-    // 1. Hämta endast aktiva bostäder som INTE börjar med "Start"
-    const { data: bostader, error } = await supabase
-      .from("adresser")
-      .select("id, namn, lat, lng, adresslista_sortering, uppskattad_tid_min")
-      .eq("Bostad_Företag", "Bostad")
-      .eq("aktiv", true)
-      .not("namn", "ilike", "Start%")
-      .order("adresslista_sortering", {
-        ascending: riktning === "uppifrån-ner",
-      });
-
-    if (error) throw error;
-
-    if (!bostader || bostader.length === 0) {
-      showPopup("👎 Inga bostadsadresser hittades.", "error", 3000);
-      setRuttStatus("❌ Inga bostäder i databasen.");
-      return;
-    }
-
-    let komplettLista = [];
-
-    // 2. Om startadress är vald, lägg den först
-    if (startAdress) {
-      console.log("📍 Startadress vald:", startAdress.namn);
-      komplettLista = [startAdress, ...bostader];
-    } else {
-      // 3. Ingen startadress vald - försök använda GPS
-      console.log("📍 Ingen startadress vald, försöker använda GPS...");
-
-      const gpsPosition = await new Promise((resolve) => {
-        if (!navigator.geolocation) {
-          console.warn("⚠️ GPS ej tillgänglig");
-          resolve(null);
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            });
-          },
-          (error) => {
-            console.warn("⚠️ GPS-fel:", error.message);
-            resolve(null);
-          },
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-      });
-
-      if (gpsPosition) {
-        console.log("✅ GPS-position hämtad:", gpsPosition);
-        setRuttStatus("Sorterar efter närmaste adress...");
-
-        // Sortera bostäder efter avstånd från GPS-position
-        const bostaderMedAvstand = bostader
-          .filter((b) => b.lat && b.lng)
-          .map((b) => ({
-            ...b,
-            avstand: Math.sqrt(
-              Math.pow(b.lat - gpsPosition.lat, 2) +
-                Math.pow(b.lng - gpsPosition.lng, 2)
-            ),
-          }))
-          .sort((a, b) => a.avstand - b.avstand);
-
-        // Lägg till bostäder utan GPS-koordinater sist
-        const bostaderUtanGPS = bostader.filter((b) => !b.lat || !b.lng);
-
-        komplettLista = [...bostaderMedAvstand, ...bostaderUtanGPS];
-
-        showPopup("📍 Rutt beräknad från din position", "success", 3000);
-      } else {
-        // Ingen GPS - använd ordningen som den är
-        console.warn("⚠️ Kunde inte hämta GPS, använder standardordning");
-        komplettLista = bostader;
-        showPopup("⚠️ GPS ej tillgänglig, använder standardordning", "warning", 3000);
-      }
-    }
-
-    // 4. Rensa gammal aktiv rutt
-    await supabase.from("aktiv_rutt").delete().neq("id", 0);
-
-    // 5. Spara den nya rutten
-    const ruttRader = komplettLista.map((a, idx) => ({
-      adress_id: a.id,
-      ordning: idx + 1,
-      avklarad: false,
-    }));
-
-    const { error: insertError } = await supabase
-      .from("aktiv_rutt")
-      .insert(ruttRader);
-
-    if (insertError) throw insertError;
-
-    await laddaAktivRutt();
-
-    // 6. Hämta körtider via Google Maps
-    setRuttStatus("Beräknar körtider via Google Maps...");
-    const kortider = await hamtaKortiderForRutt(komplettLista);
-    setRuttKortider(kortider);
-
-    // 7. Visa bekräftelse
-    const riktningText = riktning === "uppifrån-ner" ? "Uppifrån → Ner" : "Nerifrån → Upp";
-    const startText = startAdress ? `Start: ${startAdress.namn}` : "Start: Din position";
-
-    showPopup(`👍 ${riktningText}: ${komplettLista.length} adresser`, "success", 4000);
-    setRuttStatus(`✅ ${startText} + ${bostader.length} bostäder`);
-
-  } catch (err) {
-    console.error(err);
-    showPopup("👎 Fel vid aktivering av rutt.", "error", 3000);
-    setRuttStatus("❌ " + err.message);
-  }
-}
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
@@ -4377,34 +4257,34 @@ function avbrytRadering() {
       )}
 
       {totalAdresser > 0 && (
-  <div
-    style={{
-      padding: "12px 16px",
-      borderRadius: 12,
-      backgroundColor: "#fef3c7",
-      color: "#92400e",
-      marginBottom: 12,
-      fontSize: 14,
-      fontWeight: 600,
-    }}
-  >
-    📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
-    
-    {ruttKortider.length > 0 && (
-      <div style={{ fontSize: 12, fontWeight: 400, marginTop: 6 }}>
-        🚗 Körsträcka: {totalDistansKm} km ({formatTid(uppskattadTransportMin)})
-      </div>
-    )}
-    
-    <div style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>
-      🔧 Arbetstid: {formatTid(uppskattadArbeteMin)}
-    </div>
-    
-    <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4, color: "#065f46" }}>
-      ⏱️ Total uppskattad tid: {formatTid(uppskattadTotalMin)}
-    </div>
-  </div>
-)}
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: 12,
+            backgroundColor: "#fef3c7",
+            color: "#92400e",
+            marginBottom: 12,
+            fontSize: 14,
+            fontWeight: 600,
+          }}
+        >
+          📍 Rutt: {avklaradeAntal} / {totalAdresser} avklarade
+          
+          {ruttKortider.length > 0 && (
+            <div style={{ fontSize: 12, fontWeight: 400, marginTop: 6 }}>
+              🚗 Körsträcka: {totalDistansKm} km ({formatTid(uppskattadTransportMin)})
+            </div>
+          )}
+          
+          <div style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>
+            🔧 Arbetstid: {formatTid(uppskattadArbeteMin)}
+          </div>
+          
+          <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4, color: "#065f46" }}>
+            ⏱️ Total uppskattad tid: {formatTid(uppskattadTotalMin)}
+          </div>
+        </div>
+      )}
 
       {nastaAdress && (
         <div
@@ -4423,51 +4303,52 @@ function avbrytRadering() {
       )}
 
       {/* === FASTA RUTTER: BOSTÄDER === */}
-<div
-  style={{
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: "#f0fdf4",
-    border: "1px solid #86efac",
-  }}
->
-  <h3 style={{ fontSize: 15, marginTop: 0, marginBottom: 8, color: "#166534" }}>
-    🏠 Fasta bostadsrutter
-  </h3>
-  <div style={{ display: "flex", gap: 8 }}>
-    <button
-      onClick={() => initieraBostadsrutt("uppifrån-ner")}
-      style={{
-        flex: 1,
-        padding: "12px 8px",
-        borderRadius: 999,
-        border: "none",
-        backgroundColor: "#22c55e",
-        color: "#ffffff",
-        fontWeight: 600,
-        fontSize: 13,
-      }}
-    >
-      ⬇️ Uppifrån-Ner Bostad
-    </button>
-    <button
-      onClick={() => initieraBostadsrutt("nerifrån-upp")}
-      style={{
-        flex: 1,
-        padding: "12px 8px",
-        borderRadius: 999,
-        border: "none",
-        backgroundColor: "#16a34a",
-        color: "#ffffff",
-        fontWeight: 600,
-        fontSize: 13,
-      }}
-    >
-      ⬆️ Nerifrån-Upp Bostad
-    </button>
-  </div>
-</div>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 12,
+          borderRadius: 12,
+          backgroundColor: "#f0fdf4",
+          border: "1px solid #86efac",
+        }}
+      >
+        <h3 style={{ fontSize: 15, marginTop: 0, marginBottom: 8, color: "#166534" }}>
+          🏠 Fasta bostadsrutter
+        </h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => initieraBostadsrutt("uppifrån-ner")}
+            style={{
+              flex: 1,
+              padding: "12px 8px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#22c55e",
+              color: "#ffffff",
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            ⬇️ Uppifrån-Ner Bostad
+          </button>
+          <button
+            onClick={() => initieraBostadsrutt("nerifrån-upp")}
+            style={{
+              flex: 1,
+              padding: "12px 8px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#16a34a",
+              color: "#ffffff",
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            ⬆️ Nerifrån-Upp Bostad
+          </button>
+        </div>
+      </div>
+
       <button
         onClick={oppnaRuttPopup}
         style={{
@@ -4639,19 +4520,19 @@ function avbrytRadering() {
                   <div style={{ flex: 1, fontSize: 14 }}>
                     <strong>{r.adresser?.namn}</strong>
                     <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-                   🔧 Arbete: ~{uppskattadMin} min
-                   {(() => {
-                   const kortid = ruttKortider.find((k) => k.from_id === r.adress_id);
-                   if (kortid) {
-                  return (
-                  <span style={{ marginLeft: 8 }}>
-                  🚗 → {kortid.duration_text} ({kortid.distance_text})
-                 </span>
-                );
-                }
-                return null;
-                })()}
-                </div>
+                      🔧 Arbete: ~{uppskattadMin} min
+                      {(() => {
+                        const kortid = ruttKortider.find((k) => k.from_id === r.adress_id);
+                        if (kortid) {
+                          return (
+                            <span style={{ marginLeft: 8 }}>
+                              🚗 → {kortid.duration_text} ({kortid.distance_text})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                     {!harGPS && (
                       <span style={{ fontSize: 11, color: "#dc2626" }}>
                         (Ingen GPS)
