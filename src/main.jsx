@@ -2647,7 +2647,119 @@ async function korBostadsruttBerakning() {
   const riktning = visaStartPunktPopup;
   const startAdress = adresser.find((a) => String(a.id) === String(valdStartAdressId));
 
-  setVisaStartPunktPopup(null); // Stäng popup
+  setVisaStartPunktPopup(null);
+
+  try {
+    setRuttStatus(`Hämtar bostadsadresser (${riktning})...`);
+
+    const { data: bostader, error } = await supabase
+      .from("adresser")
+      .select("id, namn, lat, lng, adresslista_sortering, uppskattad_tid_min")
+      .eq("Bostad_Företag", "Bostad")
+      .eq("aktiv", true)
+      .not("namn", "ilike", "Start%")
+      .order("adresslista_sortering", {
+        ascending: riktning === "uppifrån-ner",
+      });
+
+    if (error) throw error;
+
+    if (!bostader || bostader.length === 0) {
+      showPopup("👎 Inga bostadsadresser hittades.", "error", 3000);
+      setRuttStatus("❌ Inga bostäder i databasen.");
+      return;
+    }
+
+    let komplettLista = [];
+
+    if (startAdress) {
+      console.log("📍 Startadress vald:", startAdress.namn);
+      komplettLista = [startAdress, ...bostader];
+    } else {
+      console.log("📍 Ingen startadress vald, försöker använda GPS...");
+
+      const gpsPosition = await new Promise((resolve) => {
+        if (!navigator.geolocation) {
+          console.warn("⚠️ GPS ej tillgänglig");
+          resolve(null);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          (gpsError) => {
+            console.warn("⚠️ GPS-fel:", gpsError.message);
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      });
+
+      if (gpsPosition) {
+        console.log("✅ GPS-position hämtad:", gpsPosition);
+        setRuttStatus("Sorterar efter närmaste adress...");
+
+        const bostaderMedAvstand = bostader
+          .filter((b) => b.lat && b.lng)
+          .map((b) => ({
+            ...b,
+            avstand: Math.sqrt(
+              Math.pow(b.lat - gpsPosition.lat, 2) +
+                Math.pow(b.lng - gpsPosition.lng, 2)
+            ),
+          }))
+          .sort((a, b) => a.avstand - b.avstand);
+
+        const bostaderUtanGPS = bostader.filter((b) => !b.lat || !b.lng);
+
+        komplettLista = [...bostaderMedAvstand, ...bostaderUtanGPS];
+
+        showPopup("📍 Rutt beräknad från din position", "success", 3000);
+      } else {
+        console.warn("⚠️ Kunde inte hämta GPS, använder standardordning");
+        komplettLista = bostader;
+        showPopup("⚠️ GPS ej tillgänglig, använder standardordning", "warning", 3000);
+      }
+    }
+
+    await supabase.from("aktiv_rutt").delete().neq("id", 0);
+
+    const ruttRader = komplettLista.map((a, idx) => ({
+      adress_id: a.id,
+      ordning: idx + 1,
+      avklarad: false,
+    }));
+
+    const { error: insertError } = await supabase
+      .from("aktiv_rutt")
+      .insert(ruttRader);
+
+    if (insertError) throw insertError;
+
+    await laddaAktivRutt();
+
+    setRuttStatus("Beräknar körtider via Google Maps...");
+    const kortider = await hamtaKortiderForRutt(komplettLista);
+    setRuttKortider(kortider);
+
+    const riktningText = riktning === "uppifrån-ner" ? "Uppifrån → Ner" : "Nerifrån → Upp";
+    const startText = startAdress ? `Start: ${startAdress.namn}` : "Start: Din position";
+
+    showPopup(`👍 ${riktningText}: ${komplettLista.length} adresser`, "success", 4000);
+    setRuttStatus(`✅ ${startText} + ${bostader.length} bostäder`);
+
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Fel vid aktivering av rutt.", "error", 3000);
+    setRuttStatus("❌ " + err.message);
+  }
+}
+
   
 // ====== RADERA-FUNKTIONER =======
 async function raderaRapporter() {
