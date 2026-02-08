@@ -1422,8 +1422,19 @@ const { error } = await supabase.from("rapporter").insert([
   setAntalAnstallda(1);
   setSenasteRapportTid(nuIso);
 
-  // Nu är await inne i async-funktionen
+  // Bocka av den rapporterade adressen
   await bockAvAdressIRutt(valda);
+
+  // Om detta är första rapporten (senasteRapportTid är null), 
+  // leta efter en "Start"-adress i rutten och bocka av den också
+  if (!senasteRapportTid) {
+    const startAdressIRutt = ruttAdresser.find(r => 
+      !r.avklarad && r.adresser?.namn?.toLowerCase().startsWith("start")
+    );
+    if (startAdressIRutt) {
+      await bockAvAdressIRutt(startAdressIRutt.adress_id);
+    }
+  }
 
   setPaus(null);
   setPausSekUnderIntervall(0);
