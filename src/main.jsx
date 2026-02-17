@@ -3656,7 +3656,39 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-     {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
+     {/* 🆕 Ny knapp: Alla Job Per Adress */}
+<button
+  onClick={() => setVisaAllaJob((prev) => !prev)}
+  style={{
+    ...secondaryButton,
+    backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
+    color: visaAllaJob ? "#fff" : "#111827",
+    marginBottom: 8,
+  }}
+>
+  {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
+</button>
+
+{/* Filtrera på metod */}
+<label style={labelStyle}>Filtrera på metod</label>
+<select
+  value={filterMetod}
+  onChange={(e) => setFilterMetod(e.target.value)}
+  style={selectStyle}
+>
+  <option value="alla">Alla</option>
+  <option value="hand">Endast För hand</option>
+  <option value="maskin">Endast Maskin</option>
+</select>
+
+<button
+  style={{ ...secondaryButton, marginTop: 12 }}
+  onClick={hamtaRapporter}
+>
+  Uppdatera översikt
+</button>
+
+{/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
 {visaAllaJob && (
   <div
     style={{
@@ -3704,7 +3736,6 @@ if (activeTab === "rapport") {
       }
 
       return adressGrupper.map((g) => {
-        // Beräkna totalsummor per adress
         const totTidMin = g.rapporter.reduce(
           (s, r) => s + (r.arbetstid_min || 0),
           0
@@ -3810,7 +3841,7 @@ if (activeTab === "rapport") {
                   </tr>
                 ))}
 
-                {/* Totalsummering per adress */}
+                {/* Summa för adress */}
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
