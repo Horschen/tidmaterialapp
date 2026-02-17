@@ -481,7 +481,9 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
     if (syfteGrusning) delar.push("Grusning");
     return delar.join(", ");
   }
-
+  // Knapp För Visa Översikt För Alla Adresser / Vecka)
+  const [visaOversikt, setVisaOversikt] = useState(false);
+  
   // Manuell Registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
   const [manuellTeam, setManuellTeam] = useState("För hand");
@@ -532,6 +534,7 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
     setVisaManuellPopup(false);
     resetManuellForm();
   }
+
 
   // Editera-rapport popup
   const [visaEditPopup, setVisaEditPopup] = useState(false);
@@ -3536,146 +3539,232 @@ function avbrytRadering() {
       );
     }    
     // === SLUT PÅ KARTA-FLIK ===
-    if (activeTab === "rapport") {
+if (activeTab === "rapport") {
   return (
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
         Veckorapport
       </h2>
-            
-          {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
-<div
-  style={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  }}
->
-  <div
-    style={{
-      padding: "6px 12px",
-      borderRadius: 999,
-      backgroundColor: "#facc15",
-      color: "#854d0e",
-      fontSize: 13,
-      fontWeight: 600,
-    }}
-  >
-    Total Tid "Maskin":{" "}
-    <span style={{ fontFamily: "monospace" }}>
-      {formatTid(totalMaskinMin)}
-    </span>
-  </div>
 
-  <div
-    style={{
-      padding: "6px 12px",
-      borderRadius: 999,
-      backgroundColor: "#facc15",
-      color: "#854d0e",
-      fontSize: 13,
-      fontWeight: 600,
-    }}
-  >
-    Total Tid "För Hand":{" "}
-    <span style={{ fontFamily: "monospace" }}>
-      {formatTid(totalHandMin)}
-    </span>
-  </div>
-</div>
-      
-          <div
+      {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
+            padding: "6px 12px",
+            borderRadius: 999,
+            backgroundColor: "#facc15",
+            color: "#854d0e",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          Total Tid "Maskin":{" "}
+          <span style={{ fontFamily: "monospace" }}>
+            {formatTid(totalMaskinMin)}
+          </span>
+        </div>
+        <div
+          style={{
+            padding: "6px 12px",
+            borderRadius: 999,
+            backgroundColor: "#facc15",
+            color: "#854d0e",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          Total Tid "För Hand":{" "}
+          <span style={{ fontFamily: "monospace" }}>
+            {formatTid(totalHandMin)}
+          </span>
+        </div>
+      </div>
+
+      {/* Vecka / År‑fält */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 8,
+          marginBottom: 8,
+        }}
+      >
+        <div>
+          <label style={labelStyle}>Vecka</label>
+          <input
+            type="number"
+            min="1"
+            max="52"
+            value={filtreradVecka}
+            onChange={(e) => setFiltreradVecka(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+        <div>
+          <label style={labelStyle}>År</label>
+          <input
+            type="number"
+            min="2020"
+            max="2100"
+            value={filtreratÅr}
+            onChange={(e) => setFiltreratÅr(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      {/* Navigeringsknappar */}
+      <button
+        onClick={() => {
+          const nu = getCurrentIsoWeekAndYear();
+          const aktuellVecka = Number(filtreradVecka) || nu.vecka;
+          const aktuelltÅr = Number(filtreratÅr) || nu.år;
+          let prevVecka = aktuellVecka - 1;
+          let prevÅr = aktuelltÅr;
+          if (prevVecka < 1) {
+            prevVecka = 52;
+            prevÅr = aktuelltÅr - 1;
+          }
+          setFiltreradVecka(String(prevVecka));
+          setFiltreratÅr(String(prevÅr));
+        }}
+        style={{
+          ...secondaryButton,
+          marginTop: 4,
+          marginBottom: 4,
+        }}
+      >
+        Föregående vecka
+      </button>
+
+      <button
+        onClick={() => {
+          const { vecka, år } = getCurrentIsoWeekAndYear();
+          setFiltreradVecka(String(vecka));
+          setFiltreratÅr(String(år));
+        }}
+        style={{
+          ...secondaryButton,
+          marginTop: 4,
+          marginBottom: 8,
+        }}
+      >
+        Denna vecka
+      </button>
+
+      {/* 🆕 Ny knapp: Alla Job Per Adress */}
+      <button
+        onClick={() => setVisaAllaJob((prev) => !prev)}
+        style={{
+          ...secondaryButton,
+          backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
+          color: visaAllaJob ? "#fff" : "#111827",
+          marginBottom: 8,
+        }}
+      >
+        {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
+      </button>
+
+      {/* Filtrera på metod */}
+      <label style={labelStyle}>Filtrera på metod</label>
+      <select
+        value={filterMetod}
+        onChange={(e) => setFilterMetod(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="alla">Alla</option>
+        <option value="hand">Endast För hand</option>
+        <option value="maskin">Endast Maskin</option>
+      </select>
+
+      <button
+        style={{ ...secondaryButton, marginTop: 12 }}
+        onClick={hamtaRapporter}
+      >
+        Uppdatera översikt
+      </button>
+
+      {/* 🧾 Tabell – Alla Job Per Adress (Respekterar valt metodfilter) */}
+      {visaAllaJob && (
+        <div
+          style={{
+            marginTop: 16,
+            backgroundColor: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+            overflow: "hidden",
+          }}
+        >
+          <table
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 8,
-              marginBottom: 8,
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: 14,
             }}
           >
-            <div>
-              <label style={labelStyle}>Vecka</label>
-              <input
-                type="number"
-                min="1"
-                max="52"
-                value={filtreradVecka}
-                onChange={(e) => setFiltreradVecka(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
+            <thead style={{ backgroundColor: "#f9fafb" }}>
+              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                <th style={{ textAlign: "left", padding: 8 }}>Adress</th>
+                <th style={{ textAlign: "left", padding: 8 }}>Datum</th>
+                <th style={{ textAlign: "center", padding: 8 }}>Arbetstid (min)</th>
+                <th style={{ textAlign: "center", padding: 8 }}>Team / Metod</th>
+                <th style={{ textAlign: "left", padding: 8 }}>Syfte</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                const data = [...filtreradeRapporter];
+                const sorter = data.sort((a, b) => {
+                  const adrA = a.adresser?.adresslista_sortering ?? a.adresser?.id ?? 0;
+                  const adrB = b.adresser?.adresslista_sortering ?? b.adresser?.id ?? 0;
+                  if (adrA !== adrB) return adrA - adrB;
+                  const tA = new Date(a.datum).getTime();
+                  const tB = new Date(b.datum).getTime();
+                  return tB - tA;
+                });
 
-            <div>
-              <label style={labelStyle}>År</label>
-              <input
-                type="number"
-                min="2020"
-                max="2100"
-                value={filtreratÅr}
-                onChange={(e) => setFiltreratÅr(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-          </div>
+                if (sorter.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={5} style={{ padding: 12, textAlign: "center" }}>
+                        Inga jobb hittades för vald vecka och metod.
+                      </td>
+                    </tr>
+                  );
+                }
 
-          <button
-            onClick={() => {
-              const nu = getCurrentIsoWeekAndYear();
-              const aktuellVecka = Number(filtreradVecka) || nu.vecka;
-              const aktuelltÅr = Number(filtreratÅr) || nu.år;
-
-              let prevVecka = aktuellVecka - 1;
-              let prevÅr = aktuelltÅr;
-
-              if (prevVecka < 1) {
-                prevVecka = 52;
-                prevÅr = aktuelltÅr - 1;
-              }
-
-              setFiltreradVecka(String(prevVecka));
-              setFiltreratÅr(String(prevÅr));
-            }}
-            style={{
-              ...secondaryButton,
-              marginTop: 4,
-              marginBottom: 4,
-            }}
-          >
-            Föregående vecka
-          </button>
-
-          <button
-            onClick={() => {
-              const { vecka, år } = getCurrentIsoWeekAndYear();
-              setFiltreradVecka(String(vecka));
-              setFiltreratÅr(String(år));
-            }}
-            style={{
-              ...secondaryButton,
-              marginTop: 4,
-              marginBottom: 8,
-            }}
-          >
-            Denna vecka
-          </button>
-
-          <label style={labelStyle}>Filtrera på metod</label>
-          <select
-            value={filterMetod}
-            onChange={(e) => setFilterMetod(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="alla">Alla</option>
-            <option value="hand">Endast För hand</option>
-            <option value="maskin">Endast Maskin</option>
-          </select>
-
-          <button
-            style={{ ...secondaryButton, marginTop: 12 }}
-            onClick={hamtaRapporter}
-          >
-            Uppdatera översikt
-          </button>
+                return sorter.map((r, idx) => (
+                  <tr
+                    key={r.id}
+                    style={{
+                      backgroundColor: idx % 2 === 0 ? "#fff" : "#f9fafb",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <td style={{ padding: 8 }}>{r.adresser?.namn || "—"}</td>
+                    <td style={{ padding: 8 }}>{formatDatumTid(r.datum)}</td>
+                    <td style={{ textAlign: "center", padding: 8 }}>
+                      {r.arbetstid_min}
+                    </td>
+                    <td style={{ textAlign: "center", padding: 8 }}>
+                      {r.team_namn ||
+                        (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+                    </td>
+                    <td style={{ padding: 8 }}>{r.syfte}</td>
+                  </tr>
+                ));
+              })()}
+            </tbody>
+          </table>
+        </div>
+      )}
 
           {/* === ARBETSPASS-ÖVERSIKT === */}
           <div style={{ marginTop: 16 }}>
