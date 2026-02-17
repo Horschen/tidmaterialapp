@@ -481,8 +481,6 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
     if (syfteGrusning) delar.push("Grusning");
     return delar.join(", ");
   }
-  // Knapp För Visa Översikt För Alla Adresser / Vecka)
-  const [visaOversikt, setVisaOversikt] = useState(false);
   
   // Manuell Registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
