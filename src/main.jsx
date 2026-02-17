@@ -3819,8 +3819,7 @@ if (activeTab === "rapport") {
                     {" "}
                     ({formatTid(r.arbetstid_min ?? 0)})
                     </span>
-                    </td>
-                    
+                                   
                     </td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
                       {r.antal_anstallda || 1}
