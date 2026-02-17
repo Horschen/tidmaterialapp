@@ -400,9 +400,6 @@ function App() {
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
   const [adresser, setAdresser] = useState([]);
-
-// 🧾 Fakturerade adresser (visuell markering)
-const [fakturerade, setFakturerade] = useState({});
   
   // 🟡 Popup‑för val av pass‑typ
 const [visaMetodValPopup, setVisaMetodValPopup] = useState(false);
@@ -3845,77 +3842,41 @@ if (activeTab === "rapport") {
                 ))}
 
                 {/* Summa för adress */}
-<tr
-  style={{
-    backgroundColor: "#fef9c3",
-    fontWeight: 600,
-    borderTop: "2px solid #e5e7eb",
-  }}
->
-  <td style={{ padding: "4px 6px" }}>
-    Summa (Totalt / adress)
-  </td>
-  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-    {totTidMin}
-    <span style={{ color: "#6b7280", fontSize: 12 }}>
-      {" "}
-      ({formatTid(totTidMin)})
-    </span>
-  </td>
-  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-    {totAnst}
-  </td>
-  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-    {totGrus}
-  </td>
-  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-    {totSalt}
-  </td>
-  <td colSpan="2"></td>
-</tr>
-</tbody>
-</table>
-
-{/* 🔽  Ny sektion: Fakturerad‑kryssruta per adress */}
-<div
-  style={{
-    display: "flex",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 4,
-    marginBottom: 6,
-  }}
->
-  <label
-    style={{
-      fontSize: 13,
-      color: "#991b1b",
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      cursor: "pointer",
-      fontWeight: 600,
-    }}
-  >
-    <input
-      type="checkbox"
-      checked={fakturerade[g.id] === true}
-      onChange={(e) =>
-        setFakturerade((prev) => ({
-          ...prev,
-          [g.id]: e.target.checked,
-        }))
-      }
-      style={{ transform: "scale(1.2)" }}
-    />
-    Fakturerad
-  </label>
-</div>
-</div>
-);
-});
-})()}
-</div>
+                <tr
+                  style={{
+                    backgroundColor: "#fef9c3",
+                    fontWeight: 600,
+                    borderTop: "2px solid #e5e7eb",
+                  }}
+                >
+                  <td style={{ padding: "4px 6px" }}>
+                    Summa (Totalt / adress)
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totTidMin}
+                    <span style={{ color: "#6b7280", fontSize: 12 }}>
+                      {" "}
+                      ({formatTid(totTidMin)})
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totAnst}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totGrus}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totSalt}
+                  </td>
+                  <td colSpan="2"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      });
+    })()}
+  </div>
 )}
 
           {/* === ARBETSPASS-ÖVERSIKT === */}
