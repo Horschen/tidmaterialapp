@@ -3543,47 +3543,48 @@ function avbrytRadering() {
         Veckorapport
       </h2>
             
-          {/* Gula ovala rutor för total tider */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              marginBottom: 12,
-            }}
-          >
-            <div
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                backgroundColor: "#facc15",
-                color: "#854d0e",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Total Maskin Tid:{" "}
-              <span style={{ fontFamily: "monospace" }}>
-                {formatTid(totalMaskinMin)}
-              </span>
-            </div>
-            <div
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                backgroundColor: "#facc15",
-                color: "#854d0e",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              Total Man Tid:{" "}
-              <span style={{ fontFamily: "monospace" }}>
-                {formatTid(totalHandMin)}
-              </span>
-            </div>
-          </div>
+          {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
+<div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  }}
+>
+  <div
+    style={{
+      padding: "6px 12px",
+      borderRadius: 999,
+      backgroundColor: "#facc15",
+      color: "#854d0e",
+      fontSize: 13,
+      fontWeight: 600,
+    }}
+  >
+    Total Tid "Maskin":{" "}
+    <span style={{ fontFamily: "monospace" }}>
+      {formatTid(totalMaskinMin)}
+    </span>
+  </div>
 
+  <div
+    style={{
+      padding: "6px 12px",
+      borderRadius: 999,
+      backgroundColor: "#facc15",
+      color: "#854d0e",
+      fontSize: 13,
+      fontWeight: 600,
+    }}
+  >
+    Total Tid "För Hand":{" "}
+    <span style={{ fontFamily: "monospace" }}>
+      {formatTid(totalHandMin)}
+    </span>
+  </div>
+</div>
+      
           <div
             style={{
               display: "grid",
