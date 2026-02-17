@@ -3531,7 +3531,7 @@ function avbrytRadering() {
 </div>
       )}
     </section>
-    {/* === SLUT PÅ KARTA-FLIK === */}
+    // === SLUT PÅ KARTA-FLIK === 
   );            // stänger return( ... )
 }               // stänger if (activeTab === "karta")
 
