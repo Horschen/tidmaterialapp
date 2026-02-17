@@ -3735,7 +3735,7 @@ if (activeTab === "rapport") {
         );
       }
 
-      return adresseGrupper.map((g) => {
+      return adressGrupper.map((g) => {
         // Beräkna totalsummor per adress
         const totGrus = g.rapporter.reduce(
           (s, r) => s + (parseInt(r.sand_kg) || 0),
