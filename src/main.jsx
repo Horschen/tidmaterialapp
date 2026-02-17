@@ -3535,7 +3535,7 @@ function avbrytRadering() {
         </section>
       );
     }    
-    // === SLUT PÅ KARTA-FLIK ===
+    {/* === SLUT PÅ KARTA-FLIK === */}
 if (activeTab === "rapport") {
   // 🧾 Kryss för fakturerade adresser (lokalt state)
   const [fakturerade, setFakturerade] = useState({});
