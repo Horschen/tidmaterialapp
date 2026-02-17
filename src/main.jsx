@@ -3532,17 +3532,17 @@ function avbrytRadering() {
                 ))}
             </div>
           )}
-        </section>
+       </section>
       );
-    }    
+    };   // <-- semikolon avslutar hela funktionen som öppnade "if (activeTab === 'karta')"
     {/* === SLUT PÅ KARTA-FLIK === */}
-if (activeTab === "rapport") {
+
+    if (activeTab === "rapport") {
   // 🧾 Kryss för fakturerade adresser (lokalt state)
   const [fakturerade, setFakturerade] = useState({});
   
   return (
-    <section style={sectionStyle}>
-    <section style={sectionStyle}>
+      <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
         Veckorapport
       </h2>
