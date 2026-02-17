@@ -1329,7 +1329,9 @@ function validateManuellFields() {
 async function sparaRapport() {
   if (!validateBeforeSaveFields()) return;
 
-  const metod = team === "För hand" ? "hand" : "maskin";
+  // säker, oberoende av typ av mellanslag och stora/små bokstäver
+const cleanTeam = team.replace(/\s/g, "").toLowerCase();
+const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
   const syfteText = buildSyfteString();
   let arbetstidMin = 0;
 
@@ -1444,7 +1446,10 @@ const { error } = await supabase.from("rapporter").insert([
 async function sparaManuellRapport() {
   if (!validateManuellFields()) return;
 
-  const metod = manuellTeam === "För hand" ? "hand" : "maskin";
+  // 🔧 Säker metod‑identifiering oavsett mellanslag, stora/små bokstäver
+  const cleanTeam = manuellTeam.replace(/\s/g, "").toLowerCase();
+  const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
+
   const syfteText = buildManuellSyfteString();
 
   const tidMin = parseInt(manuellTidMin, 10);
@@ -1457,17 +1462,18 @@ async function sparaManuellRapport() {
     setStatus("Ange arbetstid (minuter) för manuell registrering.");
     return;
   }
-    const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
-  
+
+  const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
+
   // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
   try {
-    const datePart = manuellDatum;                  // "YYYY-MM-DD"
+    const datePart = manuellDatum; // "YYYY-MM-DD"
     const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
 
     // 🔸 Spara som lokal tid (utan zonkonvertering)
     datumIso = `${datePart}T${timePart}:00`;
-    jobbIso  = datumIso;
+    jobbIso = datumIso;
   } catch (e) {
     showPopup(
       "👎 Ogiltigt datum eller tid för manuell registrering.",
@@ -1486,8 +1492,8 @@ async function sparaManuellRapport() {
       jobb_tid: jobbIso,
       adress_id: manuellAdressId,
       arbetstid_min: arbetstidMin,
-      team_namn: manuellTeam,
-      arbetssatt: metod,
+      team_namn: manuellTeam,  // 📋 UI-fält – "För hand" / "Maskin"
+      arbetssatt: metod,       // ⚙️ filtrerings-fält – "hand" / "maskin"
       sand_kg: parseInt(manuellSand, 10) || 0,
       salt_kg: parseInt(manuellSalt, 10) || 0,
       syfte: syfteText,
