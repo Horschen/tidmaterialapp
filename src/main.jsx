@@ -3431,113 +3431,110 @@ function avbrytRadering() {
               />
 
               {/* Förhandsvisning + Radera‑knapp för just denna adress */}
-              {adresser
-                .filter(
-                  (a) =>
-                    (a.id === Number(kartaAdressId) ||
-                      String(a.id) === String(kartaAdressId)) &&
-                    a.file_url
-                )
-                .map((a) => (
-                  <div key={a.id} style={{ marginTop: 20 }}>
-                    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
-                      Förhandsgranskning
-                    </h4>
+{adresser
+  .filter(
+    (a) =>
+      (a.id === Number(kartaAdressId) ||
+        String(a.id) === String(kartaAdressId)) &&
+      a.file_url
+  )
+  .map((a) => (
+    <div key={a.id} style={{ marginTop: 20 }}>
+      <h4 style={{ fontSize: 15, marginBottom: 6 }}>Förhandsgranskning</h4>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <span style={{ fontSize: 13, color: "#4b5563" }}>
-                        {a.file_url.split("/").pop()}
-                      </span>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const parts = a.file_url.split("/adresskartor/");
-                            const relativePath = parts[1];
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontSize: 13, color: "#4b5563" }}>
+          {a.file_url.split("/").pop()}
+        </span>
+        <button
+          onClick={async () => {
+            try {
+              const parts = a.file_url.split("/adresskartor/");
+              const relativePath = parts[1];
 
-                            if (relativePath) {
-                              const { error: removeError } = await supabase
-                                .storage
-                                .from("adresskartor")
-                                .remove([relativePath]);
-                              if (removeError) throw removeError;
-                            }
+              if (relativePath) {
+                const { error: removeError } = await supabase
+                  .storage
+                  .from("adresskartor")
+                  .remove([relativePath]);
+                if (removeError) throw removeError;
+              }
 
-                            const { error: dbError } = await supabase
-                              .from("adresser")
-                              .update({ file_url: null })
-                              .eq("id", a.id);
-                            if (dbError) throw dbError;
+              const { error: dbError } = await supabase
+                .from("adresser")
+                .update({ file_url: null })
+                .eq("id", a.id);
+              if (dbError) throw dbError;
 
-                            showPopup("🗑️ Fil raderad.", "success", 3000);
-                            await laddaAdresser();
-                          } catch (err) {
-                            console.error(err);
-                            showPopup("👎 Fel vid radering.", "error", 3000);
-                          }
-                        }}
-                        style={{
-                          padding: "4px 10px",
-                          border: "none",
-                          borderRadius: 6,
-                          backgroundColor: "#dc2626",
-                          color: "#fff",
-                          fontSize: 12,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Radera fil
-                      </button>
-                    </div>
+              showPopup("🗑️ Fil raderad.", "success", 3000);
+              await laddaAdresser();
+            } catch (err) {
+              console.error(err);
+              showPopup("👎 Fel vid radering.", "error", 3000);
+            }
+          }}
+          style={{
+            padding: "4px 10px",
+            border: "none",
+            borderRadius: 6,
+            backgroundColor: "#dc2626",
+            color: "#fff",
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+        >
+          Radera fil
+        </button>
+      </div>
 
-                    {a.file_url.toLowerCase().endsWith(".pdf") ? (
-                      <iframe
-                        src={`${a.file_url}#view=FitH`}
-                        title="Karta PDF"
-                        style={{
-                          width: "100%",
-                          height: "70vh",
-                          border: "1px solid #d1d5db",
-                          borderRadius: 8,
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          maxHeight: "70vh",
-                          overflow: "auto",
-                          border: "1px solid #d1d5db",
-                          borderRadius: 8,
-                        }}
-                      >
-                        <img
-                          src={a.file_url}
-                          alt="Karta"
-                          style={{
-                            width: "100%",
-                            height: "auto",
-                            display: "block",
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          )}
-       </section>
-      );
-    };   // <-- semikolon avslutar hela funktionen som öppnade "if (activeTab === 'karta')"
-    {/* === SLUT PÅ KARTA-FLIK === */}
+      {a.file_url.toLowerCase().endsWith(".pdf") ? (
+        <iframe
+          src={`${a.file_url}#view=FitH`}
+          title="Karta PDF"
+          style={{
+            width: "100%",
+            height: "70vh",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            maxHeight: "70vh",
+            overflow: "auto",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+          }}
+        >
+          <img
+            src={a.file_url}
+            alt="Karta"
+            style={{
+              width: "100%",
+              height: "auto",
+              display: "block",
+            }}
+          />
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+)}
+</section>
+  );
+}   {/* === SLUT PÅ KARTA‑FLIK === */}
 
-    if (activeTab === "rapport") {
+if (activeTab === "rapport") {
   // 🧾 Kryss för fakturerade adresser (lokalt state)
   const [fakturerade, setFakturerade] = useState({});
   
