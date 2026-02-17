@@ -1630,7 +1630,11 @@ async function stoppaPass() {
 
   const filtreradeRapporter = veckansRapporter.filter((r) => {
     const metodOK =
-      filterMetod === "alla" ? true : r.arbetssatt === filterMetod;
+  filterMetod === "alla"
+    ? true
+    : (r.arbetssatt === filterMetod) ||
+      (filterMetod === "hand" && r.team_namn === "För hand") ||
+      (filterMetod === "maskin" && r.team_namn === "Maskin");
     return metodOK;
   });
 
