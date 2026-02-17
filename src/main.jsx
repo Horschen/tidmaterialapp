@@ -3688,7 +3688,7 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
-      {/* 🧾 Alla Job Per Adress – grupperad per adress, sorterad enligt önskemål */}
+      {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
 {visaAllaJob && (
   <div
     style={{
@@ -3701,11 +3701,9 @@ if (activeTab === "rapport") {
     }}
   >
     {(() => {
-      // --- 1️⃣ Förbered grupperna ---
-      // Vi arbetar på en kopia av filtreradeRapporter (respekterar metodval)
       const data = [...filtreradeRapporter];
 
-      // Gruppera rader per adress_id
+      // Gruppera rapporter per adress
       const grupper = {};
       data.forEach((r) => {
         const id = r.adress_id || "okänd";
@@ -3713,7 +3711,7 @@ if (activeTab === "rapport") {
         grupper[id].push(r);
       });
 
-      // --- 2️⃣ Sortera adresser enligt adresslista_sortering (stigande) ---
+      // Sortera adresser enligt adresslista_sortering; inom adress sortera på datum
       const adressGrupper = Object.entries(grupper)
         .map(([aid, list]) => ({
           id: aid,
@@ -3722,12 +3720,10 @@ if (activeTab === "rapport") {
             list[0]?.adresser?.adresslista_sortering ??
             list[0]?.adresser?.id ??
             0,
-          rapporter: list
-            // sortera inom adressen efter datum (nyast överst)
-            .sort(
-              (a, b) =>
-                new Date(b.datum).getTime() - new Date(a.datum).getTime()
-            ),
+          rapporter: list.sort(
+            (a, b) =>
+              new Date(b.datum).getTime() - new Date(a.datum).getTime()
+          ),
         }))
         .sort((a, b) => a.sortIndex - b.sortIndex);
 
@@ -3739,87 +3735,127 @@ if (activeTab === "rapport") {
         );
       }
 
-      // --- 3️⃣ Rendera grupperna ---
-      return adressGrupper.map((g) => (
-        <div
-          key={g.id}
-          style={{
-            borderTop: "2px solid #e5e7eb",
-            padding: "8px 12px 4px",
-          }}
-        >
-          {/* Grupp‑rubrik */}
-          <h4
-            style={{
-              margin: "6px 0 4px",
-              fontSize: 15,
-              color: "#1e3a8a",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            📍 {g.namn}
-          </h4>
+      return adresseGrupper.map((g) => {
+        // Beräkna totalsummor per adress
+        const totGrus = g.rapporter.reduce(
+          (s, r) => s + (parseInt(r.sand_kg) || 0),
+          0
+        );
+        const totSalt = g.rapporter.reduce(
+          (s, r) => s + (parseInt(r.salt_kg) || 0),
+          0
+        );
 
-          {/* Tabell för varje grupp */}
-          <table
+        return (
+          <div
+            key={g.id}
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              marginBottom: 4,
-              fontSize: 13,
+              borderTop: "2px solid #e5e7eb",
+              padding: "8px 12px 4px",
             }}
           >
-            <thead>
-              <tr style={{ backgroundColor: "#f3f4f6" }}>
-                <th style={{ textAlign: "left", padding: "4px 6px" }}>Datum</th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Arbetstid (min)
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Team / Metod
-                </th>
-                <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
-              </tr>
-            </thead>
-            <tbody>
-              {g.rapporter.map((r, idx) => (
+            {/* Grupp‑rubrik */}
+            <h4
+              style={{
+                margin: "6px 0 8px",
+                fontSize: 15,
+                color: "#1e3a8a",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              📍 {g.namn}
+            </h4>
+
+            {/* Samma tabell-layout för alla adresser = raka kolumner */}
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                tableLayout: "fixed",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: "#f3f4f6" }}>
+                  <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
+                    Datum
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Tid (min)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Anst (#)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Grus (kg)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Salt (kg)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
+                    Team
+                  </th>
+                  <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.rapporter.map((r, idx) => (
+                  <tr
+                    key={r.id || idx}
+                    style={{
+                      backgroundColor:
+                        idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <td style={{ padding: "4px 6px" }}>
+                      {formatDatumTid(r.datum)}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.arbetstid_min}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.antal_anstallda || 1}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.sand_kg || 0}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.salt_kg || 0}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.team_namn ||
+                        (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+                    </td>
+                    <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+                  </tr>
+                ))}
+                {/* Rad för totalsummor per adress */}
                 <tr
-                  key={r.id || idx}
                   style={{
-                    backgroundColor:
-                      idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                    borderBottom: "1px solid #e5e7eb",
+                    backgroundColor: "#fef9c3",
+                    fontWeight: 600,
+                    borderTop: "2px solid #e5e7eb",
                   }}
                 >
-                  <td style={{ padding: "4px 6px" }}>
-                    {formatDatumTid(r.datum)}
+                  <td style={{ padding: "4px 6px" }}>Summa (Totalt / adress)</td>
+                  <td></td>
+                  <td></td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totGrus}
                   </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                    }}
-                  >
-                    {r.arbetstid_min}
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totSalt}
                   </td>
-                  <td
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                    }}
-                  >
-                    {r.team_namn ||
-                      (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
-                  </td>
-                  <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+                  <td colSpan="2"></td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ));
+              </tbody>
+            </table>
+          </div>
+        );
+      });
     })()}
   </div>
 )}
