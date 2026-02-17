@@ -3522,18 +3522,18 @@ function avbrytRadering() {
               width: "100%",
               height: "auto",
               display: "block",
-            }}
-          />
-        </div>
-      )}
-    </div>
-  ))}
-</div>
-      )}
-    </section>
-    // === SLUT PÅ KARTA-FLIK === 
-  );            // stänger return( ... )
-}               // stänger if (activeTab === "karta")
+           }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </section>
+      );
+    }    
+    // === SLUT PÅ KARTA-FLIK ===
 
 if (activeTab === "rapport") {
   // 🧾 Kryss för fakturerade adresser (lokalt state)
