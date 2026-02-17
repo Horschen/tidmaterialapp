@@ -40,6 +40,9 @@ function getCurrentYearPassword() {
   return `Jour${year}`;
 }
 
+// ======= Kryssruta för fakturerat =======
+const [faktureradeAdresser, setFaktureradeAdresser] = useState({});
+
 // ======= Hjälp: minuter -> hh:mm =======
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
