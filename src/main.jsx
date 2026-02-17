@@ -3656,39 +3656,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-      {/* 🆕 Ny knapp: Alla Job Per Adress */}
-      <button
-        onClick={() => setVisaAllaJob((prev) => !prev)}
-        style={{
-          ...secondaryButton,
-          backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
-          color: visaAllaJob ? "#fff" : "#111827",
-          marginBottom: 8,
-        }}
-      >
-        {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
-      </button>
-
-      {/* Filtrera på metod */}
-      <label style={labelStyle}>Filtrera på metod</label>
-      <select
-        value={filterMetod}
-        onChange={(e) => setFilterMetod(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="alla">Alla</option>
-        <option value="hand">Endast För hand</option>
-        <option value="maskin">Endast Maskin</option>
-      </select>
-
-      <button
-        style={{ ...secondaryButton, marginTop: 12 }}
-        onClick={hamtaRapporter}
-      >
-        Uppdatera översikt
-      </button>
-
-      {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
+     {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
 {visaAllaJob && (
   <div
     style={{
@@ -3737,6 +3705,14 @@ if (activeTab === "rapport") {
 
       return adressGrupper.map((g) => {
         // Beräkna totalsummor per adress
+        const totTidMin = g.rapporter.reduce(
+          (s, r) => s + (r.arbetstid_min || 0),
+          0
+        );
+        const totAnst = g.rapporter.reduce(
+          (s, r) => s + (r.antal_anstallda || 1),
+          0
+        );
         const totGrus = g.rapporter.reduce(
           (s, r) => s + (parseInt(r.sand_kg) || 0),
           0
@@ -3754,7 +3730,6 @@ if (activeTab === "rapport") {
               padding: "8px 12px 4px",
             }}
           >
-            {/* Grupp‑rubrik */}
             <h4
               style={{
                 margin: "6px 0 8px",
@@ -3768,7 +3743,6 @@ if (activeTab === "rapport") {
               📍 {g.namn}
             </h4>
 
-            {/* Samma tabell-layout för alla adresser = raka kolumner */}
             <table
               style={{
                 width: "100%",
@@ -3782,7 +3756,7 @@ if (activeTab === "rapport") {
                   <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
                     Datum
                   </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
                     Tid (min)
                   </th>
                   <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
@@ -3805,8 +3779,7 @@ if (activeTab === "rapport") {
                   <tr
                     key={r.id || idx}
                     style={{
-                      backgroundColor:
-                        idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                      backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
                       borderBottom: "1px solid #e5e7eb",
                     }}
                   >
@@ -3814,12 +3787,11 @@ if (activeTab === "rapport") {
                       {formatDatumTid(r.datum)}
                     </td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {r.arbetstid_min ?? 0}
-                    <span style={{ color: "#6b7280", fontSize: 12 }}>
-                    {" "}
-                    ({formatTid(r.arbetstid_min ?? 0)})
-                    </span>
-                                   
+                      {r.arbetstid_min ?? 0}
+                      <span style={{ color: "#6b7280", fontSize: 12 }}>
+                        {" "}
+                        ({formatTid(r.arbetstid_min ?? 0)})
+                      </span>
                     </td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
                       {r.antal_anstallda || 1}
@@ -3837,7 +3809,8 @@ if (activeTab === "rapport") {
                     <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
                   </tr>
                 ))}
-                {/* Rad för totalsummor per adress */}
+
+                {/* Totalsummering per adress */}
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
@@ -3845,9 +3818,19 @@ if (activeTab === "rapport") {
                     borderTop: "2px solid #e5e7eb",
                   }}
                 >
-                  <td style={{ padding: "4px 6px" }}>Summa (Totalt / adress)</td>
-                  <td></td>
-                  <td></td>
+                  <td style={{ padding: "4px 6px" }}>
+                    Summa (Totalt / adress)
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totTidMin}
+                    <span style={{ color: "#6b7280", fontSize: 12 }}>
+                      {" "}
+                      ({formatTid(totTidMin)})
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totAnst}
+                  </td>
                   <td style={{ textAlign: "center", padding: "4px 6px" }}>
                     {totGrus}
                   </td>
