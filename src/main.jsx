@@ -396,10 +396,9 @@ function App() {
   // ======= Resterande state =======
   const [rapporter, setRapporter] = useState([]);
   const [visaOversikt, setVisaOversikt] = useState(false);
-
+  const [visaAllaJob, setVisaAllaJob] = useState(false); // ✅ nytt tillstånd
   const [filtreradVecka, setFiltreradVecka] = useState(String(AKTUELL_VECKA));
   const [filtreratÅr, setFiltreratÅr] = useState(String(AKTUELLT_ÅR));
-
   const [adresser, setAdresser] = useState([]);
   
   // 🟡 Popup‑för val av pass‑typ
