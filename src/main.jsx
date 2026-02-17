@@ -3529,11 +3529,11 @@ function avbrytRadering() {
     </div>
   ))}
 </div>
-)}
-</section>
+      )}
+    </section>
+    {/* === SLUT PÅ KARTA-FLIK === */}
   );            // stänger return( ... )
 }               // stänger if (activeTab === "karta")
-{/* === SLUT PÅ KARTA-FLIK === */}
 
 if (activeTab === "rapport") {
   // 🧾 Kryss för fakturerade adresser (lokalt state)
