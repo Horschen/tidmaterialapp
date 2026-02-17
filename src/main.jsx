@@ -3688,80 +3688,141 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
-      {/* 🧾 Tabell – Alla Job Per Adress (Respekterar valt metodfilter) */}
-      {visaAllaJob && (
+      {/* 🧾 Alla Job Per Adress – grupperad per adress, sorterad enligt önskemål */}
+{visaAllaJob && (
+  <div
+    style={{
+      marginTop: 16,
+      backgroundColor: "#fff",
+      borderRadius: 12,
+      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+      overflow: "hidden",
+      paddingBottom: 8,
+    }}
+  >
+    {(() => {
+      // --- 1️⃣ Förbered grupperna ---
+      // Vi arbetar på en kopia av filtreradeRapporter (respekterar metodval)
+      const data = [...filtreradeRapporter];
+
+      // Gruppera rader per adress_id
+      const grupper = {};
+      data.forEach((r) => {
+        const id = r.adress_id || "okänd";
+        if (!grupper[id]) grupper[id] = [];
+        grupper[id].push(r);
+      });
+
+      // --- 2️⃣ Sortera adresser enligt adresslista_sortering (stigande) ---
+      const adressGrupper = Object.entries(grupper)
+        .map(([aid, list]) => ({
+          id: aid,
+          namn: list[0]?.adresser?.namn || "Okänd adress",
+          sortIndex:
+            list[0]?.adresser?.adresslista_sortering ??
+            list[0]?.adresser?.id ??
+            0,
+          rapporter: list
+            // sortera inom adressen efter datum (nyast överst)
+            .sort(
+              (a, b) =>
+                new Date(b.datum).getTime() - new Date(a.datum).getTime()
+            ),
+        }))
+        .sort((a, b) => a.sortIndex - b.sortIndex);
+
+      if (adressGrupper.length === 0) {
+        return (
+          <div style={{ padding: 12, textAlign: "center", fontSize: 14 }}>
+            Inga jobb hittades för vald vecka och metod.
+          </div>
+        );
+      }
+
+      // --- 3️⃣ Rendera grupperna ---
+      return adressGrupper.map((g) => (
         <div
+          key={g.id}
           style={{
-            marginTop: 16,
-            backgroundColor: "#fff",
-            borderRadius: 12,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-            overflow: "hidden",
+            borderTop: "2px solid #e5e7eb",
+            padding: "8px 12px 4px",
           }}
         >
+          {/* Grupp‑rubrik */}
+          <h4
+            style={{
+              margin: "6px 0 4px",
+              fontSize: 15,
+              color: "#1e3a8a",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            📍 {g.namn}
+          </h4>
+
+          {/* Tabell för varje grupp */}
           <table
             style={{
               width: "100%",
               borderCollapse: "collapse",
-              fontSize: 14,
+              marginBottom: 4,
+              fontSize: 13,
             }}
           >
-            <thead style={{ backgroundColor: "#f9fafb" }}>
-              <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
-                <th style={{ textAlign: "left", padding: 8 }}>Adress</th>
-                <th style={{ textAlign: "left", padding: 8 }}>Datum</th>
-                <th style={{ textAlign: "center", padding: 8 }}>Arbetstid (min)</th>
-                <th style={{ textAlign: "center", padding: 8 }}>Team / Metod</th>
-                <th style={{ textAlign: "left", padding: 8 }}>Syfte</th>
+            <thead>
+              <tr style={{ backgroundColor: "#f3f4f6" }}>
+                <th style={{ textAlign: "left", padding: "4px 6px" }}>Datum</th>
+                <th style={{ textAlign: "center", padding: "4px 6px" }}>
+                  Arbetstid (min)
+                </th>
+                <th style={{ textAlign: "center", padding: "4px 6px" }}>
+                  Team / Metod
+                </th>
+                <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                const data = [...filtreradeRapporter];
-                const sorter = data.sort((a, b) => {
-                  const adrA = a.adresser?.adresslista_sortering ?? a.adresser?.id ?? 0;
-                  const adrB = b.adresser?.adresslista_sortering ?? b.adresser?.id ?? 0;
-                  if (adrA !== adrB) return adrA - adrB;
-                  const tA = new Date(a.datum).getTime();
-                  const tB = new Date(b.datum).getTime();
-                  return tB - tA;
-                });
-
-                if (sorter.length === 0) {
-                  return (
-                    <tr>
-                      <td colSpan={5} style={{ padding: 12, textAlign: "center" }}>
-                        Inga jobb hittades för vald vecka och metod.
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return sorter.map((r, idx) => (
-                  <tr
-                    key={r.id}
+              {g.rapporter.map((r, idx) => (
+                <tr
+                  key={r.id || idx}
+                  style={{
+                    backgroundColor:
+                      idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <td style={{ padding: "4px 6px" }}>
+                    {formatDatumTid(r.datum)}
+                  </td>
+                  <td
                     style={{
-                      backgroundColor: idx % 2 === 0 ? "#fff" : "#f9fafb",
-                      borderBottom: "1px solid #e5e7eb",
+                      textAlign: "center",
+                      padding: "4px 6px",
                     }}
                   >
-                    <td style={{ padding: 8 }}>{r.adresser?.namn || "—"}</td>
-                    <td style={{ padding: 8 }}>{formatDatumTid(r.datum)}</td>
-                    <td style={{ textAlign: "center", padding: 8 }}>
-                      {r.arbetstid_min}
-                    </td>
-                    <td style={{ textAlign: "center", padding: 8 }}>
-                      {r.team_namn ||
-                        (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
-                    </td>
-                    <td style={{ padding: 8 }}>{r.syfte}</td>
-                  </tr>
-                ));
-              })()}
+                    {r.arbetstid_min}
+                  </td>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      padding: "4px 6px",
+                    }}
+                  >
+                    {r.team_namn ||
+                      (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+                  </td>
+                  <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-      )}
+      ));
+    })()}
+  </div>
+)}
 
           {/* === ARBETSPASS-ÖVERSIKT === */}
           <div style={{ marginTop: 16 }}>
