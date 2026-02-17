@@ -40,7 +40,7 @@ function getCurrentYearPassword() {
   return `Jour${year}`;
 }
 
-// ======= Kryssruta för fakturerat =======
+// Kryssruta för fakturering =======
 const [faktureradeAdresser, setFaktureradeAdresser] = useState({});
 
 // ======= Hjälp: minuter -> hh:mm =======
@@ -3737,16 +3737,7 @@ if (activeTab === "rapport") {
         );
       }
 
-      // faktureringsflagga per adress (lokal state)
-      const [faktureradeAdresser, setFaktureradeAdresser] = React.useState({});
-      function toggleFakturerad(id) {
-        setFaktureradeAdresser((prev) => ({
-          ...prev,
-          [id]: !prev[id],
-        }));
-      }
-
-      return adressGrupper.map((g) => {
+        return adressGrupper.map((g) => {
         const totGrus = g.rapporter.reduce(
           (sum, r) => sum + (parseInt(r.sand_kg) || 0),
           0
