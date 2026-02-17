@@ -3431,98 +3431,100 @@ function avbrytRadering() {
               />
 
               {/* Förhandsvisning + Radera‑knapp för just denna adress */}
-{adresser
-  .filter(
-    (a) =>
-      (a.id === Number(kartaAdressId) ||
-        String(a.id) === String(kartaAdressId)) &&
-      a.file_url
-  )
-  .map((a) => (
-    <div key={a.id} style={{ marginTop: 20 }}>
-      <h4 style={{ fontSize: 15, marginBottom: 6 }}>Förhandsgranskning</h4>
+              {adresser
+                .filter(
+                  (a) =>
+                    (a.id === Number(kartaAdressId) ||
+                      String(a.id) === String(kartaAdressId)) &&
+                    a.file_url
+                )
+                .map((a) => (
+                  <div key={a.id} style={{ marginTop: 20 }}>
+                    <h4 style={{ fontSize: 15, marginBottom: 6 }}>
+                      Förhandsgranskning
+                    </h4>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 8,
-        }}
-      >
-        <span style={{ fontSize: 13, color: "#4b5563" }}>
-          {a.file_url.split("/").pop()}
-        </span>
-        <button
-          onClick={async () => {
-            try {
-              const parts = a.file_url.split("/adresskartor/");
-              const relativePath = parts[1];
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 8,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "#4b5563" }}>
+                        {a.file_url.split("/").pop()}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const parts = a.file_url.split("/adresskartor/");
+                            const relativePath = parts[1];
 
-              if (relativePath) {
-                const { error: removeError } = await supabase
-                  .storage
-                  .from("adresskartor")
-                  .remove([relativePath]);
-                if (removeError) throw removeError;
-              }
+                            if (relativePath) {
+                              const { error: removeError } = await supabase
+                                .storage
+                                .from("adresskartor")
+                                .remove([relativePath]);
+                              if (removeError) throw removeError;
+                            }
 
-              const { error: dbError } = await supabase
-                .from("adresser")
-                .update({ file_url: null })
-                .eq("id", a.id);
-              if (dbError) throw dbError;
+                            const { error: dbError } = await supabase
+                              .from("adresser")
+                              .update({ file_url: null })
+                              .eq("id", a.id);
+                            if (dbError) throw dbError;
 
-              showPopup("🗑️ Fil raderad.", "success", 3000);
-              await laddaAdresser();
-            } catch (err) {
-              console.error(err);
-              showPopup("👎 Fel vid radering.", "error", 3000);
-            }
-          }}
-          style={{
-            padding: "4px 10px",
-            border: "none",
-            borderRadius: 6,
-            backgroundColor: "#dc2626",
-            color: "#fff",
-            fontSize: 12,
-            cursor: "pointer",
-          }}
-        >
-          Radera fil
-        </button>
-      </div>
+                            showPopup("🗑️ Fil raderad.", "success", 3000);
+                            await laddaAdresser();
+                          } catch (err) {
+                            console.error(err);
+                            showPopup("👎 Fel vid radering.", "error", 3000);
+                          }
+                        }}
+                        style={{
+                          padding: "4px 10px",
+                          border: "none",
+                          borderRadius: 6,
+                          backgroundColor: "#dc2626",
+                          color: "#fff",
+                          fontSize: 12,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Radera fil
+                      </button>
+                    </div>
 
-      {a.file_url.toLowerCase().endsWith(".pdf") ? (
-        <iframe
-          src={`${a.file_url}#view=FitH`}
-          title="Karta PDF"
-          style={{
-            width: "100%",
-            height: "70vh",
-            border: "1px solid #d1d5db",
-            borderRadius: 8,
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "100%",
-            maxHeight: "70vh",
-            overflow: "auto",
-            border: "1px solid #d1d5db",
-            borderRadius: 8,
-          }}
-        >
-          <img
-            src={a.file_url}
-            alt="Karta"
-            style={{
-              width: "100%",
-              height: "auto",
-              display: "block",
-           }}
+                    {a.file_url.toLowerCase().endsWith(".pdf") ? (
+                      <iframe
+                        src={`${a.file_url}#view=FitH`}
+                        title="Karta PDF"
+                        style={{
+                          width: "100%",
+                          height: "70vh",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          maxHeight: "70vh",
+                          overflow: "auto",
+                          border: "1px solid #d1d5db",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <img
+                          src={a.file_url}
+                          alt="Karta"
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            display: "block",
+                          }}
                         />
                       </div>
                     )}
@@ -3534,13 +3536,9 @@ function avbrytRadering() {
       );
     }    
     // === SLUT PÅ KARTA-FLIK ===
-
 if (activeTab === "rapport") {
-  // 🧾 Kryss för fakturerade adresser (lokalt state)
-  const [fakturerade, setFakturerade] = useState({});
-  
   return (
-      <section style={sectionStyle}>
+    <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
         Veckorapport
       </h2>
@@ -3736,179 +3734,151 @@ if (activeTab === "rapport") {
           </div>
         );
       }
-          
+
       return adressGrupper.map((g) => {
-  const totTidMin = g.rapporter.reduce(
-    (s, r) => s + (r.arbetstid_min || 0),
-    0
-  );
-  const totAnst = g.rapporter.reduce(
-    (s, r) => s + (r.antal_anstallda || 1),
-    0
-  );
-  const totGrus = g.rapporter.reduce(
-    (s, r) => s + (parseInt(r.sand_kg) || 0),
-    0
-  );
-  const totSalt = g.rapporter.reduce(
-    (s, r) => s + (parseInt(r.salt_kg) || 0),
-    0
-  );
+        const totTidMin = g.rapporter.reduce(
+          (s, r) => s + (r.arbetstid_min || 0),
+          0
+        );
+        const totAnst = g.rapporter.reduce(
+          (s, r) => s + (r.antal_anstallda || 1),
+          0
+        );
+        const totGrus = g.rapporter.reduce(
+          (s, r) => s + (parseInt(r.sand_kg) || 0),
+          0
+        );
+        const totSalt = g.rapporter.reduce(
+          (s, r) => s + (parseInt(r.salt_kg) || 0),
+          0
+        );
 
-  const ärFakturerad = fakturerade[g.id] === true;
-
-  return (
-    <div
-      key={g.id}
-      style={{
-        borderTop: "2px solid #e5e7eb",
-        padding: "8px 12px 4px",
-        backgroundColor: ärFakturerad ? "rgba(239, 68, 68, 0.15)" : "transparent",
-        transition: "background-color 0.3s ease",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <h4
-          style={{
-            margin: "6px 0 8px",
-            fontSize: 15,
-            color: "#1e3a8a",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-        >
-          📍 {g.namn}
-        </h4>
-
-        {/* ✅ Kryssruta fakturerad */}
-        <label
-          style={{
-            fontSize: 13,
-            color: "#991b1b",
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={ärFakturerad}
-            onChange={(e) =>
-              setFakturerade((prev) => ({
-                ...prev,
-                [g.id]: e.target.checked,
-              }))
-            }
-          />
-          Fakturerad
-        </label>
-      </div>
-
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          tableLayout: "fixed",
-          fontSize: 13,
-          opacity: ärFakturerad ? 0.6 : 1, // lite genomskinligt också
-        }}
-      >
-        <thead>
-          <tr style={{ backgroundColor: "#f3f4f6" }}>
-            <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
-              Datum
-            </th>
-            <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
-              Tid (min)
-            </th>
-            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-              Anst (#)
-            </th>
-            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-              Grus (kg)
-            </th>
-            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-              Salt (kg)
-            </th>
-            <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
-              Team
-            </th>
-            <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
-          </tr>
-        </thead>
-        <tbody>
-          {g.rapporter.map((r, idx) => (
-            <tr
-              key={r.id || idx}
-              style={{
-                backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                borderBottom: "1px solid #e5e7eb",
-              }}
-            >
-              <td style={{ padding: "4px 6px" }}>{formatDatumTid(r.datum)}</td>
-              <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                {r.arbetstid_min ?? 0}
-                <span style={{ color: "#6b7280", fontSize: 12 }}>
-                  {" "}
-                  ({formatTid(r.arbetstid_min ?? 0)})
-                </span>
-              </td>
-              <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                {r.antal_anstallda || 1}
-              </td>
-              <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                {r.sand_kg || 0}
-              </td>
-              <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                {r.salt_kg || 0}
-              </td>
-              <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                {r.team_namn ||
-                  (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
-              </td>
-              <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
-            </tr>
-          ))}
-
-          {/* Summering */}
-          <tr
+        return (
+          <div
+            key={g.id}
             style={{
-              backgroundColor: "#fef9c3",
-              fontWeight: 600,
               borderTop: "2px solid #e5e7eb",
+              padding: "8px 12px 4px",
             }}
           >
-            <td style={{ padding: "4px 6px" }}>Summa (Totalt / adress)</td>
-            <td style={{ textAlign: "center", padding: "4px 6px" }}>
-              {totTidMin}
-              <span style={{ color: "#6b7280", fontSize: 12 }}>
-                {" "}
-                ({formatTid(totTidMin)})
-              </span>
-            </td>
-            <td style={{ textAlign: "center", padding: "4px 6px" }}>
-              {totAnst}
-            </td>
-            <td style={{ textAlign: "center", padding: "4px 6px" }}>
-              {totGrus}
-            </td>
-            <td style={{ textAlign: "center", padding: "4px 6px" }}>
-              {totSalt}
-            </td>
-            <td colSpan="2"></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-});
+            <h4
+              style={{
+                margin: "6px 0 8px",
+                fontSize: 15,
+                color: "#1e3a8a",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              📍 {g.namn}
+            </h4>
+
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                tableLayout: "fixed",
+                fontSize: 13,
+              }}
+            >
+              <thead>
+                <tr style={{ backgroundColor: "#f3f4f6" }}>
+                  <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
+                    Datum
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
+                    Tid (min)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Anst (#)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Grus (kg)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+                    Salt (kg)
+                  </th>
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
+                    Team
+                  </th>
+                  <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.rapporter.map((r, idx) => (
+                  <tr
+                    key={r.id || idx}
+                    style={{
+                      backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    <td style={{ padding: "4px 6px" }}>
+                      {formatDatumTid(r.datum)}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.arbetstid_min ?? 0}
+                      <span style={{ color: "#6b7280", fontSize: 12 }}>
+                        {" "}
+                        ({formatTid(r.arbetstid_min ?? 0)})
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.antal_anstallda || 1}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.sand_kg || 0}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.salt_kg || 0}
+                    </td>
+                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                      {r.team_namn ||
+                        (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+                    </td>
+                    <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+                  </tr>
+                ))}
+
+                {/* Summa för adress */}
+                <tr
+                  style={{
+                    backgroundColor: "#fef9c3",
+                    fontWeight: 600,
+                    borderTop: "2px solid #e5e7eb",
+                  }}
+                >
+                  <td style={{ padding: "4px 6px" }}>
+                    Summa (Totalt / adress)
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totTidMin}
+                    <span style={{ color: "#6b7280", fontSize: 12 }}>
+                      {" "}
+                      ({formatTid(totTidMin)})
+                    </span>
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totAnst}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totGrus}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                    {totSalt}
+                  </td>
+                  <td colSpan="2"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        );
+      });
+    })()}
+  </div>
+)}
+
           {/* === ARBETSPASS-ÖVERSIKT === */}
           <div style={{ marginTop: 16 }}>
             <button
