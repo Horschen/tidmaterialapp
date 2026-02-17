@@ -3537,7 +3537,11 @@ function avbrytRadering() {
     }    
     // === SLUT PÅ KARTA-FLIK ===
 if (activeTab === "rapport") {
+  // 🧾 Kryss för fakturerade adresser (lokalt state)
+  const [fakturerade, setFakturerade] = useState({});
+  
   return (
+    <section style={sectionStyle}>
     <section style={sectionStyle}>
       <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 12 }}>
         Veckorapport
@@ -3734,8 +3738,7 @@ if (activeTab === "rapport") {
           </div>
         );
       }
-      const [fakturerade, setFakturerade] = useState({});
-    
+          
       return adressGrupper.map((g) => {
   const totTidMin = g.rapporter.reduce(
     (s, r) => s + (r.arbetstid_min || 0),
