@@ -3535,7 +3535,7 @@ function avbrytRadering() {
         </section>
       );
     }    
-    // === SLUT PÅ KARTA-FLIK ===
+    {/* === SLUT PÅ KARTA-FLIK === */}
 if (activeTab === "rapport") {
   return (
     <section style={sectionStyle}>
