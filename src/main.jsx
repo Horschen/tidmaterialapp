@@ -3473,11 +3473,11 @@ function avbrytRadering() {
                 .eq("id", a.id);
               if (dbError) throw dbError;
 
-              showPopup("🗑️ Fil raderad.", "success", 3000);
+              showPopup("🗑️ Fil raderad.", "success", 3000);
               await laddaAdresser();
             } catch (err) {
               console.error(err);
-              showPopup("👎 Fel vid radering.", "error", 3000);
+              showPopup("👎 Fel vid radering.", "error", 3000);
             }
           }}
           style={{
@@ -3529,10 +3529,10 @@ function avbrytRadering() {
     </div>
   ))}
 </div>
-      )}
-    </section>
-  );   {/* stänger return-blocket för Karta-fliken */}
-}       {/* stänger if (activeTab === "karta") */}
+)}
+</section>
+  );            // stänger return( ... )
+}               // stänger if (activeTab === "karta")
 {/* === SLUT PÅ KARTA-FLIK === */}
 
 if (activeTab === "rapport") {
