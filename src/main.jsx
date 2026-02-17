@@ -40,7 +40,6 @@ function getCurrentYearPassword() {
   return `Jour${year}`;
 }
 
-
 // ======= Hjälp: minuter -> hh:mm =======
 function formatTid(minuter) {
   const h = Math.floor(minuter / 60);
@@ -3689,7 +3688,7 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
-      {/* 🧾 Alla Job Per Adress – totalsummor + faktureringsmarkering + tid-summa under rätt kolumn */}
+      {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
 {visaAllaJob && (
   <div
     style={{
@@ -3704,7 +3703,7 @@ if (activeTab === "rapport") {
     {(() => {
       const data = [...filtreradeRapporter];
 
-      // grupper per adress
+      // Gruppera rapporter per adress
       const grupper = {};
       data.forEach((r) => {
         const id = r.adress_id || "okänd";
@@ -3712,6 +3711,7 @@ if (activeTab === "rapport") {
         grupper[id].push(r);
       });
 
+      // Sortera adresser enligt adresslista_sortering; inom adress sortera på datum
       const adressGrupper = Object.entries(grupper)
         .map(([aid, list]) => ({
           id: aid,
@@ -3735,25 +3735,16 @@ if (activeTab === "rapport") {
         );
       }
 
-        return adressGrupper.map((g) => {
+      return adressGrupper.map((g) => {
+        // Beräkna totalsummor per adress
         const totGrus = g.rapporter.reduce(
-          (sum, r) => sum + (parseInt(r.sand_kg) || 0),
+          (s, r) => s + (parseInt(r.sand_kg) || 0),
           0
         );
         const totSalt = g.rapporter.reduce(
-          (sum, r) => sum + (parseInt(r.salt_kg) || 0),
+          (s, r) => s + (parseInt(r.salt_kg) || 0),
           0
         );
-        const totAnstallda = g.rapporter.reduce(
-          (sum, r) => sum + (parseInt(r.antal_anstallda) || 1),
-          0
-        );
-        const totTidMin = g.rapporter.reduce(
-          (sum, r) => sum + (parseInt(r.arbetstid_min) || 0),
-          0
-        );
-
-        const isMarked = faktureradeAdresser[g.id];
 
         return (
           <div
@@ -3761,51 +3752,23 @@ if (activeTab === "rapport") {
             style={{
               borderTop: "2px solid #e5e7eb",
               padding: "8px 12px 4px",
-              backgroundColor: isMarked
-                ? "rgba(255,0,0,0.08)"
-                : "#ffffff",
             }}
           >
-            {/* rubrik + faktureringsruta */}
-            <div
+            {/* Grupp‑rubrik */}
+            <h4
               style={{
+                margin: "6px 0 8px",
+                fontSize: 15,
+                color: "#1e3a8a",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                margin: "6px 0 8px",
+                gap: 6,
               }}
             >
-              <h4
-                style={{
-                  fontSize: 15,
-                  color: "#1e3a8a",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  margin: 0,
-                }}
-              >
-                📍 {g.namn}
-              </h4>
-              <label
-                style={{
-                  fontSize: 13,
-                  color: isMarked ? "#b91c1c" : "#374151",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={isMarked}
-                  onChange={() => toggleFakturerad(g.id)}
-                />
-                Fakturerad till kund
-              </label>
-            </div>
+              📍 {g.namn}
+            </h4>
 
-            {/* tabell */}
+            {/* Samma tabell-layout för alla adresser = raka kolumner */}
             <table
               style={{
                 width: "100%",
@@ -3816,65 +3779,25 @@ if (activeTab === "rapport") {
             >
               <thead>
                 <tr style={{ backgroundColor: "#f3f4f6" }}>
-                  <th
-                    style={{
-                      textAlign: "left",
-                      padding: "4px 6px",
-                      width: "16%",
-                    }}
-                  >
+                  <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
                     Datum
                   </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      width: "10%",
-                    }}
-                  >
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
                     Tid (min)
                   </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      width: "10%",
-                    }}
-                  >
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
                     Anst (#)
                   </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      width: "10%",
-                    }}
-                  >
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
                     Grus (kg)
                   </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      width: "10%",
-                    }}
-                  >
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
                     Salt (kg)
                   </th>
-                  <th
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      width: "12%",
-                    }}
-                  >
+                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
                     Team
                   </th>
-                  <th
-                    style={{ textAlign: "left", padding: "4px 6px" }}
-                  >
-                    Syfte
-                  </th>
+                  <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
                 </tr>
               </thead>
               <tbody>
@@ -3891,11 +3814,12 @@ if (activeTab === "rapport") {
                       {formatDatumTid(r.datum)}
                     </td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.arbetstid_min ?? 0}
-                      <span style={{ color: "#6b7280", fontSize: 12 }}>
-                        {" "}
-                        ({formatTid(r.arbetstid_min ?? 0)})
-                      </span>
+                    {r.arbetstid_min ?? 0}
+                    <span style={{ color: "#6b7280", fontSize: 12 }}>
+                    {" "}
+                    ({formatTid(r.arbetstid_min ?? 0)})
+                    </span>
+                                   
                     </td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
                       {r.antal_anstallda || 1}
@@ -3913,8 +3837,7 @@ if (activeTab === "rapport") {
                     <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
                   </tr>
                 ))}
-
-                {/* Totalsummering per adress */}
+                {/* Rad för totalsummor per adress */}
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
@@ -3922,22 +3845,9 @@ if (activeTab === "rapport") {
                     borderTop: "2px solid #e5e7eb",
                   }}
                 >
-                  <td style={{ padding: "4px 6px" }}>
-                    Summa / adress
-                  </td>
-                  {/* ⏱️ total tid under Tid (min) */}
-                  <td
-                    style={{
-                      textAlign: "center",
-                      padding: "4px 6px",
-                      borderLeft: "1px solid #e5e7eb",
-                    }}
-                  >
-                    {formatTid(totTidMin)}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totAnstallda}
-                  </td>
+                  <td style={{ padding: "4px 6px" }}>Summa (Totalt / adress)</td>
+                  <td></td>
+                  <td></td>
                   <td style={{ textAlign: "center", padding: "4px 6px" }}>
                     {totGrus}
                   </td>
