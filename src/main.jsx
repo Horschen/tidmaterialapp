@@ -3656,39 +3656,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-     {/* 🆕 Ny knapp: Alla Job Per Adress */}
-<button
-  onClick={() => setVisaAllaJob((prev) => !prev)}
-  style={{
-    ...secondaryButton,
-    backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
-    color: visaAllaJob ? "#fff" : "#111827",
-    marginBottom: 8,
-  }}
->
-  {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
-</button>
-
-{/* Filtrera på metod */}
-<label style={labelStyle}>Filtrera på metod</label>
-<select
-  value={filterMetod}
-  onChange={(e) => setFilterMetod(e.target.value)}
-  style={selectStyle}
->
-  <option value="alla">Alla</option>
-  <option value="hand">Endast För hand</option>
-  <option value="maskin">Endast Maskin</option>
-</select>
-
-<button
-  style={{ ...secondaryButton, marginTop: 12 }}
-  onClick={hamtaRapporter}
->
-  Uppdatera översikt
-</button>
-
-{/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
+     {/* 🧾  Alla Job Per Adress – utökad version med totalsummering & färg per fakturering */}
 {visaAllaJob && (
   <div
     style={{
@@ -3711,7 +3679,7 @@ if (activeTab === "rapport") {
         grupper[id].push(r);
       });
 
-      // Sortera adresser enligt adresslista_sortering; inom adress sortera på datum
+      // Sortera adresser och grupper
       const adressGrupper = Object.entries(grupper)
         .map(([aid, list]) => ({
           id: aid,
@@ -3736,6 +3704,7 @@ if (activeTab === "rapport") {
       }
 
       return adressGrupper.map((g) => {
+        // summeringar per adress
         const totTidMin = g.rapporter.reduce(
           (s, r) => s + (r.arbetstid_min || 0),
           0
@@ -3753,33 +3722,105 @@ if (activeTab === "rapport") {
           0
         );
 
+        // faktureringsstatus från datan
+        const ärFakturerad = g.rapporter.some((r) => r.fakturerat === true);
+        const bakgrund = ärFakturerad
+          ? "rgba(134,239,172,0.35)" // grön ton
+          : "rgba(254,202,202,0.35)"; // röd ton
+
         return (
           <div
             key={g.id}
             style={{
               borderTop: "2px solid #e5e7eb",
               padding: "8px 12px 4px",
+              backgroundColor: bakgrund,
+              transition: "background-color 0.3s ease",
             }}
           >
-            <h4
+            <div
               style={{
-                margin: "6px 0 8px",
-                fontSize: 15,
-                color: "#1e3a8a",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                justifyContent: "space-between",
               }}
             >
-              📍 {g.namn}
-            </h4>
+              <h4
+                style={{
+                  margin: "6px 0 8px",
+                  fontSize: 15,
+                  color: "#1e3a8a",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                📍 {g.namn}
+              </h4>
 
+              {/* 🧾 Kryssruta för fakturerad */}
+              <label
+                style={{
+                  fontSize: 13,
+                  color: ärFakturerad ? "#166534" : "#991b1b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={ärFakturerad}
+                  onChange={async (e) => {
+                    const nyttVarde = e.target.checked;
+                    try {
+                      const { error } = await supabase
+                        .from("rapporter")
+                        .update({ fakturerat: nyttVarde })
+                        .eq("adress_id", g.id);
+                      if (error) throw error;
+
+                      // uppdatera lokalt state direkt
+                      setRapporter((prev) =>
+                        prev.map((r) =>
+                          r.adress_id === g.id
+                            ? { ...r, fakturerat: nyttVarde }
+                            : r
+                        )
+                      );
+
+                      showPopup(
+                        nyttVarde
+                          ? "✅ Markerad som fakturerad."
+                          : "🔴 Markerad som ej fakturerad.",
+                        "success",
+                        2000
+                      );
+                    } catch (err) {
+                      console.error(err);
+                      showPopup(
+                        "👎 Fel vid uppdatering av fakturerad‑status.",
+                        "error",
+                        3000
+                      );
+                    }
+                  }}
+                  style={{ transform: "scale(1.2)" }}
+                />
+                Fakturerad
+              </label>
+            </div>
+
+            {/* Tabell för adressens rapporter */}
             <table
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
                 tableLayout: "fixed",
                 fontSize: 13,
+                opacity: ärFakturerad ? 1 : 0.9,
               }}
             >
               <thead>
@@ -3805,6 +3846,7 @@ if (activeTab === "rapport") {
                   <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
                 </tr>
               </thead>
+
               <tbody>
                 {g.rapporter.map((r, idx) => (
                   <tr
@@ -3814,9 +3856,7 @@ if (activeTab === "rapport") {
                       borderBottom: "1px solid #e5e7eb",
                     }}
                   >
-                    <td style={{ padding: "4px 6px" }}>
-                      {formatDatumTid(r.datum)}
-                    </td>
+                    <td style={{ padding: "4px 6px" }}>{formatDatumTid(r.datum)}</td>
                     <td style={{ textAlign: "center", padding: "4px 6px" }}>
                       {r.arbetstid_min ?? 0}
                       <span style={{ color: "#6b7280", fontSize: 12 }}>
@@ -3841,7 +3881,7 @@ if (activeTab === "rapport") {
                   </tr>
                 ))}
 
-                {/* Summa för adress */}
+                {/* Summarad */}
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
@@ -3849,9 +3889,7 @@ if (activeTab === "rapport") {
                     borderTop: "2px solid #e5e7eb",
                   }}
                 >
-                  <td style={{ padding: "4px 6px" }}>
-                    Summa (Totalt / adress)
-                  </td>
+                  <td style={{ padding: "4px 6px" }}>Summa (Totalt / adress)</td>
                   <td style={{ textAlign: "center", padding: "4px 6px" }}>
                     {totTidMin}
                     <span style={{ color: "#6b7280", fontSize: 12 }}>
@@ -3859,15 +3897,9 @@ if (activeTab === "rapport") {
                       ({formatTid(totTidMin)})
                     </span>
                   </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totAnst}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totGrus}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totSalt}
-                  </td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>{totAnst}</td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>{totGrus}</td>
+                  <td style={{ textAlign: "center", padding: "4px 6px" }}>{totSalt}</td>
                   <td colSpan="2"></td>
                 </tr>
               </tbody>
