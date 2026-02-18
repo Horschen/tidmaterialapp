@@ -3539,7 +3539,6 @@ if (activeTab === "rapport") {
         Veckorapport
       </h2>
 
-  
       <div
         style={{
           display: "flex",
@@ -3580,7 +3579,6 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-   
       <div
         style={{
           display: "grid",
@@ -3613,7 +3611,6 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-   
       <button
         onClick={() => {
           const nu = getCurrentIsoWeekAndYear();
@@ -3652,621 +3649,502 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
- 
-<button
-  onClick={() => setVisaAllaJob((prev) => !prev)}
-  style={{
-    ...secondaryButton,
-    backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
-    color: visaAllaJob ? "#fff" : "#111827",
-    marginBottom: 8,
-  }}
->
-  {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
-</button>
+      <button
+        onClick={() => setVisaAllaJob((prev) => !prev)}
+        style={{
+          ...secondaryButton,
+          backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
+          color: visaAllaJob ? "#fff" : "#111827",
+          marginBottom: 8,
+        }}
+      >
+        {visaAllaJob
+          ? "🔽 Dölj Alla Job Per Adress"
+          : "📋 Alla Job Per Adress"}
+      </button>
 
+      <label style={labelStyle}>Filtrera på metod</label>
+      <select
+        value={filterMetod}
+        onChange={(e) => setFilterMetod(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="alla">Alla</option>
+        <option value="hand">Endast För hand</option>
+        <option value="maskin">Endast Maskin</option>
+      </select>
 
-<label style={labelStyle}>Filtrera på metod</label>
-<select
-  value={filterMetod}
-  onChange={(e) => setFilterMetod(e.target.value)}
-  style={selectStyle}
->
-  <option value="alla">Alla</option>
-  <option value="hand">Endast För hand</option>
-  <option value="maskin">Endast Maskin</option>
-</select>
+      <button
+        style={{ ...secondaryButton, marginTop: 12 }}
+        onClick={hamtaRapporter}
+      >
+        Uppdatera översikt
+      </button>
 
-<button
-  style={{ ...secondaryButton, marginTop: 12 }}
-  onClick={hamtaRapporter}
->
-  Uppdatera översikt
-</button>
+      {visaAllaJob && (
+        <div
+          style={{
+            marginTop: 16,
+            backgroundColor: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+            overflow: "hidden",
+            paddingBottom: 8,
+          }}
+        >
+          {(() => {
+            const data = [...filtreradeRapporter];
 
+            const grupper = {};
+            data.forEach((r) => {
+              const id = r.adress_id || "okänd";
+              if (!grupper[id]) grupper[id] = [];
+              grupper[id].push(r);
+            });
 
-{visaAllaJob && (
-  <div
-    style={{
-      marginTop: 16,
-      backgroundColor: "#fff",
-      borderRadius: 12,
-      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-      overflow: "hidden",
-      paddingBottom: 8,
-    }}
-  >
-    {(() => {
-      const data = [...filtreradeRapporter];
+            const adressGrupper = Object.entries(grupper)
+              .map(([aid, list]) => ({
+                id: aid,
+                namn: list[0]?.adresser?.namn || "Okänd adress",
+                sortIndex:
+                  list[0]?.adresser?.adresslista_sortering ??
+                  list[0]?.adresser?.id ??
+                  0,
+                rapporter: list.sort(
+                  (a, b) =>
+                    new Date(b.datum).getTime() -
+                    new Date(a.datum).getTime()
+                ),
+              }))
+              .sort((a, b) => a.sortIndex - b.sortIndex);
 
-      // Gruppera rapporter per adress
-      const grupper = {};
-      data.forEach((r) => {
-        const id = r.adress_id || "okänd";
-        if (!grupper[id]) grupper[id] = [];
-        grupper[id].push(r);
-      });
-
-      // Sortera adresser enligt adresslista_sortering; inom adress sortera på datum
-      const adressGrupper = Object.entries(grupper)
-        .map(([aid, list]) => ({
-          id: aid,
-          namn: list[0]?.adresser?.namn || "Okänd adress",
-          sortIndex:
-            list[0]?.adresser?.adresslista_sortering ??
-            list[0]?.adresser?.id ??
-            0,
-          rapporter: list.sort(
-            (a, b) =>
-              new Date(b.datum).getTime() - new Date(a.datum).getTime()
-          ),
-        }))
-        .sort((a, b) => a.sortIndex - b.sortIndex);
-
-      if (adressGrupper.length === 0) {
-        return (
-          <div style={{ padding: 12, textAlign: "center", fontSize: 14 }}>
-            Inga jobb hittades för vald vecka och metod.
-          </div>
-        );
-      }
-
-      return adressGrupper.map((g) => {
-        const totTidMin = g.rapporter.reduce(
-          (s, r) => s + (r.arbetstid_min || 0),
-          0
-        );
-        const totAnst = g.rapporter.reduce(
-          (s, r) => s + (r.antal_anstallda || 1),
-          0
-        );
-        const totGrus = g.rapporter.reduce(
-          (s, r) => s + (parseInt(r.sand_kg) || 0),
-          0
-        );
-        const totSalt = g.rapporter.reduce(
-          (s, r) => s + (parseInt(r.salt_kg) || 0),
-          0
-        );
-
-        // 🔹 kolla om alla rapporter för denna adress (i denna vy) är fakturerade
-        const ärFakturerad =
-          g.rapporter.length > 0 &&
-          g.rapporter.every((r) => r.fakturerat === true);
-
-        return (
-          <div
-            key={g.id}
-            style={{
-              borderTop: "2px solid #e5e7eb",
-              padding: "8px 12px 4px",
-              backgroundColor: ärFakturerad
-                ? "rgba(134,239,172,0.35)" // mjukt grönt
-                : "rgba(254,202,202,0.35)", // mjukt rött
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <h4
-                style={{
-                  margin: "6px 0 8px",
-                  fontSize: 15,
-                  color: "#1e3a8a",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                📍 {g.namn}
-                {ärFakturerad && (
-                  <span
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      backgroundColor: "#16a34a",
-                      color: "#ffffff",
-                      fontSize: 11,
-                      fontWeight: 700,
-                    }}
-                  >
-                    FAKTURERAD
-                  </span>
-                )}
-              </h4>
-
-              <label
-                style={{
-                  fontSize: 13,
-                  color: ärFakturerad ? "#166534" : "#991b1b",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={ärFakturerad}
-                  onChange={async (e) => {
-                    const nyttVarde = e.target.checked;
-                    try {
-                      // Alla rapport-id under denna adress i denna vecka/filtrering
-                      const rapportIds = g.rapporter.map((r) => r.id);
-                      if (rapportIds.length === 0) return;
-
-                      const { error } = await supabase
-                        .from("rapporter")
-                        .update({ fakturerat: nyttVarde })
-                        .in("id", rapportIds);
-
-                      if (error) throw error;
-
-                      // Uppdatera lokalt
-                      setRapporter((prev) =>
-                        prev.map((r) =>
-                          rapportIds.includes(r.id)
-                            ? { ...r, fakturerat: nyttVarde }
-                            : r
-                        )
-                      );
-
-                      showPopup(
-                        nyttVarde
-                          ? "✅ Markerad som fakturerad (denna vecka)."
-                          : "🔴 Markerad som ej fakturerad (denna vecka).",
-                        "success",
-                        2000
-                      );
-                    } catch (err) {
-                      console.error(err);
-                      showPopup(
-                        "👎 Fel vid uppdatering av fakturerad‑status.",
-                        "error",
-                        3000
-                      );
-                    }
-                  }}
-                  style={{ transform: "scale(1.2)" }}
-                />
-                Fakturerad
-              </label>
-            </div>
-
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                tableLayout: "fixed",
-                fontSize: 13,
-              }}
-            >
-              <thead>
-                <tr style={{ backgroundColor: "#f3f4f6" }}>
-                  <th style={{ textAlign: "left", padding: "4px 6px", width: "18%" }}>
-                    Datum
-                  </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
-                    Tid (min)
-                  </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-                    Anst (#)
-                  </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-                    Grus (kg)
-                  </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
-                    Salt (kg)
-                  </th>
-                  <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
-                    Team
-                  </th>
-                  <th style={{ textAlign: "left", padding: "4px 6px" }}>Syfte</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.rapporter.map((r, idx) => (
-                  <tr
-                    key={r.id || idx}
-                    style={{
-                      backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                      borderBottom: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <td style={{ padding: "4px 6px" }}>
-                      {formatDatumTid(r.datum)}
-                    </td>
-                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.arbetstid_min ?? 0}
-                      <span style={{ color: "#6b7280", fontSize: 12 }}>
-                        {" "}
-                        ({formatTid(r.arbetstid_min ?? 0)})
-                      </span>
-                    </td>
-                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.antal_anstallda || 1}
-                    </td>
-                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.sand_kg || 0}
-                    </td>
-                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.salt_kg || 0}
-                    </td>
-                    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                      {r.team_namn ||
-                        (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
-                    </td>
-                    <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
-                  </tr>
-                ))}
-
-                {/* Summa-rad */}
-                <tr
+            if (adressGrupper.length === 0) {
+              return (
+                <div
                   style={{
-                    backgroundColor: "#fef9c3",
-                    fontWeight: 600,
-                    borderTop: "2px solid #e5e7eb",
+                    padding: 12,
+                    textAlign: "center",
+                    fontSize: 14,
                   }}
                 >
-                  <td style={{ padding: "4px 6px" }}>
-                    Summa (Totalt / adress)
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totTidMin}
-                    <span style={{ color: "#6b7280", fontSize: 12 }}>
-                      {" "}
-                      ({formatTid(totTidMin)})
-                    </span>
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totAnst}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totGrus}
-                  </td>
-                  <td style={{ textAlign: "center", padding: "4px 6px" }}>
-                    {totSalt}
-                  </td>
-                  <td colSpan="2"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        );
-      });
+                  Inga jobb hittades för vald vecka och metod.
+                </div>
+              );
+            }
 
-    // ARBETSPASS-ÖVERSIKT
-          <div style={{ marginTop: 16 }}>
-            <button
-              onClick={async () => {
-                setVisaPassOversikt(!visaPassOversikt);
-                if (!visaPassOversikt) {
-                  await hamtaPassHistorik();
-                }
-              }}
-              style={{
-                ...secondaryButton,
-                backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
-                color: "#ffffff",
-                marginTop: 0,
-              }}
-            >
-              {visaPassOversikt ? "🔼 Dölj Arbetspass-Översikt" : "📋 Arbetspass-Översikt"}
-            </button>
-          </div>
+            return adressGrupper.map((g) => {
+              const totTidMin = g.rapporter.reduce(
+                (s, r) => s + (r.arbetstid_min || 0),
+                0
+              );
+              const totAnst = g.rapporter.reduce(
+                (s, r) => s + (r.antal_anstallda || 1),
+                0
+              );
+              const totGrus = g.rapporter.reduce(
+                (s, r) => s + (parseInt(r.sand_kg) || 0),
+                0
+              );
+              const totSalt = g.rapporter.reduce(
+                (s, r) => s + (parseInt(r.salt_kg) || 0),
+                0
+              );
 
-          {visaPassOversikt && (
-            <div
-              style={{
-                marginTop: 16,
-                padding: 16,
-                borderRadius: 12,
-                backgroundColor: "#f5f3ff",
-                border: "1px solid #c4b5fd",
-              }}
-            >
-              <h3 style={{ fontSize: 16, marginTop: 0, marginBottom: 12, color: "#5b21b6" }}>
-                📋 Arbetspass-Översikt
-              </h3>
+              const ärFakturerad =
+                g.rapporter.length > 0 &&
+                g.rapporter.every((r) => r.fakturerat === true);
 
-              <label style={{ ...labelStyle, color: "#5b21b6" }}>Välj arbetspass:</label>
-              <select
-                value={valtPassId}
-                onChange={(e) => {
-                  setValtPassId(e.target.value);
-                  hamtaPassDetaljer(e.target.value);
-                }}
-                style={{
-                  ...selectStyle,
-                  marginBottom: 16,
-                  borderColor: "#c4b5fd",
-                }}
-              >
-                <option value="">-- Välj ett arbetspass --</option>
-                
-                {passHistorik
-                  .filter((p) => p.aktiv)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      🟢 Pågående: {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
-                      {new Date(p.start_tid).toLocaleString("sv-SE", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })})
-                    </option>
-                  ))}
-                
-                {passHistorik
-                  .filter((p) => !p.aktiv)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      📅 {new Date(p.start_tid).toLocaleDateString("sv-SE")} |{" "}
-                      {p.team_typ === "hand" ? "För hand" : "Maskin"}
-                      {p.sluttid && ` | ${formatSekTillLasbar(
-                        Math.floor((new Date(p.sluttid) - new Date(p.start_tid)) / 1000)
-                      )}`}
-                    </option>
-                  ))}
-              </select>
-
-              {laddaPassDetaljer && (
-                <p style={{ textAlign: "center", color: "#6b7280" }}>
-                  Laddar passdetaljer...
-                </p>
-              )}
-
-              {passDetaljer && !laddaPassDetaljer && (
-                <div>
-                
+              return (
+                <div
+                  key={g.id}
+                  style={{
+                    borderTop: "2px solid #e5e7eb",
+                    padding: "8px 12px 4px",
+                    backgroundColor: ärFakturerad
+                      ? "rgba(134,239,172,0.35)"
+                      : "rgba(254,202,202,0.35)",
+                    transition: "background-color 0.3s ease",
+                  }}
+                >
                   <div
                     style={{
-                      padding: 12,
-                      borderRadius: 8,
-                      backgroundColor: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                      marginBottom: 16,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                     }}
                   >
-                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                      📅 {new Date(passDetaljer.pass.start_tid).toLocaleDateString("sv-SE")} |{" "}
-                      {passDetaljer.pass.team_typ === "hand" ? "För hand" : "Maskin"} |{" "}
-                      {passDetaljer.sammanfattning.antalAdresser} adresser
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
-                      <div>
-                        🚗 Total körtid:{" "}
-                        <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTransportSek)}</strong>
-                      </div>
-                      <div style={{ color: "#6b7280" }}>
-                        (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTransportSek)})
-                      </div>
-                      
-                      <div>
-                        🔧 Total arbetstid:{" "}
-                        <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalArbeteSek)}</strong>
-                      </div>
-                      <div style={{ color: "#6b7280" }}>
-                        (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadArbeteSek)})
-                      </div>
-                      
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>
-                        ⏱️ Total tid:{" "}
-                        <strong>{formatSekTillLasbar(passDetaljer.sammanfattning.totalTidSek)}</strong>
-                      </div>
-                      <div style={{ color: "#6b7280" }}>
-                        (beräknat: {formatSekTillLasbar(passDetaljer.sammanfattning.uppskattadTotalSek)})
-                      </div>
-                    </div>
-
-                
-                    <div
+                    <h4
                       style={{
-                        marginTop: 12,
-                        padding: "8px 12px",
-                        borderRadius: 8,
-                        backgroundColor:
-                          passDetaljer.sammanfattning.avvikelseSek <= 0
-                            ? "#d1fae5"
-                            : passDetaljer.sammanfattning.avvikelseSek < 600
-                            ? "#fef3c7"
-                            : "#fee2e2",
-                        color:
-                          passDetaljer.sammanfattning.avvikelseSek <= 0
-                            ? "#065f46"
-                            : passDetaljer.sammanfattning.avvikelseSek < 600
-                            ? "#92400e"
-                            : "#991b1b",
-                        fontWeight: 600,
-                        fontSize: 14,
-                        textAlign: "center",
+                        margin: "6px 0 8px",
+                        fontSize: 15,
+                        color: "#1e3a8a",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
                       }}
                     >
-                      {passDetaljer.sammanfattning.avvikelseSek <= 0 ? (
-                        <>✅ {formatSekTillLasbar(Math.abs(passDetaljer.sammanfattning.avvikelseSek))} FÖRE schema</>
-                      ) : passDetaljer.sammanfattning.avvikelseSek < 600 ? (
-                        <>⚠️ {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} efter schema</>
-                      ) : (
-                        <>🔴 {formatSekTillLasbar(passDetaljer.sammanfattning.avvikelseSek)} EFTER schema</>
+                      📍 {g.namn}
+                      {ärFakturerad && (
+                        <span
+                          style={{
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            backgroundColor: "#16a34a",
+                            color: "#ffffff",
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                        >
+                          FAKTURERAD
+                        </span>
                       )}
-                    </div>
+                    </h4>
+
+                    <label
+                      style={{
+                        fontSize: 13,
+                        color: ärFakturerad
+                          ? "#166534"
+                          : "#991b1b",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={ärFakturerad}
+                        onChange={async (e) => {
+                          const nyttVarde = e.target.checked;
+                          try {
+                            const rapportIds = g.rapporter.map(
+                              (r) => r.id
+                            );
+                            if (rapportIds.length === 0) return;
+
+                            const { error } = await supabase
+                              .from("rapporter")
+                              .update({ fakturerat: nyttVarde })
+                              .in("id", rapportIds);
+
+                            if (error) throw error;
+
+                            setRapporter((prev) =>
+                              prev.map((r) =>
+                                rapportIds.includes(r.id)
+                                  ? {
+                                      ...r,
+                                      fakturerat: nyttVarde,
+                                    }
+                                  : r
+                              )
+                            );
+
+                            showPopup(
+                              nyttVarde
+                                ? "✅ Markerad som fakturerad (denna vecka)."
+                                : "🔴 Markerad som ej fakturerad (denna vecka).",
+                              "success",
+                              2000
+                            );
+                          } catch (err) {
+                            console.error(err);
+                            showPopup(
+                              "👎 Fel vid uppdatering av fakturerad‑status.",
+                              "error",
+                              3000
+                            );
+                          }
+                        }}
+                        style={{ transform: "scale(1.2)" }}
+                      />
+                      Fakturerad
+                    </label>
                   </div>
 
-                
-                  <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
-                    Rutt-detaljer:
-                  </h4>
-                  <div
+                  <table
                     style={{
-                      backgroundColor: "#ffffff",
-                      borderRadius: 8,
-                      border: "1px solid #e5e7eb",
-                      overflow: "hidden",
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      tableLayout: "fixed",
+                      fontSize: 13,
                     }}
                   >
-                    {passDetaljer.adresser.map((a, idx) => {
-                      const arbetsSek = a.arbets_tid_sek || 0;
-                      const transportSek = a.transport_tid_sek || 0;
-                      const totalSek = arbetsSek + transportSek;
-                      const uppskattadArbeteSek = a.uppskattad_arbete_sek || 600;
-                      const arbetsAvvikelse = arbetsSek - uppskattadArbeteSek;
-
-                      return (
-                        <div key={a.id || idx}>
-                          {idx > 0 && transportSek > 0 && (
-                            <div
-                              style={{
-                                padding: "6px 12px",
-                                backgroundColor: "#f3f4f6",
-                                borderTop: "1px dashed #d1d5db",
-                                borderBottom: "1px dashed #d1d5db",
-                                textAlign: "center",
-                                fontSize: 12,
-                                color: "#6b7280",
-                              }}
-                            >
-                              🚗 Körtid: {formatSekTillLasbar(transportSek)}
-                            </div>
-                          )}
-
-                          <div
+                    <thead>
+                      <tr style={{ backgroundColor: "#f3f4f6" }}>
+                        <th
+                          style={{
+                            textAlign: "left",
+                            padding: "4px 6px",
+                            width: "18%",
+                          }}
+                        >
+                          Datum
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                            width: "12%",
+                          }}
+                        >
+                          Tid (min)
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                            width: "10%",
+                          }}
+                        >
+                          Anst (#)
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                            width: "10%",
+                          }}
+                        >
+                          Grus (kg)
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                            width: "10%",
+                          }}
+                        >
+                          Salt (kg)
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                            width: "12%",
+                          }}
+                        >
+                          Team
+                        </th>
+                        <th
+                          style={{
+                            textAlign: "left",
+                            padding: "4px 6px",
+                          }}
+                        >
+                          Syfte
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {g.rapporter.map((r, idx) => (
+                        <tr
+                          key={r.id || idx}
+                          style={{
+                            backgroundColor:
+                              idx % 2 === 0
+                                ? "#ffffff"
+                                : "#f9fafb",
+                            borderBottom:
+                              "1px solid #e5e7eb",
+                          }}
+                        >
+                          <td style={{ padding: "4px 6px" }}>
+                            {formatDatumTid(r.datum)}
+                          </td>
+                          <td
                             style={{
-                              padding: "12px 16px",
-                              borderBottom: idx < passDetaljer.adresser.length - 1 ? "1px solid #f3f4f6" : "none",
+                              textAlign: "center",
+                              padding: "4px 6px",
                             }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", marginBottom: 6 }}>
-                              <div
-                                style={{
-                                  width: 24,
-                                  height: 24,
-                                  borderRadius: "50%",
-                                  backgroundColor: "#7c3aed",
-                                  color: "#ffffff",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontWeight: 700,
-                                  fontSize: 12,
-                                  marginRight: 10,
-                                }}
-                              >
-                                {idx + 1}
-                              </div>
-                              <strong style={{ fontSize: 14 }}>{a.adresser?.namn || "Okänd adress"}</strong>
-                            </div>
+                            {r.arbetstid_min ?? 0}
+                            <span
+                              style={{
+                                color: "#6b7280",
+                                fontSize: 12,
+                              }}
+                            >
+                              {" "}
+                              (
+                              {formatTid(
+                                r.arbetstid_min ?? 0
+                              )}
+                              )
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              textAlign: "center",
+                              padding: "4px 6px",
+                            }}
+                          >
+                            {r.antal_anstallda || 1}
+                          </td>
+                          <td
+                            style={{
+                              textAlign: "center",
+                              padding: "4px 6px",
+                            }}
+                          >
+                            {r.sand_kg || 0}
+                          </td>
+                          <td
+                            style={{
+                              textAlign: "center",
+                              padding: "4px 6px",
+                            }}
+                          >
+                            {r.salt_kg || 0}
+                          </td>
+                          <td
+                            style={{
+                              textAlign: "center",
+                              padding: "4px 6px",
+                            }}
+                          >
+                            {r.team_namn ||
+                              (r.arbetssatt === "hand"
+                                ? "För hand"
+                                : "Maskin")}
+                          </td>
+                          <td style={{ padding: "4px 6px" }}>
+                            {r.syfte}
+                          </td>
+                        </tr>
+                      ))}
 
-                            <div style={{ fontSize: 12, color: "#4b5563", marginLeft: 34 }}>
-                              <div>
-                                🔧 Arbetstid: {formatSekTillLasbar(arbetsSek)}
-                                {uppskattadArbeteSek > 0 && (
-                                  <span
-                                    style={{
-                                      marginLeft: 6,
-                                      padding: "2px 6px",
-                                      borderRadius: 4,
-                                      fontSize: 11,
-                                      backgroundColor: arbetsAvvikelse <= 0 ? "#d1fae5" : "#fee2e2",
-                                      color: arbetsAvvikelse <= 0 ? "#065f46" : "#991b1b",
-                                    }}
-                                  >
-                                    {arbetsAvvikelse <= 0 ? "✅" : "⚠️"}{" "}
-                                    {arbetsAvvikelse <= 0 ? "" : "+"}
-                                    {Math.round(arbetsAvvikelse / 60)} min
-                                  </span>
-                                )}
-                              </div>
-                              <div style={{ marginTop: 4 }}>
-                                ⏱️ Total: {formatSekTillLasbar(totalSek)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {passDetaljer.adresser.length === 0 && (
-                    <p style={{ textAlign: "center", color: "#6b7280", fontStyle: "italic" }}>
-                      Ingen detaljerad logg finns för detta pass.
-                      <br />
-                      <span style={{ fontSize: 12 }}>
-                        (Loggning aktiveras automatiskt för nya pass)
-                      </span>
-                    </p>
-                  )}
+                      <tr
+                        style={{
+                          backgroundColor: "#fef9c3",
+                          fontWeight: 600,
+                          borderTop:
+                            "2px solid #e5e7eb",
+                        }}
+                      >
+                        <td style={{ padding: "4px 6px" }}>
+                          Summa (Totalt / adress)
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                          }}
+                        >
+                          {totTidMin}
+                          <span
+                            style={{
+                              color: "#6b7280",
+                              fontSize: 12,
+                            }}
+                          >
+                            {" "}
+                            ({formatTid(totTidMin)})
+                          </span>
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                          }}
+                        >
+                          {totAnst}
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                          }}
+                        >
+                          {totGrus}
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "center",
+                            padding: "4px 6px",
+                          }}
+                        >
+                          {totSalt}
+                        </td>
+                        <td colSpan={2}></td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              );
+            });
+          })()}
+        </div>
+      )}
 
-              {!passDetaljer && !laddaPassDetaljer && valtPassId && (
-                <p style={{ textAlign: "center", color: "#6b7280" }}>
-                  Kunde inte ladda passdetaljer.
-                </p>
-              )}
-            </div>
-          )}
+      <div style={{ marginTop: 16 }}>
+        <button
+          onClick={async () => {
+            setVisaPassOversikt(!visaPassOversikt);
+            if (!visaPassOversikt) {
+              await hamtaPassHistorik();
+            }
+          }}
+          style={{
+            ...secondaryButton,
+            backgroundColor: visaPassOversikt
+              ? "#7c3aed"
+              : "#8b5cf6",
+            color: "#ffffff",
+            marginTop: 0,
+          }}
+        >
+          {visaPassOversikt
+            ? "🔼 Dölj Arbetspass-Översikt"
+            : "📋 Arbetspass-Översikt"}
+        </button>
+      </div>
+
+      {visaPassOversikt && (
+        <div
+          style={{
+            marginTop: 16,
+            padding: 16,
+            borderRadius: 12,
+            backgroundColor: "#f5f3ff",
+            border: "1px solid #c4b5fd",
+          }}
 
           {visaOversikt && (
-            <VeckoOversikt
-              data={filtreradeRapporter}
-              onSkickaEmail={skickaVeckorapportEmail}
-              onExportCSV={exportVeckorapportCSV}
-              filtreradVecka={filtreradVecka}
-              filtreratÅr={filtreratÅr}
-              filterMetod={filterMetod}
-              onOpenManuell={openManuellPopup}
-              onToggleSkyddad={toggleSkyddadForAdress}
-              onOpenEdit={openEditPopupForAdress}
-            />
-          )}
+        <VeckoOversikt
+          data={filtreradeRapporter}
+          onSkickaEmail={skickaVeckorapportEmail}
+          onExportCSV={exportVeckorapportCSV}
+          filtreradVecka={filtreradVecka}
+          filtreratÅr={filtreratÅr}
+          filterMetod={filterMetod}
+          onOpenManuell={openManuellPopup}
+          onToggleSkyddad={toggleSkyddadForAdress}
+          onOpenEdit={openEditPopupForAdress}
+        />
+      )}
 
-          {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
-            </p>
-          )}
-        </section>
-      );
-    }
+      {status && (
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: status.startsWith("✅")
+              ? "#16a34a"
+              : status.startsWith("❌")
+              ? "#dc2626"
+              : "#4b5563",
+            textAlign: "center",
+          }}
+        >
+          {status}
+        </p>
+      )}
+    </section>
+  );
+}
 
     if (activeTab === "radera") {
       return (
