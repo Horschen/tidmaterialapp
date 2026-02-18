@@ -1,4 +1,3 @@
-// rebuild trigger
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -1225,8 +1224,8 @@ async function hamtaRapporter() {
   const { data, error } = await supabase
     .from("rapporter")
     .select(
-      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, fakturerat, adress_id, adresser(namn)"
-)
+      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
+    )
     .order("datum", { ascending: false });
   if (error) {
     setStatus("❌ " + error.message);
@@ -3544,7 +3543,7 @@ if (activeTab === "rapport") {
         Veckorapport
       </h2>
 
-   // === 🔶 Gula ovala rutor för total tider – omdöpta rubriker ===
+      {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
       <div
         style={{
           display: "flex",
@@ -3585,7 +3584,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      // === Vecka / År‑fält ===
+      {/* Vecka / År‑fält */}
       <div
         style={{
           display: "grid",
@@ -3618,7 +3617,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      // === Navigeringsknappar ===
+      {/* Navigeringsknappar */}
       <button
         onClick={() => {
           const nu = getCurrentIsoWeekAndYear();
@@ -3657,7 +3656,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-     // === 🆕 Ny knapp: Alla Job Per Adress ===
+     {/* 🆕 Ny knapp: Alla Job Per Adress */}
 <button
   onClick={() => setVisaAllaJob((prev) => !prev)}
   style={{
@@ -3670,7 +3669,7 @@ if (activeTab === "rapport") {
   {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
 </button>
 
-// === Filtrera på metod ===
+{/* Filtrera på metod */}
 <label style={labelStyle}>Filtrera på metod</label>
 <select
   value={filterMetod}
@@ -3689,7 +3688,7 @@ if (activeTab === "rapport") {
   Uppdatera översikt
 </button>
 
-// === 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner ===
+{/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
 {visaAllaJob && (
   <div
     style={{
@@ -3791,7 +3790,7 @@ if (activeTab === "rapport") {
           📍 {g.namn}
         </h4>
 
-        // === 🔘 Kryssruta – Fakturerad ===
+        {/* 🔘 Kryssruta – Fakturerad */}
         <label
           style={{
             fontSize: 13,
@@ -3804,50 +3803,46 @@ if (activeTab === "rapport") {
           }}
         >
           <input
-  type="checkbox"
-  checked={ärFakturerad}
-  onChange={async (e) => {
-    const nyttVarde = e.target.checked;
-    try {
-      // Hämta alla rapport-id för denna adress i den aktuella vyn (vecka/år/metod)
-      const rapportIds = g.rapporter.map((r) => r.id);
+            type="checkbox"
+            checked={ärFakturerad}
+            onChange={async (e) => {
+              const nyttVarde = e.target.checked;
+              try {
+                // Uppdatera alla rapporter för adressen i databasen
+                const { error } = await supabase
+                  .from("rapporter")
+                  .update({ fakturerat: nyttVarde })
+                  .eq("adress_id", g.id);
 
-      if (rapportIds.length === 0) return;
+                if (error) throw error;
 
-      const { error } = await supabase
-        .from("rapporter")
-        .update({ fakturerat: nyttVarde })
-        .in("id", rapportIds);   // 🔹 bara rapporter i denna vecka/filter
+                // Uppdatera lokalt i listan
+                setRapporter((prev) =>
+                  prev.map((r) =>
+                    r.adress_id === g.id
+                      ? { ...r, fakturerat: nyttVarde }
+                      : r
+                  )
+                );
 
-      if (error) throw error;
-
-      // Uppdatera lokalt i listan
-      setRapporter((prev) =>
-        prev.map((r) =>
-          rapportIds.includes(r.id)
-            ? { ...r, fakturerat: nyttVarde }
-            : r
-        )
-      );
-
-      showPopup(
-        nyttVarde
-          ? "✅ Markerad som fakturerad (denna vecka)."
-          : "🔴 Markerad som ej fakturerad (denna vecka).",
-        "success",
-        2000
-      );
-    } catch (err) {
-      console.error(err);
-      showPopup(
-        "👎 Fel vid uppdatering av fakturerad‑status.",
-        "error",
-        3000
-      );
-    }
-  }}
-  style={{ transform: "scale(1.2)" }}
-/>
+                showPopup(
+                  nyttVarde
+                    ? "✅ Markerad som fakturerad."
+                    : "🔴 Markerad som ej fakturerad.",
+                  "success",
+                  2000
+                );
+              } catch (err) {
+                console.error(err);
+                showPopup(
+                  "👎 Fel vid uppdatering av fakturerad‑status.",
+                  "error",
+                  3000
+                );
+              }
+            }}
+            style={{ transform: "scale(1.2)" }}
+          />
           Fakturerad
         </label>
       </div>
@@ -3918,7 +3913,7 @@ if (activeTab === "rapport") {
             </tr>
           ))}
 
-          // === Summa-rad ===
+          {/* Summa-rad */}
           <tr
             style={{
               backgroundColor: "#fef9c3",
@@ -3952,7 +3947,7 @@ if (activeTab === "rapport") {
   );
 });
 
-          // === ARBETSPASS-ÖVERSIKT === 
+          {/* === ARBETSPASS-ÖVERSIKT === */}
           <div style={{ marginTop: 16 }}>
             <button
               onClick={async () => {
@@ -4036,7 +4031,7 @@ if (activeTab === "rapport") {
 
               {passDetaljer && !laddaPassDetaljer && (
                 <div>
-                  // === Sammanfattning ===
+                  {/* Sammanfattning */}
                   <div
                     style={{
                       padding: 12,
@@ -4078,7 +4073,7 @@ if (activeTab === "rapport") {
                       </div>
                     </div>
 
-                    // === Avvikelse-indikator (före/efter schema) ===
+                    {/* Avvikelse-indikator (före/efter schema) */}
                     <div
                       style={{
                         marginTop: 12,
@@ -4111,7 +4106,7 @@ if (activeTab === "rapport") {
                     </div>
                   </div>
 
-                  // === Adresslista ===
+                  {/* Adresslista */}
                   <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
                     Rutt-detaljer:
                   </h4>
@@ -4339,7 +4334,7 @@ if (activeTab === "rapport") {
    if (activeTab === "startstop") {
   return (
     <section style={sectionStyle}>
-      // === 🔔 visar om lösenordet är avaktiverat ===
+      {/* 🔔 visar om lösenordet är avaktiverat */}
       {passwordPaused && (
         <div
           style={{
@@ -4421,7 +4416,7 @@ if (activeTab === "rapport") {
         </div>
       )}
 
-      // === Vanliga pass‑knappar ===
+      {/* Vanliga pass‑knappar */}
       <button
         style={{
           ...primaryButton,
@@ -4460,7 +4455,7 @@ if (activeTab === "rapport") {
         Stop Paus
       </button>
 
-      // === 🔐 Pausa / starta lösenord ===
+      {/* 🔐 Pausa / starta lösenord */}
       <div
         style={{
           marginTop: 16,
