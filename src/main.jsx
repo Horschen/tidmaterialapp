@@ -3544,7 +3544,7 @@ if (activeTab === "rapport") {
         Veckorapport
       </h2>
 
-      {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
+   // === 🔶 Gula ovala rutor för total tider – omdöpta rubriker ===
       <div
         style={{
           display: "flex",
@@ -3585,7 +3585,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      {/* Vecka / År‑fält */}
+      // === Vecka / År‑fält ===
       <div
         style={{
           display: "grid",
@@ -3618,7 +3618,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      {/* Navigeringsknappar */}
+      // === Navigeringsknappar ===
       <button
         onClick={() => {
           const nu = getCurrentIsoWeekAndYear();
@@ -3657,7 +3657,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-     {/* 🆕 Ny knapp: Alla Job Per Adress */}
+     // === 🆕 Ny knapp: Alla Job Per Adress ===
 <button
   onClick={() => setVisaAllaJob((prev) => !prev)}
   style={{
@@ -3670,7 +3670,7 @@ if (activeTab === "rapport") {
   {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
 </button>
 
-{/* Filtrera på metod */}
+// === Filtrera på metod ===
 <label style={labelStyle}>Filtrera på metod</label>
 <select
   value={filterMetod}
@@ -3689,7 +3689,7 @@ if (activeTab === "rapport") {
   Uppdatera översikt
 </button>
 
-{/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
+// === 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner ===
 {visaAllaJob && (
   <div
     style={{
@@ -3791,7 +3791,7 @@ if (activeTab === "rapport") {
           📍 {g.namn}
         </h4>
 
-        {/* 🔘 Kryssruta – Fakturerad */}
+        // === 🔘 Kryssruta – Fakturerad ===
         <label
           style={{
             fontSize: 13,
@@ -3918,7 +3918,7 @@ if (activeTab === "rapport") {
             </tr>
           ))}
 
-          {/* Summa-rad */}
+          // === Summa-rad ===
           <tr
             style={{
               backgroundColor: "#fef9c3",
@@ -3952,7 +3952,7 @@ if (activeTab === "rapport") {
   );
 });
 
-          {/* === ARBETSPASS-ÖVERSIKT === */}
+          // === ARBETSPASS-ÖVERSIKT === 
           <div style={{ marginTop: 16 }}>
             <button
               onClick={async () => {
@@ -4036,7 +4036,7 @@ if (activeTab === "rapport") {
 
               {passDetaljer && !laddaPassDetaljer && (
                 <div>
-                  {/* Sammanfattning */}
+                  // === Sammanfattning ===
                   <div
                     style={{
                       padding: 12,
@@ -4078,7 +4078,7 @@ if (activeTab === "rapport") {
                       </div>
                     </div>
 
-                    {/* Avvikelse-indikator (före/efter schema) */}
+                    // === Avvikelse-indikator (före/efter schema) ===
                     <div
                       style={{
                         marginTop: 12,
@@ -4111,7 +4111,7 @@ if (activeTab === "rapport") {
                     </div>
                   </div>
 
-                  {/* Adresslista */}
+                  // === Adresslista ===
                   <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
                     Rutt-detaljer:
                   </h4>
@@ -4339,7 +4339,7 @@ if (activeTab === "rapport") {
    if (activeTab === "startstop") {
   return (
     <section style={sectionStyle}>
-      {/* 🔔 visar om lösenordet är avaktiverat */}
+      // === 🔔 visar om lösenordet är avaktiverat ===
       {passwordPaused && (
         <div
           style={{
@@ -4421,7 +4421,7 @@ if (activeTab === "rapport") {
         </div>
       )}
 
-      {/* Vanliga pass‑knappar */}
+      // === Vanliga pass‑knappar ===
       <button
         style={{
           ...primaryButton,
@@ -4460,7 +4460,7 @@ if (activeTab === "rapport") {
         Stop Paus
       </button>
 
-      {/* 🔐 Pausa / starta lösenord */}
+      // === 🔐 Pausa / starta lösenord ===
       <div
         style={{
           marginTop: 16,
