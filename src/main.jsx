@@ -3539,6 +3539,7 @@ if (activeTab === "rapport") {
         Veckorapport
       </h2>
 
+      {/* Gula ovala totalrutor */}
       <div
         style={{
           display: "flex",
@@ -3579,6 +3580,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
+      {/* Vecka / År */}
       <div
         style={{
           display: "grid",
@@ -3611,6 +3613,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
+      {/* Navigering mellan veckor */}
       <button
         onClick={() => {
           const nu = getCurrentIsoWeekAndYear();
@@ -3649,6 +3652,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
+      {/* Knapp: Alla Job Per Adress */}
       <button
         onClick={() => setVisaAllaJob((prev) => !prev)}
         style={{
@@ -3663,6 +3667,7 @@ if (activeTab === "rapport") {
           : "📋 Alla Job Per Adress"}
       </button>
 
+      {/* Filter på metod */}
       <label style={labelStyle}>Filtrera på metod</label>
       <select
         value={filterMetod}
@@ -3681,6 +3686,7 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
+      {/* Alla Job Per Adress */}
       {visaAllaJob && (
         <div
           style={{
@@ -3750,6 +3756,7 @@ if (activeTab === "rapport") {
                 0
               );
 
+              // Alla rapporter för denna adress (i denna vy) är fakturerade?
               const ärFakturerad =
                 g.rapporter.length > 0 &&
                 g.rapporter.every((r) => r.fakturerat === true);
@@ -4079,39 +4086,8 @@ if (activeTab === "rapport") {
         </div>
       )}
 
-      <div style={{ marginTop: 16 }}>
-        <button
-          onClick={async () => {
-            setVisaPassOversikt(!visaPassOversikt);
-            if (!visaPassOversikt) {
-              await hamtaPassHistorik();
-            }
-          }}
-          style={{
-            ...secondaryButton,
-            backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
-            color: "#ffffff",
-            marginTop: 0,
-          }}
-        >
-          {visaPassOversikt
-            ? "🔼 Dölj Arbetspass-Översikt"
-            : "📋 Arbetspass-Översikt"}
-        </button>
-      </div>
-
-      {visaPassOversikt && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            borderRadius: 12,
-            backgroundColor: "#f5f3ff",
-            border: "1px solid #c4b5fd",
-          }}
-        >
-
-          {visaOversikt && (
+      {/* VeckoOversikt-tabellen */}
+      {visaOversikt && (
         <VeckoOversikt
           data={filtreradeRapporter}
           onSkickaEmail={skickaVeckorapportEmail}
