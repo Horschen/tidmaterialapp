@@ -1225,8 +1225,8 @@ async function hamtaRapporter() {
   const { data, error } = await supabase
     .from("rapporter")
     .select(
-      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
-    )
+      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, fakturerat, adress_id, adresser(namn)"
+)
     .order("datum", { ascending: false });
   if (error) {
     setStatus("❌ " + error.message);
@@ -3804,46 +3804,50 @@ if (activeTab === "rapport") {
           }}
         >
           <input
-            type="checkbox"
-            checked={ärFakturerad}
-            onChange={async (e) => {
-              const nyttVarde = e.target.checked;
-              try {
-                // Uppdatera alla rapporter för adressen i databasen
-                const { error } = await supabase
-                  .from("rapporter")
-                  .update({ fakturerat: nyttVarde })
-                  .eq("adress_id", g.id);
+  type="checkbox"
+  checked={ärFakturerad}
+  onChange={async (e) => {
+    const nyttVarde = e.target.checked;
+    try {
+      // Hämta alla rapport-id för denna adress i den aktuella vyn (vecka/år/metod)
+      const rapportIds = g.rapporter.map((r) => r.id);
 
-                if (error) throw error;
+      if (rapportIds.length === 0) return;
 
-                // Uppdatera lokalt i listan
-                setRapporter((prev) =>
-                  prev.map((r) =>
-                    r.adress_id === g.id
-                      ? { ...r, fakturerat: nyttVarde }
-                      : r
-                  )
-                );
+      const { error } = await supabase
+        .from("rapporter")
+        .update({ fakturerat: nyttVarde })
+        .in("id", rapportIds);   // 🔹 bara rapporter i denna vecka/filter
 
-                showPopup(
-                  nyttVarde
-                    ? "✅ Markerad som fakturerad."
-                    : "🔴 Markerad som ej fakturerad.",
-                  "success",
-                  2000
-                );
-              } catch (err) {
-                console.error(err);
-                showPopup(
-                  "👎 Fel vid uppdatering av fakturerad‑status.",
-                  "error",
-                  3000
-                );
-              }
-            }}
-            style={{ transform: "scale(1.2)" }}
-          />
+      if (error) throw error;
+
+      // Uppdatera lokalt i listan
+      setRapporter((prev) =>
+        prev.map((r) =>
+          rapportIds.includes(r.id)
+            ? { ...r, fakturerat: nyttVarde }
+            : r
+        )
+      );
+
+      showPopup(
+        nyttVarde
+          ? "✅ Markerad som fakturerad (denna vecka)."
+          : "🔴 Markerad som ej fakturerad (denna vecka).",
+        "success",
+        2000
+      );
+    } catch (err) {
+      console.error(err);
+      showPopup(
+        "👎 Fel vid uppdatering av fakturerad‑status.",
+        "error",
+        3000
+      );
+    }
+  }}
+  style={{ transform: "scale(1.2)" }}
+/>
           Fakturerad
         </label>
       </div>
