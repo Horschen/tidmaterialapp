@@ -4089,9 +4089,7 @@ if (activeTab === "rapport") {
           }}
           style={{
             ...secondaryButton,
-            backgroundColor: visaPassOversikt
-              ? "#7c3aed"
-              : "#8b5cf6",
+            backgroundColor: visaPassOversikt ? "#7c3aed" : "#8b5cf6",
             color: "#ffffff",
             marginTop: 0,
           }}
@@ -4111,6 +4109,7 @@ if (activeTab === "rapport") {
             backgroundColor: "#f5f3ff",
             border: "1px solid #c4b5fd",
           }}
+        >
 
           {visaOversikt && (
         <VeckoOversikt
