@@ -1222,8 +1222,8 @@ async function hamtaRapporter() {
   const { data, error } = await supabase
     .from("rapporter")
     .select(
-      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, adress_id, adresser(namn)"
-    )
+      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, fakturerat, adress_id, adresser(namn)"
+)
     .order("datum", { ascending: false });
   if (error) {
     setStatus("❌ " + error.message);
@@ -3749,26 +3749,115 @@ if (activeTab === "rapport") {
           0
         );
 
+        // 🔹 kolla om alla rapporter för denna adress (i denna vy) är fakturerade
+        const ärFakturerad =
+          g.rapporter.length > 0 &&
+          g.rapporter.every((r) => r.fakturerat === true);
+
         return (
           <div
             key={g.id}
             style={{
               borderTop: "2px solid #e5e7eb",
               padding: "8px 12px 4px",
+              backgroundColor: ärFakturerad
+                ? "rgba(134,239,172,0.35)" // mjukt grönt
+                : "rgba(254,202,202,0.35)", // mjukt rött
+              transition: "background-color 0.3s ease",
             }}
           >
-            <h4
+            <div
               style={{
-                margin: "6px 0 8px",
-                fontSize: 15,
-                color: "#1e3a8a",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
+                justifyContent: "space-between",
               }}
             >
-              📍 {g.namn}
-            </h4>
+              <h4
+                style={{
+                  margin: "6px 0 8px",
+                  fontSize: 15,
+                  color: "#1e3a8a",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                📍 {g.namn}
+                {ärFakturerad && (
+                  <span
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      backgroundColor: "#16a34a",
+                      color: "#ffffff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    FAKTURERAD
+                  </span>
+                )}
+              </h4>
+
+              <label
+                style={{
+                  fontSize: 13,
+                  color: ärFakturerad ? "#166534" : "#991b1b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={ärFakturerad}
+                  onChange={async (e) => {
+                    const nyttVarde = e.target.checked;
+                    try {
+                      // Alla rapport-id under denna adress i denna vecka/filtrering
+                      const rapportIds = g.rapporter.map((r) => r.id);
+                      if (rapportIds.length === 0) return;
+
+                      const { error } = await supabase
+                        .from("rapporter")
+                        .update({ fakturerat: nyttVarde })
+                        .in("id", rapportIds);
+
+                      if (error) throw error;
+
+                      // Uppdatera lokalt
+                      setRapporter((prev) =>
+                        prev.map((r) =>
+                          rapportIds.includes(r.id)
+                            ? { ...r, fakturerat: nyttVarde }
+                            : r
+                        )
+                      );
+
+                      showPopup(
+                        nyttVarde
+                          ? "✅ Markerad som fakturerad (denna vecka)."
+                          : "🔴 Markerad som ej fakturerad (denna vecka).",
+                        "success",
+                        2000
+                      );
+                    } catch (err) {
+                      console.error(err);
+                      showPopup(
+                        "👎 Fel vid uppdatering av fakturerad‑status.",
+                        "error",
+                        3000
+                      );
+                    }
+                  }}
+                  style={{ transform: "scale(1.2)" }}
+                />
+                Fakturerad
+              </label>
+            </div>
 
             <table
               style={{
@@ -3837,7 +3926,7 @@ if (activeTab === "rapport") {
                   </tr>
                 ))}
 
-               
+                {/* Summa-rad */}
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
@@ -3871,10 +3960,8 @@ if (activeTab === "rapport") {
           </div>
         );
       });
-    })()}
-  </div>
-)}
 
+    // ARBETSPASS-ÖVERSIKT
           <div style={{ marginTop: 16 }}>
             <button
               onClick={async () => {
