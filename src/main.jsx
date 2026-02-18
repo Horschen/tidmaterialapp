@@ -182,7 +182,7 @@ function VeckoOversikt({
   // === 4️⃣ Rendera tabellen ===
   return (
     <div style={{ marginTop: 16 }}>
-      {/* === KNAPPRAD === */}
+  
       <div
         style={{
           display: "flex",
@@ -197,7 +197,7 @@ function VeckoOversikt({
 
         <div style={{ display: "flex", gap: 8 }}>
           
-          {/* 📋 Manuell Registrering */}
+        
           <button
             onClick={onOpenManuell}
             style={{
@@ -213,7 +213,7 @@ function VeckoOversikt({
             Manuell Registrering
           </button>
 
-          {/* ✉️ / 💾 */}
+       
           <button
             onClick={onSkickaEmail}
             style={{
@@ -244,8 +244,7 @@ function VeckoOversikt({
         </div>
       </div>
 
-      {/* === TABELL HEADER === */}
-      <div
+           <div
         style={{
           marginTop: 6,
           fontSize: 12,
@@ -255,8 +254,7 @@ function VeckoOversikt({
         Vecka {filtreradVecka || "-"} · År {filtreratÅr || "-"} · {metodText}
       </div>
 
-      {/* === TABELL === */}
-      <div style={{ overflowX: "auto", marginTop: 10 }}>
+          <div style={{ overflowX: "auto", marginTop: 10 }}>
         <table
           cellPadding={14}
           style={{
@@ -3158,7 +3156,7 @@ function avbrytRadering() {
   Öppna karta för vald adress
 </button>
 
-{/* 🧭 Administrera Adresser */}
+
 <button
   onClick={() => setVisaAdressAdmin((v) => !v)}
   style={{
@@ -3185,7 +3183,7 @@ function avbrytRadering() {
       Klicka på "Editera" för att ändra en adress, eller "Lägg till ny adress" för att skapa en ny.
     </p>
 
-    {/* Lista över adresser */}
+  
     <div style={{ marginTop: 12, maxHeight: 400, overflowY: "auto" }}>
       {adresser.map((a) => (
         <div
@@ -3245,7 +3243,7 @@ function avbrytRadering() {
       ))}
     </div>
 
-    {/* Knapp för att lägga till ny adress */}
+  
     <button
       onClick={openNyAdressPopup}
       style={{
@@ -3265,7 +3263,7 @@ function avbrytRadering() {
   </div>
 )}
 
-          {/* === Instruktioner / noteringar för vald adress === */}
+        
           {kartaAdressId && (
             <div style={{ marginTop: 20 }}>
               <h4 style={{ fontSize: 15, marginBottom: 6 }}>
@@ -3281,7 +3279,7 @@ function avbrytRadering() {
                 • ”Ploga ej framför garage X” osv.
               </p>
 
-              {/* Visning/editering av notering */}
+            
               <textarea
                 value={kartaNotering}
                 onChange={(e) =>
@@ -3309,7 +3307,7 @@ function avbrytRadering() {
                 }}
               />
 
-              {/* Knappar för Lägg till / Ändra / Spara */}
+             
               {!kartaNoteringEditing && (
                 <div
                   style={{
@@ -3380,14 +3378,12 @@ function avbrytRadering() {
             </div>
           )}
 
-          {/* === Hantera PDF/bild‑karta för vald adress === */}
           {kartaAdressId && (
             <div style={{ marginTop: 24 }}>
               <h4 style={{ fontSize: 15, marginBottom: 6 }}>
                 PDF‑ eller bildkarta för vald adress
               </h4>
 
-              {/* Uppladdningsknapp */}
               <input
                 type="file"
                 accept="application/pdf,image/*"
@@ -3430,7 +3426,7 @@ function avbrytRadering() {
                 style={{ marginTop: 6 }}
               />
 
-              {/* Förhandsvisning + Radera‑knapp för just denna adress */}
+             
               {adresser
                 .filter(
                   (a) =>
@@ -3543,7 +3539,7 @@ if (activeTab === "rapport") {
         Veckorapport
       </h2>
 
-      {/* 🔶 Gula ovala rutor för total tider – omdöpta rubriker */}
+  
       <div
         style={{
           display: "flex",
@@ -3584,7 +3580,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      {/* Vecka / År‑fält */}
+   
       <div
         style={{
           display: "grid",
@@ -3617,7 +3613,7 @@ if (activeTab === "rapport") {
         </div>
       </div>
 
-      {/* Navigeringsknappar */}
+   
       <button
         onClick={() => {
           const nu = getCurrentIsoWeekAndYear();
@@ -3656,7 +3652,7 @@ if (activeTab === "rapport") {
         Denna vecka
       </button>
 
-     {/* 🆕 Ny knapp: Alla Job Per Adress */}
+ 
 <button
   onClick={() => setVisaAllaJob((prev) => !prev)}
   style={{
@@ -3669,7 +3665,7 @@ if (activeTab === "rapport") {
   {visaAllaJob ? "🔽 Dölj Alla Job Per Adress" : "📋 Alla Job Per Adress"}
 </button>
 
-{/* Filtrera på metod */}
+
 <label style={labelStyle}>Filtrera på metod</label>
 <select
   value={filterMetod}
@@ -3688,7 +3684,7 @@ if (activeTab === "rapport") {
   Uppdatera översikt
 </button>
 
-{/* 🧾  Alla Job Per Adress – utökad version med totalsummering & jämna kolumner */}
+
 {visaAllaJob && (
   <div
     style={{
@@ -3841,7 +3837,7 @@ if (activeTab === "rapport") {
                   </tr>
                 ))}
 
-                {/* Summa för adress */}
+               
                 <tr
                   style={{
                     backgroundColor: "#fef9c3",
@@ -3879,7 +3875,6 @@ if (activeTab === "rapport") {
   </div>
 )}
 
-          {/* === ARBETSPASS-ÖVERSIKT === */}
           <div style={{ marginTop: 16 }}>
             <button
               onClick={async () => {
@@ -3963,7 +3958,7 @@ if (activeTab === "rapport") {
 
               {passDetaljer && !laddaPassDetaljer && (
                 <div>
-                  {/* Sammanfattning */}
+                
                   <div
                     style={{
                       padding: 12,
@@ -4005,7 +4000,7 @@ if (activeTab === "rapport") {
                       </div>
                     </div>
 
-                    {/* Avvikelse-indikator (före/efter schema) */}
+                
                     <div
                       style={{
                         marginTop: 12,
@@ -4038,7 +4033,7 @@ if (activeTab === "rapport") {
                     </div>
                   </div>
 
-                  {/* Adresslista */}
+                
                   <h4 style={{ fontSize: 14, marginBottom: 8, color: "#5b21b6" }}>
                     Rutt-detaljer:
                   </h4>
@@ -4266,7 +4261,7 @@ if (activeTab === "rapport") {
    if (activeTab === "startstop") {
   return (
     <section style={sectionStyle}>
-      {/* 🔔 visar om lösenordet är avaktiverat */}
+    
       {passwordPaused && (
         <div
           style={{
@@ -4348,7 +4343,7 @@ if (activeTab === "rapport") {
         </div>
       )}
 
-      {/* Vanliga pass‑knappar */}
+    
       <button
         style={{
           ...primaryButton,
@@ -4387,7 +4382,7 @@ if (activeTab === "rapport") {
         Stop Paus
       </button>
 
-      {/* 🔐 Pausa / starta lösenord */}
+
       <div
         style={{
           marginTop: 16,
@@ -4526,7 +4521,7 @@ if (activeTab === "rapport") {
         </div>
       )}
 
-      {/* === FASTA RUTTER: BOSTÄDER === */}
+     
       <div
         style={{
           marginBottom: 16,
@@ -5663,7 +5658,7 @@ return (
     marginTop: 16,
   }}
 >
-  {/* ✅ Vänster: Spara */}
+
   <button
     onClick={sparaEditRapport}
     style={{
@@ -5680,7 +5675,7 @@ return (
     Spara
   </button>
 
-  {/* ➡️ Mitten: Avbryt */}
+
   <button
     onClick={() => setVisaEditPopup(false)}
     style={{
@@ -5697,7 +5692,7 @@ return (
     Avbryt
   </button>
 
-  {/* 🗑️ Höger: Radera */}
+  
   <button
     onClick={() => raderaEnRapport(valdaEditId)}
     style={{
@@ -6145,7 +6140,7 @@ return (
   </div>
 )}
 
-{/* ===== EDIT ADRESS POPUP ===== */}
+
 {visaAdressEditPopup && editAdressData && (
   <div
     style={{
@@ -6171,7 +6166,7 @@ return (
     </h3>
 
     <div style={{ display: "grid", gap: 12 }}>
-      {/* Namn */}
+ 
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Adressnamn:</span>
         <input
@@ -6190,7 +6185,6 @@ return (
         />
       </label>
 
-      {/* Aktiv/Inaktiv */}
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Status:</span>
         <select
@@ -6214,7 +6208,7 @@ return (
         </select>
       </label>
 
-      {/* Bostad/Företag */}
+      
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Typ:</span>
         <select
@@ -6238,7 +6232,7 @@ return (
         </select>
       </label>
 
-      {/* Material */}
+    
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Material:</span>
         <select
@@ -6259,7 +6253,7 @@ return (
         </select>
       </label>
 
-      {/* Maskin */}
+     
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Maskin möjlig:</span>
         <select
@@ -6283,7 +6277,7 @@ return (
         </select>
       </label>
 
-      {/* Kombinerad */}
+     
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Kombinerad:</span>
         <select
@@ -6307,7 +6301,7 @@ return (
         </select>
       </label>
 
-      {/* Adress-lista nummer */}
+     
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Sorteringsnummer (adress_lista):
@@ -6334,7 +6328,7 @@ return (
         </span>
       </label>
 
-      {/* Uppskattad tid */}
+   
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Uppskattad arbetstid (minuter):
@@ -6359,7 +6353,7 @@ return (
       </label>
     </div>
 
-    {/* Knappar */}
+   
     <div
       style={{
         display: "flex",
@@ -6403,7 +6397,7 @@ return (
   </div>
 )}
 
-{/* ===== NY ADRESS POPUP ===== */}
+
 {visaNyAdressPopup && (
   <div
     style={{
@@ -6429,7 +6423,7 @@ return (
     </h3>
 
     <div style={{ display: "grid", gap: 12 }}>
-      {/* Gatuadress för geokodning */}
+    
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Gatuadress (för GPS-koordinater):
@@ -6454,7 +6448,7 @@ return (
         </span>
       </label>
 
-      {/* Valfritt namn */}
+    
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Valfritt namn (visas i listor):
@@ -6476,7 +6470,7 @@ return (
         />
       </label>
 
-      {/* Aktiv/Inaktiv */}
+ 
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Status:</span>
         <select
@@ -6500,7 +6494,7 @@ return (
         </select>
       </label>
 
-      {/* Bostad/Företag */}
+    
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Typ:</span>
         <select
@@ -6524,7 +6518,7 @@ return (
         </select>
       </label>
 
-      {/* Material */}
+  
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Material:</span>
         <select
@@ -6545,7 +6539,7 @@ return (
         </select>
       </label>
 
-      {/* Maskin */}
+
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Maskin möjlig:</span>
         <select
@@ -6569,7 +6563,7 @@ return (
         </select>
       </label>
 
-      {/* Kombinerad */}
+    
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>Kombinerad:</span>
         <select
@@ -6593,7 +6587,7 @@ return (
         </select>
       </label>
 
-      {/* Adress-lista nummer */}
+  
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Sorteringsnummer (adress_lista):
@@ -6620,7 +6614,7 @@ return (
         </span>
       </label>
 
-      {/* Uppskattad tid */}
+
       <label>
         <span style={{ fontSize: 13, fontWeight: 500 }}>
           Uppskattad arbetstid (minuter):
@@ -6645,7 +6639,7 @@ return (
       </label>
     </div>
 
-    {/* Knappar */}
+  
     <div
       style={{
         display: "flex",
@@ -6686,7 +6680,7 @@ return (
   </div>
 )}
 
-{/* ===== POPUP: VÄLJ STARTPUNKT FÖR BOSTADSRUTT ===== */}
+
 {visaStartPunktPopup && (
   <div
     style={{
@@ -6732,7 +6726,7 @@ return (
       }}
     >
       <option value="">📍 Använd min GPS-position</option>
-      {/* Visa endast adresser som börjar med "Start" */}
+   
       {adresser
         .filter((a) => a.aktiv !== false && a.namn.toLowerCase().startsWith("start"))
         .sort((a, b) => a.namn.localeCompare(b.namn))
@@ -6806,7 +6800,7 @@ return (
       fontFamily: "system-ui, -apple-system, sans-serif",
     }}
   >
-    {/* === Alternativ: två pågående pass === */}
+
     {aktivPassPopup.lista && (
       <>
         <h3 style={{ fontSize: 18, marginTop: 0, marginBottom: 16 }}>
@@ -6864,7 +6858,7 @@ return (
       </>
     )}
 
-    {/* === En aktiv typ (steg 1 eller 2) === */}
+  
     {!aktivPassPopup.lista && aktivPassPopup.steg === 1 && (
       <>
         <h3 style={{ fontSize: 18, marginTop: 0 }}>
@@ -6925,7 +6919,7 @@ return (
       </>
     )}
 
-    {/* === Steg 2: fråga om nytt pass av andra typen === */}
+
     {aktivPassPopup.steg === 2 && (
       <>
         <h3 style={{ fontSize: 18, marginTop: 0 }}>
@@ -6971,10 +6965,10 @@ return (
       </>
     )}
   </div>
-)}     {/* stänger popupens JSX-VILLKOR */}
+)}    
 
 
-  {/* TVÅ-RADIG NAVIGATION LÄNGST NER */}
+
   <nav
     style={{
       position: "fixed",
@@ -6990,7 +6984,7 @@ return (
       boxShadow: "0 -1px 4px rgba(0,0,0,0.08)",
     }}
   >
-      {/* Rad 1: Info + Start/Stop + Registrera */}
+     
       <div
         style={{
           display: "flex",
@@ -7053,7 +7047,7 @@ return (
         </button>
       </div>
 
-      {/* Rad 2: Karta + Veckorapport + Radera */}
+    
       <div
         style={{
           display: "flex",
