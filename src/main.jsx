@@ -3960,91 +3960,100 @@ if (activeTab === "rapport") {
                     </thead>
                     <tbody>
                       {g.rapporter.map((r, idx) => {
-                        const thisEndIso = r.jobb_tid || r.datum;
-                        const prev = idx > 0 ? g.rapporter[idx - 1] : null;
-                        const prevEndIso = prev ? prev.jobb_tid || prev.datum : null;
+  // Hämta slut-tid för denna rad
+  const thisEndRaw = r.jobb_tid || r.datum || null;
+  // Föregående rad för samma adress (om finns)
+  const prev = idx > 0 ? g.rapporter[idx - 1] : null;
+  const prevEndRaw = prev ? prev.jobb_tid || prev.datum || null : null;
 
-                        let datumText = "";
-                        if (prevEndIso && thisEndIso) {
-                          datumText = `${formatIsoTillDatumOchTid(
-                            prevEndIso
-                          )} > ${formatIsoTillDatumOchTid(thisEndIso)}`;
-                        } else if (thisEndIso) {
-                          datumText = formatIsoTillDatumOchTid(thisEndIso);
-                        } else {
-                          datumText = "-";
-                        }
+  let datumText = "";
 
-                        const tidMin = r.arbetstid_min || 0;
-                        const ärPassStart = r.syfte === "Pass-start";
+  if (prevEndRaw && thisEndRaw) {
+    // Båda tider finns → visa från → till
+    datumText = `${formatIsoTillDatumOchTid(
+      prevEndRaw
+    )} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
+  } else if (thisEndRaw) {
+    // Bara denna rad har tid (t.ex. första raden)
+    datumText = formatIsoTillDatumOchTid(thisEndRaw);
+  } else if (prevEndRaw) {
+    // Extremfall: bara föregående hade tid
+    datumText = formatIsoTillDatumOchTid(prevEndRaw);
+  } else {
+    datumText = "-";
+  }
 
-                        return (
-                          <tr
-                            key={r.id || idx}
-                            style={{
-                              backgroundColor: ärPassStart
-                                ? "#d1fae5"
-                                : idx % 2 === 0
-                                ? "#ffffff"
-                                : "#f9fafb",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <td style={{ padding: "4px 6px" }}>{datumText}</td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {tidMin}
-                              <span
-                                style={{
-                                  color: "#6b7280",
-                                  fontSize: 12,
-                                }}
-                              >
-                                {" "}
-                                ({formatTid(tidMin)})
-                              </span>
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.antal_anstallda || 1}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.sand_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.salt_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.team_namn ||
-                                (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
-                            </td>
-                            <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
-                          </tr>
-                        );
-                      })}
+  const tidMin = r.arbetstid_min || 0;
+  const ärPassStart =
+    r.syfte === "PASS-START" || r.syfte === "Pass-start";
+
+  return (
+    <tr
+      key={r.id || idx}
+      style={{
+        backgroundColor: ärPassStart
+          ? "#d1fae5"
+          : idx % 2 === 0
+          ? "#ffffff"
+          : "#f9fafb",
+        borderBottom: "1px solid #e5e7eb",
+      }}
+    >
+      <td style={{ padding: "4px 6px" }}>{datumText}</td>
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {tidMin}
+        <span
+          style={{
+            color: "#6b7280",
+            fontSize: 12,
+          }}
+        >
+          {" "}
+          ({formatTid(tidMin)})
+        </span>
+      </td>
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.antal_anstallda || 1}
+      </td>
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.sand_kg || 0}
+      </td>
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.salt_kg || 0}
+      </td>
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.team_namn ||
+          (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+      </td>
+      <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+    </tr>
+  );
+})}
 
                       <tr
                         style={{
