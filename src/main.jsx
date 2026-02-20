@@ -3686,7 +3686,7 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
-      {/* Alla Job Per Adress */}
+     {/* Alla Job Per Adress */}
       {visaAllaJob && (
         <div
           style={{
@@ -3699,6 +3699,7 @@ if (activeTab === "rapport") {
           }}
         >
           {(() => {
+            // Sortera rapporter per adress & i tidsordning (äldst först)
             const data = [...filtreradeRapporter];
 
             const grupper = {};
@@ -3716,11 +3717,14 @@ if (activeTab === "rapport") {
                   list[0]?.adresser?.adresslista_sortering ??
                   list[0]?.adresser?.id ??
                   0,
-                rapporter: list.sort(
-                  (a, b) =>
-                    new Date(b.datum).getTime() -
-                    new Date(a.datum).getTime()
-                ),
+                // sortera äldst → nyast för att kunna räkna differenser framåt
+                rapporter: list
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(a.jobb_tid || a.datum).getTime() -
+                      new Date(b.jobb_tid || b.datum).getTime()
+                  ),
               }))
               .sort((a, b) => a.sortIndex - b.sortIndex);
 
@@ -3738,7 +3742,21 @@ if (activeTab === "rapport") {
               );
             }
 
+            // Hjälp: formatera ISO‑sträng till "YYYY-MM-DD, HH:MM"
+            function formatIsoTillDatumOchTid(iso) {
+              if (!iso) return "-";
+              try {
+                const [datePart, timePart] = iso.split("T");
+                if (!timePart) return datePart;
+                const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5); // HH:MM
+                return `${datePart}, ${tid}`;
+              } catch {
+                return "-";
+              }
+            }
+
             return adressGrupper.map((g) => {
+              // Beräkna summeringar (tid = enkel minut-summa, inte * antal anställda)
               const totTidMin = g.rapporter.reduce(
                 (s, r) => s + (r.arbetstid_min || 0),
                 0
@@ -3810,9 +3828,7 @@ if (activeTab === "rapport") {
                     <label
                       style={{
                         fontSize: 13,
-                        color: ärFakturerad
-                          ? "#166534"
-                          : "#991b1b",
+                        color: ärFakturerad ? "#166534" : "#991b1b",
                         display: "flex",
                         alignItems: "center",
                         gap: 6,
@@ -3826,9 +3842,7 @@ if (activeTab === "rapport") {
                         onChange={async (e) => {
                           const nyttVarde = e.target.checked;
                           try {
-                            const rapportIds = g.rapporter.map(
-                              (r) => r.id
-                            );
+                            const rapportIds = g.rapporter.map((r) => r.id);
                             if (rapportIds.length === 0) return;
 
                             const { error } = await supabase
@@ -3841,10 +3855,7 @@ if (activeTab === "rapport") {
                             setRapporter((prev) =>
                               prev.map((r) =>
                                 rapportIds.includes(r.id)
-                                  ? {
-                                      ...r,
-                                      fakturerat: nyttVarde,
-                                    }
+                                  ? { ...r, fakturerat: nyttVarde }
                                   : r
                               )
                             );
@@ -3885,10 +3896,10 @@ if (activeTab === "rapport") {
                           style={{
                             textAlign: "left",
                             padding: "4px 6px",
-                            width: "18%",
+                            width: "28%",
                           }}
                         >
-                          Datum
+                          Datum (från → till)
                         </th>
                         <th
                           style={{
@@ -3946,89 +3957,110 @@ if (activeTab === "rapport") {
                       </tr>
                     </thead>
                     <tbody>
-                      {g.rapporter.map((r, idx) => (
-                        <tr
-                          key={r.id || idx}
-                          style={{
-                            backgroundColor:
-                              idx % 2 === 0
-                                ? "#ffffff"
-                                : "#f9fafb",
-                            borderBottom:
-                              "1px solid #e5e7eb",
-                          }}
-                        >
-                          <td style={{ padding: "4px 6px" }}>
-                            {formatDatumTid(r.datum)}
-                          </td>
-                          <td
+                      {g.rapporter.map((r, idx) => {
+                        // Jobbtid för denna rapport (sluttid)
+                        const thisEndIso = r.jobb_tid || r.datum;
+                        const thisEnd = thisEndIso
+                          ? new Date(thisEndIso)
+                          : null;
+
+                        // Föregående jobbtid för denna adress (starttid)
+                        const prev = idx > 0 ? g.rapporter[idx - 1] : null;
+                        const prevEndIso = prev
+                          ? prev.jobb_tid || prev.datum
+                          : null;
+                        const prevEnd = prevEndIso
+                          ? new Date(prevEndIso)
+                          : null;
+
+                        // Visa från → till i datumkolumnen
+                        let datumText = "";
+                        if (prevEndIso && thisEndIso) {
+                          datumText = `${formatIsoTillDatumOchTid(
+                            prevEndIso
+                          )} > ${formatIsoTillDatumOchTid(thisEndIso)}`;
+                        } else if (thisEndIso) {
+                          // Första raden (ingen föregående) – visa bara denna tid
+                          datumText = formatIsoTillDatumOchTid(thisEndIso);
+                        } else {
+                          datumText = "-";
+                        }
+
+                        // Tidkolumn: använd sparad arbetstid_min rakt av (ingen multiplikation med antal anställda här)
+                        const tidMin = r.arbetstid_min || 0;
+
+                        return (
+                          <tr
+                            key={r.id || idx}
                             style={{
-                              textAlign: "center",
-                              padding: "4px 6px",
+                              backgroundColor:
+                                idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                              borderBottom: "1px solid #e5e7eb",
                             }}
                           >
-                            {r.arbetstid_min ?? 0}
-                            <span
+                            <td style={{ padding: "4px 6px" }}>{datumText}</td>
+                            <td
                               style={{
-                                color: "#6b7280",
-                                fontSize: 12,
+                                textAlign: "center",
+                                padding: "4px 6px",
                               }}
                             >
-                              {" "}
-                              (
-                              {formatTid(
-                                r.arbetstid_min ?? 0
-                              )}
-                              )
-                            </span>
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "center",
-                              padding: "4px 6px",
-                            }}
-                          >
-                            {r.antal_anstallda || 1}
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "center",
-                              padding: "4px 6px",
-                            }}
-                          >
-                            {r.sand_kg || 0}
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "center",
-                              padding: "4px 6px",
-                            }}
-                          >
-                            {r.salt_kg || 0}
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "center",
-                              padding: "4px 6px",
-                            }}
-                          >
-                            {r.team_namn ||
-                              (r.arbetssatt === "hand"
-                                ? "För hand"
-                                : "Maskin")}
-                          </td>
-                          <td style={{ padding: "4px 6px" }}>
-                            {r.syfte}
-                          </td>
-                        </tr>
-                      ))}
+                              {tidMin}
+                              <span
+                                style={{
+                                  color: "#6b7280",
+                                  fontSize: 12,
+                                }}
+                              >
+                                {" "}
+                                ({formatTid(tidMin)})
+                              </span>
+                            </td>
+                            <td
+                              style={{
+                                textAlign: "center",
+                                padding: "4px 6px",
+                              }}
+                            >
+                              {r.antal_anstallda || 1}
+                            </td>
+                            <td
+                              style={{
+                                textAlign: "center",
+                                padding: "4px 6px",
+                              }}
+                            >
+                              {r.sand_kg || 0}
+                            </td>
+                            <td
+                              style={{
+                                textAlign: "center",
+                                padding: "4px 6px",
+                              }}
+                            >
+                              {r.salt_kg || 0}
+                            </td>
+                            <td
+                              style={{
+                                textAlign: "center",
+                                padding: "4px 6px",
+                              }}
+                            >
+                              {r.team_namn ||
+                                (r.arbetssatt === "hand"
+                                  ? "För hand"
+                                  : "Maskin")}
+                            </td>
+                            <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
+                          </tr>
+                        );
+                      })}
 
                       <tr
                         style={{
                           backgroundColor: "#fef9c3",
                           fontWeight: 600,
-                          borderTop:
-                            "2px solid #e5e7eb",
+                          borderTop: "2px solid #e5e7eb",
                         }}
                       >
                         <td style={{ padding: "4px 6px" }}>
