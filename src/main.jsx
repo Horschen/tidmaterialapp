@@ -3691,19 +3691,7 @@ if (activeTab === "rapport") {
         Uppdatera översikt
       </button>
 
-     {/* Alla Job Per Adress */}
-      {visaAllaJob && (
-        <div
-          style={{
-            marginTop: 16,
-            backgroundColor: "#fff",
-            borderRadius: 12,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-            overflow: "hidden",
-            paddingBottom: 8,
-          }}
-        >
-          {(() => {
+     {(() => {
             // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
             function formatIsoTillDatumOchTid(iso) {
               if (!iso) return "-";
