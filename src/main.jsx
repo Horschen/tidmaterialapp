@@ -1333,7 +1333,9 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
   const syfteText = buildSyfteString();
   let arbetstidMin = 0;
 
-  // — Beräkna arbetstid —
+  let arbetstidMin = 0;
+
+  // — Beräkna arbetstid — (ENBART faktisk tid mellan adresser, INTE * antal anställda)
   if (aktivtPass) {
     const nu = new Date();
     const startTid =
@@ -1341,13 +1343,15 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
         ? new Date(senasteRapportTid)
         : new Date(aktivtPass.startTid);
 
+    // Rå sekunder mellan två jobb (eller mellan pass-start och första jobb)
     const råSek = Math.max(Math.floor((nu - startTid) / 1000), 0);
-    const personSek = råSek * (antalAnstallda || 1);
-    const pausPersonSek = (pausSekUnderIntervall || 0) * (antalAnstallda || 1);
-    const sekEfterPausPerson = Math.max(personSek - pausPersonSek, 0);
 
-    const minHeltal = Math.floor(sekEfterPausPerson / 60);
-    const restSek = sekEfterPausPerson % 60;
+    // Dra bort paus‑sekunder (paus är redan total paus under intervallet)
+    const sekEfterPaus = Math.max(råSek - (pausSekUnderIntervall || 0), 0);
+
+    // Konvertera till minuter med avrundning (samma logik som tidigare)
+    const minHeltal = Math.floor(sekEfterPaus / 60);
+    const restSek = sekEfterPaus % 60;
     const diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
 
     if (diffMin <= 0) {
@@ -1363,7 +1367,8 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
       setStatus("Ange arbetstid (minuter).");
       return;
     }
-    arbetstidMin = manu * (antalAnstallda || 1);
+    // Manuell tid är nu också “ren” tid, utan multiplikation med antal anställda
+    arbetstidMin = manu;
   }
 
  // — Tidsstämplar —
@@ -1461,7 +1466,9 @@ async function sparaManuellRapport() {
     return;
   }
 
-  const arbetstidMin = tidMin * (manuellAntalAnstallda || 1);
+  // Spara ren tid mellan två jobb, inte multiplicerat med antal anställda
+  const arbetstidMin = tidMin;
+  
 
   // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
   let datumIso, jobbIso;
