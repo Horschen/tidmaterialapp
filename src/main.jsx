@@ -1333,8 +1333,6 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
   const syfteText = buildSyfteString();
   let arbetstidMin = 0;
 
-  let arbetstidMin = 0;
-
   // — Beräkna arbetstid — (ENBART faktisk tid mellan adresser, INTE * antal anställda)
   if (aktivtPass) {
     const nu = new Date();
