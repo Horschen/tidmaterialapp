@@ -3086,24 +3086,24 @@ function avbrytRadering() {
           </div>
 
           {status && (
-            <p
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: status.startsWith("✅")
-                  ? "#16a34a"
-                  : status.startsWith("❌")
-                  ? "#dc2626"
-                  : "#4b5563",
-                textAlign: "center",
-              }}
-            >
-              {status}
-            </p>
-          )}
-        </section>
-      );
-    }
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: status.startsWith("✅")
+              ? "#16a34a"
+              : status.startsWith("❌")
+              ? "#dc2626"
+              : "#4b5563",
+            textAlign: "center",
+          }}
+        >
+          {status}
+        </p>
+      )}
+    </section>
+  );
+}
 
     // === KARTA‑FLIK ===
     if (activeTab === "karta") {
