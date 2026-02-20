@@ -6504,22 +6504,22 @@ return (
       const passStartAdressId = 993; // 🔹 Byt till din faktiska start-adress-id
 
       const { error: rapportError } = await supabase
-        .from("rapporter")
-        .insert([
-          {
-            datum: startTidIso,
-            jobb_tid: startTidIso,
-            adress_id: passStartAdressId,
-            arbetstid_min: 0,
-            team_namn: metodLabel,
-            arbetssatt: metod,
-            sand_kg: 0,
-            salt_kg: 0,
-            syfte: "Pass-start",
-            antal_anstallda: 1,
-            skyddad: true, // 🔹 Skyddar mot radering
-          },
-        ]);
+  .from("rapporter")
+  .insert([
+    {
+      datum: startTidIso,
+      jobb_tid: startTidIso,
+      adress_id: passStartAdressId,
+      arbetstid_min: 0,
+      team_namn: metodLabel,
+      arbetssatt: metod,
+      sand_kg: 0,
+      salt_kg: 0,
+      syfte: "Pass-start",
+      antal_anstallda: 1,
+      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
+    },
+  ]);
 
       if (rapportError) {
         console.warn("⚠️ Kunde inte skapa pass-start-rapport:", rapportError);
