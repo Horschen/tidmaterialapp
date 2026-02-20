@@ -3704,7 +3704,19 @@ if (activeTab === "rapport") {
           }}
         >
           {(() => {
-            // Sortera rapporter per adress & i tidsordning (äldst först)
+            // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
+            function formatIsoTillDatumOchTid(iso) {
+              if (!iso) return "-";
+              try {
+                const [datePart, timePart] = iso.split("T");
+                if (!timePart) return datePart;
+                const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
+                return `${datePart}, ${tid}`;
+              } catch {
+                return "-";
+              }
+            }
+
             const data = [...filtreradeRapporter];
 
             const grupper = {};
@@ -3722,7 +3734,7 @@ if (activeTab === "rapport") {
                   list[0]?.adresser?.adresslista_sortering ??
                   list[0]?.adresser?.id ??
                   0,
-                // sortera äldst → nyast för att kunna räkna differenser framåt
+                // Sortera äldst → nyast per adress
                 rapporter: list
                   .slice()
                   .sort(
@@ -3747,21 +3759,7 @@ if (activeTab === "rapport") {
               );
             }
 
-            // Hjälp: formatera ISO‑sträng till "YYYY-MM-DD, HH:MM"
-            function formatIsoTillDatumOchTid(iso) {
-              if (!iso) return "-";
-              try {
-                const [datePart, timePart] = iso.split("T");
-                if (!timePart) return datePart;
-                const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5); // HH:MM
-                return `${datePart}, ${tid}`;
-              } catch {
-                return "-";
-              }
-            }
-
             return adressGrupper.map((g) => {
-              // Beräkna summeringar (tid = enkel minut-summa, inte * antal anställda)
               const totTidMin = g.rapporter.reduce(
                 (s, r) => s + (r.arbetstid_min || 0),
                 0
@@ -3779,7 +3777,6 @@ if (activeTab === "rapport") {
                 0
               );
 
-              // Alla rapporter för denna adress (i denna vy) är fakturerade?
               const ärFakturerad =
                 g.rapporter.length > 0 &&
                 g.rapporter.every((r) => r.fakturerat === true);
@@ -3867,15 +3864,15 @@ if (activeTab === "rapport") {
 
                             showPopup(
                               nyttVarde
-                                ? "✅ Markerad som fakturerad (denna vecka)."
-                                : "🔴 Markerad som ej fakturerad (denna vecka).",
+                                ? "✅ Markerad som fakturerad (denna vecka)."
+                                : "🔴 Markerad som ej fakturerad (denna vecka).",
                               "success",
                               2000
                             );
                           } catch (err) {
                             console.error(err);
                             showPopup(
-                              "👎 Fel vid uppdatering av fakturerad‑status.",
+                              "👎 Fel vid uppdatering av fakturerad‑status.",
                               "error",
                               3000
                             );
@@ -3913,7 +3910,7 @@ if (activeTab === "rapport") {
                             width: "12%",
                           }}
                         >
-                          Tid (min)
+                          Tid (min)
                         </th>
                         <th
                           style={{
@@ -3922,7 +3919,7 @@ if (activeTab === "rapport") {
                             width: "10%",
                           }}
                         >
-                          Anst (#)
+                          Anst (#)
                         </th>
                         <th
                           style={{
@@ -3931,7 +3928,7 @@ if (activeTab === "rapport") {
                             width: "10%",
                           }}
                         >
-                          Grus (kg)
+                          Grus (kg)
                         </th>
                         <th
                           style={{
@@ -3940,7 +3937,7 @@ if (activeTab === "rapport") {
                             width: "10%",
                           }}
                         >
-                          Salt (kg)
+                          Salt (kg)
                         </th>
                         <th
                           style={{
@@ -3963,43 +3960,33 @@ if (activeTab === "rapport") {
                     </thead>
                     <tbody>
                       {g.rapporter.map((r, idx) => {
-                        // Jobbtid för denna rapport (sluttid)
                         const thisEndIso = r.jobb_tid || r.datum;
-                        const thisEnd = thisEndIso
-                          ? new Date(thisEndIso)
-                          : null;
-
-                        // Föregående jobbtid för denna adress (starttid)
                         const prev = idx > 0 ? g.rapporter[idx - 1] : null;
-                        const prevEndIso = prev
-                          ? prev.jobb_tid || prev.datum
-                          : null;
-                        const prevEnd = prevEndIso
-                          ? new Date(prevEndIso)
-                          : null;
+                        const prevEndIso = prev ? prev.jobb_tid || prev.datum : null;
 
-                        // Visa från → till i datumkolumnen
                         let datumText = "";
                         if (prevEndIso && thisEndIso) {
                           datumText = `${formatIsoTillDatumOchTid(
                             prevEndIso
                           )} > ${formatIsoTillDatumOchTid(thisEndIso)}`;
                         } else if (thisEndIso) {
-                          // Första raden (ingen föregående) – visa bara denna tid
                           datumText = formatIsoTillDatumOchTid(thisEndIso);
                         } else {
                           datumText = "-";
                         }
 
-                        // Tidkolumn: använd sparad arbetstid_min rakt av (ingen multiplikation med antal anställda här)
                         const tidMin = r.arbetstid_min || 0;
+                        const ärPassStart = r.syfte === "Pass-start";
 
                         return (
                           <tr
                             key={r.id || idx}
                             style={{
-                              backgroundColor:
-                                idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+                              backgroundColor: ärPassStart
+                                ? "#d1fae5"
+                                : idx % 2 === 0
+                                ? "#ffffff"
+                                : "#f9fafb",
                               borderBottom: "1px solid #e5e7eb",
                             }}
                           >
@@ -4052,9 +4039,7 @@ if (activeTab === "rapport") {
                               }}
                             >
                               {r.team_namn ||
-                                (r.arbetssatt === "hand"
-                                  ? "För hand"
-                                  : "Maskin")}
+                                (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
                             </td>
                             <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
                           </tr>
@@ -4069,7 +4054,7 @@ if (activeTab === "rapport") {
                         }}
                       >
                         <td style={{ padding: "4px 6px" }}>
-                          Summa (Totalt / adress)
+                          Summa (Totalt / adress)
                         </td>
                         <td
                           style={{
