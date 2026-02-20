@@ -3705,15 +3705,32 @@ if (activeTab === "rapport") {
               }
             }
 
-            // 1️⃣ Global tidslinje: alla rapporter sorterade på jobb_tid (äldst → nyast)
+           // 1️⃣ Global tidslinje: alla rapporter sorterade på jobb_tid (äldst → nyast)
             const allaSort = [...filtreradeRapporter].sort(
               (a, b) =>
                 new Date(a.jobb_tid || a.datum) -
                 new Date(b.jobb_tid || b.datum)
             );
 
+            // 🔹 Hitta alla pass-start för denna vecka
+            const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
+
             // 2️⃣ Bygg "föregående jobb"-karta: per rapport-id → föregående jobb_tid
             const föregåendeJobbTidPerRapportId = new Map();
+
+            // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
+            if (allaPassStart.length > 0) {
+              const senastePassStart = allaPassStart.at(-1);
+              const passStartTid = senastePassStart.jobb_tid || senastePassStart.datum;
+
+              // Sätt pass-start som föregående tid för första jobbet
+              if (allaSort.length >= 2) {
+                const forstaRiktigaJobbet = allaSort.find(r => r.id !== senastePassStart.id);
+                if (forstaRiktigaJobbet) {
+                  föregåendeJobbTidPerRapportId.set(forstaRiktigaJobbet.id, passStartTid);
+                }
+              }
+            }
             for (let i = 1; i < allaSort.length; i++) {
               const prev = allaSort[i - 1];
               const curr = allaSort[i];
