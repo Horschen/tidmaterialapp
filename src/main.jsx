@@ -6537,7 +6537,7 @@ return (
       salt_kg: 0,
       syfte: "Pass-start",
       antal_anstallda: 1,
-      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
+      skyddad: true, // 🔹 skyddas automatiskt
     },
   ]);
 
