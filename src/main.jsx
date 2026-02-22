@@ -51,15 +51,15 @@ function formatTid(minuter) {
 function formatDatumTid(iso) {
   if (!iso) return "-";
 
-  return new Date(iso).toLocaleString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const d = new Date(iso); // UTC → lokal automatiskt
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}, ${hours}:${minutes}`;
 }
 
 // ======= Hjälp: sekunder -> hh:mm:ss (för timers) =======
@@ -1821,16 +1821,11 @@ function onChangeValdEditId(nyttId) {
 if (rad.jobb_tid) {
   const d = new Date(rad.jobb_tid);
 
-  datumStr = d.toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-  });
+  datumStr = rad.jobb_tid.slice(0, 10);
 
-  tidStr = d.toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  tidStr = `${hours}:${minutes}`;
 }
 
   setEditForm({
