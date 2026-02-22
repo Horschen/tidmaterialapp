@@ -4004,64 +4004,42 @@ if (adressGrupper.length === 0) {
                       </tr>
                     </thead>
                     <tbody>
-                      {g.rapporter.map((r, idx) => {
-
-  const isPassStart =
-    r.syfte && r.syfte.toUpperCase().includes("PASS-START");
-
-  // ✅ Dölj PASS-START som egen rad
-  if (isPassStart) {
-    return null;
-  }
+                     {g.rapporter.map((r, idx) => {
 
   const thisEndRaw = r.jobb_tid || r.datum || null;
   const prevEndRaw =
     föregåendeJobbTidPerRapportId.get(r.id) || null;
 
   let datumText = "-";
-  let isFirstAfterPass = false;
 
   if (prevEndRaw && thisEndRaw) {
-
-    // ✅ Kontrollera om föregående rapport var PASS-START
-    const prevRapport = g.rapporter.find(
-      x =>
-        x.jobb_tid === prevEndRaw &&
-        x.syfte &&
-        x.syfte.toUpperCase().includes("PASS-START")
-    );
-
-    isFirstAfterPass = !!prevRapport;
-
-    const baseText =
+    datumText =
       `${formatDatumTid(prevEndRaw)} > ` +
       `${formatDatumTid(thisEndRaw)}`;
-
-    datumText = isFirstAfterPass
-      ? `⏱️ Start Pass: ${baseText}`
-      : baseText;
-
   } else if (thisEndRaw) {
     datumText = formatDatumTid(thisEndRaw);
   }
 
   const tidMin = r.arbetstid_min || 0;
 
+  const isFirstAfterPass = idx === 0;
+
   return (
     <tr
       key={r.id || idx}
       style={{
         backgroundColor:
-          isFirstAfterPass
-            ? "#f0f9ff"   // ✅ svagt blå markering för första raden
-            : idx % 2 === 0
-            ? "#ffffff"
-            : "#f9fafb",
+          idx % 2 === 0 ? "#ffffff" : "#f9fafb",
         borderBottom: "1px solid #e5e7eb",
       }}
     >
-      <td style={{ padding: "4px 6px", fontWeight: isFirstAfterPass ? 600 : 400 }}>
-        {datumText}
+      <td
+        style={{
+          padding: "4px 6px",
+          fontWeight: isFirstAfterPass ? 600 : 400,
+        }}
+      >
+        {isFirstAfterPass ? `⏱️ ${datumText}` : datumText}
       </td>
 
       <td style={{ textAlign: "center", padding: "4px 6px" }}>
