@@ -3701,17 +3701,22 @@ if (activeTab === "rapport") {
 
      {(() => {
             // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
-            function formatIsoTillDatumOchTid(iso) {
-              if (!iso) return "-";
-              try {
-                const [datePart, timePart] = iso.split("T");
-                if (!timePart) return datePart;
-                const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
-                return `${datePart}, ${tid}`;
-              } catch {
-                return "-";
-              }
-            }
+           function formatIsoTillDatumOchTid(iso) {
+  if (!iso) return "-";
+  try {
+    const d = new Date(iso); // ✅ konverterar UTC → lokal tid
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}, ${hours}:${minutes}`;
+  } catch {
+    return "-";
+  }
+}
 
            // 1️⃣ Global tidslinje: alla rapporter sorterade på jobb_tid (äldst → nyast)
             const allaSort = [...filtreradeRapporter].sort(
