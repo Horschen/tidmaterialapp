@@ -6502,76 +6502,85 @@ return (
 
     <div style={{ display: "flex", gap: 8 }}>
       <button
+<button
   onClick={async () => {
-  const metod = valdMetodTemp;
-  const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
+    const metod = valdMetodTemp;
+    const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
 
-  setVisaMetodValPopup(false);
-  setTeam(metodLabel);
+    setVisaMetodValPopup(false);
+    setTeam(metodLabel);
 
-  try {
-    const startTidIso = new Date().toISOString();
+    try {
+      const startTidIso = new Date().toISOString();
 
-    // ✅ 1. Skapa pass i tillstand_pass
-    const { data, error } = await supabase
-      .from("tillstand_pass")
-      .insert([
-        {
-          team_typ: metod,
-          start_tid: startTidIso,
-          aktiv: true,
-        },
-      ])
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from("tillstand_pass")
+        .insert([
+          {
+            team_typ: metod,
+            start_tid: startTidIso,
+            aktiv: true,
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // ✅ 2. Skapa PASS-START i rapporter
-    const { error: rapportError } = await supabase
-      .from("rapporter")
-      .insert([
-        {
-          datum: startTidIso,
-          jobb_tid: startTidIso,
-          adress_id: null, // ✅ viktigt: ingen adress
-          arbetstid_min: 0,
-          team_namn: metodLabel,
-          arbetssatt: metod,
-          sand_kg: 0,
-          salt_kg: 0,
-          syfte: `Start av Arbetspass ${metodLabel}`,
-          antal_anstallda: 1,
-          skyddad: false,
-        },
-      ]);
+      const { error: rapportError } = await supabase
+        .from("rapporter")
+        .insert([
+          {
+            datum: startTidIso,
+            jobb_tid: startTidIso,
+            adress_id: null,
+            arbetstid_min: 0,
+            team_namn: metodLabel,
+            arbetssatt: metod,
+            sand_kg: 0,
+            salt_kg: 0,
+            syfte: `Start av Arbetspass ${metodLabel}`,
+            antal_anstallda: 1,
+            skyddad: false,
+          },
+        ]);
 
-    if (rapportError) throw rapportError;
+      if (rapportError) throw rapportError;
 
-    // ✅ 3. Sätt aktivt pass lokalt
-    const nyttPass = {
-      id: data.id,
-      startTid: data.start_tid,
-      metod,
-      team_typ: metod,
-    };
+      const nyttPass = {
+        id: data.id,
+        startTid: data.start_tid,
+        metod,
+        team_typ: metod,
+      };
 
-    setAktivtPass(nyttPass);
-    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+      setAktivtPass(nyttPass);
+      localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
 
-    setSenasteRapportTid(startTidIso);
-    setPaus(null);
-    setPausSekUnderIntervall(0);
+      setSenasteRapportTid(startTidIso);
+      setPaus(null);
+      setPausSekUnderIntervall(0);
 
-    setStatus(`⏱️ ${metodLabel}-pass startat.`);
-    showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
+      setStatus(`⏱️ ${metodLabel}-pass startat.`);
+      showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
 
-  } catch (err) {
-    console.error("PASS-START ERROR:", err);
-    showPopup("❌ Kunde inte starta passet.", "error", 3000);
-  }
-}}
-
+    } catch (err) {
+      console.error("PASS-START ERROR:", err);
+      showPopup("❌ Kunde inte starta passet.", "error", 3000);
+    }
+  }}
+  style={{
+    flex: 1,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#16a34a",
+    color: "#fff",
+    fontWeight: 600,
+  }}
+>
+  Starta
+</button>
 
 {visaAdressEditPopup && editAdressData && (
   <div
