@@ -1802,17 +1802,11 @@ function onChangeValdEditId(nyttId) {
   let tidStr = "";
 
   if (rad.jobb_tid) {
-    const d = new Date(rad.jobb_tid); // ✅ konverterar UTC → lokal tid
+    const formatted = formatDatumTid(rad.jobb_tid);
+    const parts = formatted.split(" ");
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-
-    datumStr = `${year}-${month}-${day}`;
-    tidStr = `${hours}:${minutes}`;
+    datumStr = parts[0];
+    tidStr = parts[1];
   }
 
   setEditForm({
