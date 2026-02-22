@@ -113,7 +113,7 @@ const sorterade = [...(data || [])].sort((a, b) => {
   return tA - tB; // ✅ äldst först
 });
 
-  // === 2️⃣ Gruppera per adress ===
+// === 2️⃣ Gruppera per adress ===
 const grupperad = {};
 
 sorterade.forEach((r) => {
@@ -147,14 +147,13 @@ sorterade.forEach((r) => {
       const diffMs = currentTid.getTime() - prevTid.getTime();
 
       if (diffMs > 0) {
-        g.tid += Math.round(diffMs / 60000); // minuter
+        g.tid += Math.round(diffMs / 60000);
       }
     }
 
     g.senasteJobbTid = r.jobb_tid;
   }
 
-  // ✅ Övriga summeringar
   g.grus += r.sand_kg || 0;
   g.salt += r.salt_kg || 0;
   g.antal++;
@@ -170,18 +169,6 @@ sorterade.forEach((r) => {
       .forEach((s) => g.syften.add(s));
   }
 });
-
-    // Håll senaste jobb_tid per adress
-    const jobbTid = r.jobb_tid || r.datum || null;
-    if (
-      jobbTid &&
-      (!g.senasteJobbTid ||
-        Math.floor(new Date(jobbTid).getTime() / 1000) >
-          Math.floor(new Date(g.senasteJobbTid).getTime() / 1000))
-    ) {
-      g.senasteJobbTid = jobbTid;
-    }
-  });
 
   // === 3️⃣ Gör om till lista och sortera igen efter senaste jobb_tid ===
   const lista = Object.values(grupperad)
