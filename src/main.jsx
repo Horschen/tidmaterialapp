@@ -4135,140 +4135,81 @@ return adressGrupper.map((g) => {
     datumText = formatDatumTid(thisEndRaw);
   }
 
-  // ✅ Räkna arbetstid dynamiskt från Från → Till
-let tidMin = 0;
+  // ✅ Dynamisk beräkning med 30-sekundersregel
+  let tidMin = 0;
 
-if (prevEndRaw && thisEndRaw) {
-  const start = new Date(prevEndRaw);
-  const end = new Date(thisEndRaw);
+  if (prevEndRaw && thisEndRaw) {
+    const start = new Date(prevEndRaw);
+    const end = new Date(thisEndRaw);
 
-  const diffMs = end.getTime() - start.getTime();
+    const diffMs = end.getTime() - start.getTime();
 
-  if (diffMs > 0) {
-    const totalSek = Math.floor(diffMs / 1000);
-    const helaMin = Math.floor(totalSek / 60);
-    const restSek = totalSek % 60;
+    if (diffMs > 0) {
+      const totalSek = Math.floor(diffMs / 1000);
+      const helaMin = Math.floor(totalSek / 60);
+      const restSek = totalSek % 60;
 
-    tidMin = restSek > 30 ? helaMin + 1 : helaMin;
-
-    if (totalSek > 0 && tidMin === 0) {
-      tidMin = 1;
+      if (helaMin === 0) {
+        tidMin = 1; // alltid minst 1 minut om tid finns
+      } else {
+        tidMin = restSek > 30 ? helaMin + 1 : helaMin;
+      }
     }
   }
-}
 
-// ✅ Detta använder Set:en vi byggde tidigare
-const isFirstAfterPass = firstAfterPassIds.has(r.id);
+  const isFirstAfterPass = firstAfterPassIds.has(r.id);
 
-return (
-  <tr
-    key={r.id || idx}
-    style={{
-      backgroundColor:
-        idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-      borderBottom: "1px solid #e5e7eb",
-    }}
-  >
-    <td
+  return (
+    <tr
+      key={r.id || idx}
       style={{
-        padding: "4px 6px",
-        fontWeight: isFirstAfterPass ? 600 : 400,
+        backgroundColor:
+          idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+        borderBottom: "1px solid #e5e7eb",
       }}
     >
-      {isFirstAfterPass ? `⏱️ ${datumText}` : datumText}
-    </td>
+      <td
+        style={{
+          padding: "4px 6px",
+          fontWeight: isFirstAfterPass ? 600 : 400,
+        }}
+      >
+        {isFirstAfterPass ? `⏱️ ${datumText}` : datumText}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {tidMin}
-      <span style={{ color: "#6b7280", fontSize: 12 }}>
-        {" "}
-        ({formatTid(tidMin)})
-      </span>
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {tidMin}
+        <span style={{ color: "#6b7280", fontSize: 12 }}>
+          {" "}
+          ({formatTid(tidMin)})
+        </span>
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.antal_anstallda || 1}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.antal_anstallda || 1}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.sand_kg || 0}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.sand_kg || 0}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.salt_kg || 0}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.salt_kg || 0}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.team_namn ||
-        (r.arbetssatt === "hand"
-          ? "För hand"
-          : "Maskin")}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.team_namn ||
+          (r.arbetssatt === "hand"
+            ? "För hand"
+            : "Maskin")}
+      </td>
 
-    <td style={{ padding: "4px 6px" }}>
-      {r.syfte}
-    </td>
-  </tr>
-);
+      <td style={{ padding: "4px 6px" }}>
+        {r.syfte}
+      </td>
+    </tr>
+  );
 })}
-                      <tr
-                        style={{
-                          backgroundColor: "#fef9c3",
-                          fontWeight: 600,
-                          borderTop: "2px solid #e5e7eb",
-                        }}
-                      >
-                        <td style={{ padding: "4px 6px" }}>
-                          Summa (Totalt / adress)
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totTidMin}
-                          <span
-                            style={{
-                              color: "#6b7280",
-                              fontSize: 12,
-                            }}
-                          >
-                            {" "}
-                            ({formatTid(totTidMin)})
-                          </span>
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totAnst}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totGrus}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totSalt}
-                        </td>
-                        <td colSpan={2}></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              );
-            });
           })()}
 
        {/* Arbetspass-Översikt – knapp */}
