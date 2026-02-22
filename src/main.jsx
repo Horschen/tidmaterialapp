@@ -4136,15 +4136,24 @@ return adressGrupper.map((g) => {
   }
 
   // ✅ Räkna arbetstid dynamiskt från Från → Till
-let tidMin = r.arbetstid_min || 0;
+let tidMin = 0;
 
 if (prevEndRaw && thisEndRaw) {
   const start = new Date(prevEndRaw);
   const end = new Date(thisEndRaw);
 
   const diffMs = end.getTime() - start.getTime();
+
   if (diffMs > 0) {
-    tidMin = Math.round(diffMs / 60000); // minuter
+    const totalSek = Math.floor(diffMs / 1000);
+    const helaMin = Math.floor(totalSek / 60);
+    const restSek = totalSek % 60;
+
+    tidMin = restSek > 30 ? helaMin + 1 : helaMin;
+
+    if (totalSek > 0 && tidMin === 0) {
+      tidMin = 1;
+    }
   }
 }
 
