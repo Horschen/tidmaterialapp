@@ -286,14 +286,19 @@ function VeckoOversikt({
           </thead>
           <tbody>
             {lista.map((r, idx) => (
-              <tr
-                key={r.adressId}
-                style={{
-                  backgroundColor: idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-                  borderBottom: "1px solid #e5e7eb",
-                  height: 44,
-                }}
-              >
+              <tr       //bakgrundsfärg för PASS-START Veckoöversikt
+  key={r.adressId}
+  style={{
+    backgroundColor:
+      r.syften?.toUpperCase().includes("PASS-START")
+        ? "#fef9c3"   // ✅ ljusgul
+        : idx % 2 === 0
+        ? "#ffffff"
+        : "#f9fafb",
+    borderBottom: "1px solid #e5e7eb",
+    height: 44,
+  }}
+>
                 <td style={{ textAlign: "center" }}>
                   <input
                     type="checkbox"
@@ -3985,101 +3990,107 @@ if (activeTab === "rapport") {
                     </thead>
                     <tbody>
                       {g.rapporter.map((r, idx) => {
-                        const thisEndRaw = r.jobb_tid || r.datum || null;
-                        const prevEndRaw =
-                          (r.id != null &&
-                            föregåendeJobbTidPerRapportId.get(r.id)) ||
-                          null;
 
-                        let datumText = "";
-                        if (prevEndRaw && thisEndRaw) {
-                          datumText = `${formatIsoTillDatumOchTid(
-                            prevEndRaw
-                          )} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
-                        } else if (thisEndRaw) {
-                          datumText = formatIsoTillDatumOchTid(thisEndRaw);
-                        } else if (prevEndRaw) {
-                          datumText = formatIsoTillDatumOchTid(prevEndRaw);
-                        } else {
-                          datumText = "-";
-                        }
+  // ✅ Dölj PASS‑START helt i "Job Per Adress"
+  if (r.syfte && r.syfte.toUpperCase().includes("PASS-START")) {
+    return null;
+  }
 
-                        const tidMin = r.arbetstid_min || 0;
-                        const ärPassStart =
-                          r.syfte === "PASS-START" ||
-                          r.syfte === "Pass-start";
+  const thisEndRaw = r.jobb_tid || r.datum || null;
 
-                        return (
-                          <tr
-                            key={r.id || idx}
-                            style={{
-                              backgroundColor: ärPassStart
-                                ? "#d1fae5"
-                                : idx % 2 === 0
-                                ? "#ffffff"
-                                : "#f9fafb",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <td style={{ padding: "4px 6px" }}>
-                              {datumText}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {tidMin}
-                              <span
-                                style={{
-                                  color: "#6b7280",
-                                  fontSize: 12,
-                                }}
-                              >
-                                {" "}
-                                ({formatTid(tidMin)})
-                              </span>
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.antal_anstallda || 1}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.sand_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.salt_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.team_namn ||
-                                (r.arbetssatt === "hand"
-                                  ? "För hand"
-                                  : "Maskin")}
-                            </td>
-                            <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
-                          </tr>
-                        );
-                      })}
+  const prevEndRaw =
+    föregåendeJobbTidPerRapportId.get(r.id) || null;
+
+  let datumText = "";
+
+  if (prevEndRaw && thisEndRaw) {
+    datumText =
+      `${formatIsoTillDatumOchTid(prevEndRaw)} > ` +
+      `${formatIsoTillDatumOchTid(thisEndRaw)}`;
+  } else if (thisEndRaw) {
+    datumText = formatIsoTillDatumOchTid(thisEndRaw);
+  } else {
+    datumText = "-";
+  }
+
+  const tidMin = r.arbetstid_min || 0;
+
+  return (
+    <tr
+      key={r.id || idx}
+      style={{
+        backgroundColor:
+          idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+        borderBottom: "1px solid #e5e7eb",
+      }}
+    >
+      <td style={{ padding: "4px 6px" }}>
+        {datumText}
+      </td>
+
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {tidMin}
+        <span
+          style={{
+            color: "#6b7280",
+            fontSize: 12,
+          }}
+        >
+          {" "}
+          ({formatTid(tidMin)})
+        </span>
+      </td>
+
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.antal_anstallda || 1}
+      </td>
+
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.sand_kg || 0}
+      </td>
+
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.salt_kg || 0}
+      </td>
+
+      <td
+        style={{
+          textAlign: "center",
+          padding: "4px 6px",
+        }}
+      >
+        {r.team_namn ||
+          (r.arbetssatt === "hand"
+            ? "För hand"
+            : "Maskin")}
+      </td>
+
+      <td style={{ padding: "4px 6px" }}>
+        {r.syfte}
+      </td>
+    </tr>
+  );
+})}
 
                       <tr
                         style={{
@@ -6535,7 +6546,7 @@ return (
       arbetssatt: metod,
       sand_kg: 0,
       salt_kg: 0,
-      syfte: "Pass-start",
+      syfte: "PASS-START",
       antal_anstallda: 1,
       skyddad: true, // 🔹 skyddas automatiskt
     },
