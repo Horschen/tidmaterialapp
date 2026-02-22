@@ -1804,11 +1804,18 @@ async function raderaEnRapport(postId) {
 
   setValdaEditId(rad.id);
 
+  // ✅ Konvertera till lokal tid korrekt
+  let lokalTid = "";
+  if (rad.jobb_tid) {
+    const d = new Date(rad.jobb_tid);
+    const timmar = String(d.getHours()).padStart(2, "0");
+    const minuter = String(d.getMinutes()).padStart(2, "0");
+    lokalTid = `${timmar}:${minuter}`;
+  }
+
   setEditForm({
     datum: rad.jobb_tid ? rad.jobb_tid.slice(0, 10) : "",
-    tid: rad.jobb_tid
-      ? new Date(rad.jobb_tid).toISOString().slice(11, 16)
-      : "",
+    tid: lokalTid,
     arbetstid_min: rad.arbetstid_min || "",
     sand_kg: rad.sand_kg ?? 0,
     salt_kg: rad.salt_kg ?? 0,
