@@ -306,23 +306,30 @@ function VeckoOversikt({
                 </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>
-                  {r.namn}
-                  {r.redigerad && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                        backgroundColor: "#e0f2fe",
-                        color: "#0369a1",
-                        fontSize: 11,
-                        fontWeight: 600,
-                      }}
-                    >
-                      📝 ändrad
-                    </span>
-                  )}
-                </td>
+  {r.namn === "Pass-Start" ? (
+    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+      ⏱️ Pass‑Start
+    </span>
+  ) : (
+    r.namn
+  )}
+
+  {r.redigerad && (
+    <span
+      style={{
+        marginLeft: 6,
+        padding: "2px 6px",
+        borderRadius: 6,
+        backgroundColor: "#e0f2fe",
+        color: "#0369a1",
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
+      📝 ändrad
+    </span>
+  )}
+</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
@@ -3715,11 +3722,25 @@ if (activeTab === "rapport") {
                 new Date(b.jobb_tid || b.datum)
             );
 
-            // 🔹 Hitta alla pass-start för denna vecka
-            const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
+            // 2️⃣ Bygg tidskedja som bryts vid Pass-start
+const föregåendeJobbTidPerRapportId = new Map();
 
-            // 2️⃣ Bygg "föregående jobb"-karta: per rapport-id → föregående jobb_tid
-            const föregåendeJobbTidPerRapportId = new Map();
+let aktuellStartTid = null;
+
+for (let i = 0; i < allaSort.length; i++) {
+  const r = allaSort[i];
+  const currentTid = r.jobb_tid || r.datum || null;
+
+  if (r.syfte === "Pass-start") {
+    aktuellStartTid = currentTid;
+    continue;
+  }
+
+  if (aktuellStartTid) {
+    föregåendeJobbTidPerRapportId.set(r.id, aktuellStartTid);
+    aktuellStartTid = currentTid;
+  }
+}
 
             // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
             if (allaPassStart.length > 0) {
