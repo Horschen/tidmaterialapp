@@ -1375,18 +1375,11 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
   }
 
  // — Tidsstämplar —
-// Bygg tidsstämpel i lokal tid (samma logik som manuell registrering & editering)
+// ✅ Spara alltid i UTC för att undvika tidszonproblem
 let nuIso;
-try {
-  const nu = new Date();
-  const y = nu.getFullYear();
-  const m = String(nu.getMonth() + 1).padStart(2, "0");
-  const d = String(nu.getDate()).padStart(2, "0");
-  const h = String(nu.getHours()).padStart(2, "0");
-  const min = String(nu.getMinutes()).padStart(2, "0");
 
-  // 🔸 Skapar lokal tid utan "Z" så Supabase tolkar tiden korrekt (ex. 09:00 visas som 09:00)
-  nuIso = `${y}-${m}-${d}T${h}:${min}:00`;
+try {
+  nuIso = new Date().toISOString();
 } catch {
   showPopup("👎 Ogiltig tidsstämpel vid sparning.", "error", 3000);
   setStatus("Ogiltig tidsstämpel vid sparning.");
@@ -1399,7 +1392,7 @@ setStatus("Sparar...");
 
 const { error } = await supabase.from("rapporter").insert([
   {
-    datum: nuIso,
+    datum: jobbtidIso,   // ✅ samma UTC-tid
     jobb_tid: jobbtidIso,
     adress_id: valda,
     arbetstid_min: arbetstidMin,
@@ -1413,11 +1406,11 @@ const { error } = await supabase.from("rapporter").insert([
   },
 ]);
 
-  if (error) {
-    setStatus("❌ " + error.message);
-    showPopup("👎 Fel vid sparning", "error", 3000);
-    return;
-  }
+if (error) {
+  setStatus("❌ " + error.message);
+  showPopup("👎 Fel vid sparning", "error", 3000);
+  return;
+}
 
   // — Lyckad sparning —
   setStatus("Rapport sparad");
