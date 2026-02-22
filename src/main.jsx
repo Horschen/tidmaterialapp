@@ -6521,7 +6521,7 @@ return (
       if (error) throw error;
 
       // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
-      const passStartAdressId = 993; // 🔹 Byt till din faktiska start-adress-id
+      const passStartAdressId = 67; // 🔹 Byt till din faktiska start-adress-id
 
       const { error: rapportError } = await supabase
   .from("rapporter")
