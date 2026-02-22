@@ -4210,7 +4210,6 @@ return adressGrupper.map((g) => {
     </tr>
   );
 })}
-          })()}
 
        {/* Arbetspass-Översikt – knapp */}
       <div style={{ marginTop: 16 }}>
