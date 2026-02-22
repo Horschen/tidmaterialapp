@@ -3715,30 +3715,27 @@ if (activeTab === "rapport") {
             // 🔹 Hitta alla pass-start för denna vecka
             const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
 
-            // 2️⃣ Bygg "föregående jobb"-karta: per rapport-id → föregående jobb_tid
-            const föregåendeJobbTidPerRapportId = new Map();
+            // 2️⃣ Bygg "föregående jobb"-karta men nollställ vid varje PASS-START
+              const föregåendeJobbTidPerRapportId = new Map();
+             let senasteTid = null;
+             for (let i = 0; i < allaSort.length; i++) {
+             const r = allaSort[i];
+             const currentTid = r.jobb_tid || r.datum || null;
 
-            // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
-            if (allaPassStart.length > 0) {
-              const senastePassStart = allaPassStart.at(-1);
-              const passStartTid = senastePassStart.jobb_tid || senastePassStart.datum;
+  // Om detta är pass-start → börja ny kedja
+  if (r.syfte === "Pass-start" || r.syfte === "PASS-START") {
+    senasteTid = currentTid;
+    continue;
+  }
 
-              // Sätt pass-start som föregående tid för första jobbet
-              if (allaSort.length >= 2) {
-                const forstaRiktigaJobbet = allaSort.find(r => r.id !== senastePassStart.id);
-                if (forstaRiktigaJobbet) {
-                  föregåendeJobbTidPerRapportId.set(forstaRiktigaJobbet.id, passStartTid);
-                }
-              }
-            }
-            for (let i = 1; i < allaSort.length; i++) {
-              const prev = allaSort[i - 1];
-              const curr = allaSort[i];
-              const prevIso = prev.jobb_tid || prev.datum || null;
-              if (curr.id != null) {
-                föregåendeJobbTidPerRapportId.set(curr.id, prevIso);
-              }
-            }
+  // Om vi har en startpunkt → sätt den som "från"
+  if (senasteTid && r.id != null) {
+    föregåendeJobbTidPerRapportId.set(r.id, senasteTid);
+  }
+
+  // Uppdatera senasteTid till denna posts sluttid
+  senasteTid = currentTid;
+}
 
             // 3️⃣ Gruppera per adress som tidigare (för rubriker/summor)
             const grupper = {};
