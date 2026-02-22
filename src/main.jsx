@@ -3756,151 +3756,99 @@ if (activeTab === "rapport") {
 </button>
 
 {/* ✅ ALLA JOB PER ADRESS */}
-{visaAllaJob && (
-  <>
-    {adressGrupper.map((g) => {
+{visaAllaJob && (() => {
 
-      const totTidMin = g.totalTid;
-      const totAnst = g.rapporter.reduce(
-        (s, r) => s + (r.antal_anstallda || 1),
-        0
-      );
-      const totGrus = g.rapporter.reduce(
-        (s, r) => s + (parseInt(r.sand_kg) || 0),
-        0
-      );
-      const totSalt = g.rapporter.reduce(
-        (s, r) => s + (parseInt(r.salt_kg) || 0),
-        0
-      );
+  const allaSort = [...filtreradeRapporter].sort(
+    (a, b) =>
+      new Date(a.jobb_tid || a.datum).getTime() -
+      new Date(b.jobb_tid || b.datum).getTime()
+  );
 
-      return (
-        <div key={g.id} style={{ marginTop: 16 }}>
-          <h4 style={{ fontSize: 15, marginBottom: 8 }}>
-            📍 {g.namn}
-          </h4>
+  const föregåendeJobbTidPerRapportId = new Map();
+  let senasteTid = null;
 
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontSize: 13,
-            }}
-          >
-            <thead>
-              <tr style={{ backgroundColor: "#f3f4f6" }}>
-                <th style={{ textAlign: "left", padding: "4px 6px" }}>
-                  Datum (från → till)
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Tid (min)
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Anst
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Grus
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Salt
-                </th>
-                <th style={{ textAlign: "center", padding: "4px 6px" }}>
-                  Team
-                </th>
-                <th style={{ textAlign: "left", padding: "4px 6px" }}>
-                  Syfte
-                </th>
-              </tr>
-            </thead>
+  for (let i = 0; i < allaSort.length; i++) {
+    const r = allaSort[i];
+    const currentTid = r.jobb_tid || r.datum || null;
 
-            <tbody>
-              {g.rapporter.map((r, idx) => {
+    if (r.syfte && r.syfte.toUpperCase().includes("PASS-START")) {
+      senasteTid = currentTid;
+      continue;
+    }
 
-                const thisEndRaw = r.jobb_tid || r.datum || null;
-                const prevEndRaw =
-                  föregåendeJobbTidPerRapportId.get(r.id) || null;
+    if (senasteTid) {
+      föregåendeJobbTidPerRapportId.set(r.id, senasteTid);
+    }
 
-                let datumText = "-";
+    senasteTid = currentTid;
+  }
 
-                if (prevEndRaw && thisEndRaw) {
-                  datumText =
-                    `${formatDatumTid(prevEndRaw)} > ` +
-                    `${formatDatumTid(thisEndRaw)}`;
-                } else if (thisEndRaw) {
-                  datumText = formatDatumTid(thisEndRaw);
-                }
+  const firstAfterPassIds = new Set();
 
-                let tidMin = 0;
+  for (let i = 0; i < allaSort.length - 1; i++) {
+    const current = allaSort[i];
+    const next = allaSort[i + 1];
 
-                if (prevEndRaw && thisEndRaw) {
-                  const start = new Date(prevEndRaw);
-                  const end = new Date(thisEndRaw);
-                  const diffMs = end.getTime() - start.getTime();
+    if (
+      current.syfte &&
+      current.syfte.toUpperCase().includes("PASS-START") &&
+      next &&
+      next.id
+    ) {
+      firstAfterPassIds.add(next.id);
+    }
+  }
 
-                  if (diffMs > 0) {
-                    const totalSek = Math.floor(diffMs / 1000);
-                    const helaMin = Math.floor(totalSek / 60);
-                    const restSek = totalSek % 60;
+  const filtreradeFörAdress = allaSort.filter(
+    (r) => !(r.syfte && r.syfte.toUpperCase().includes("PASS-START"))
+  );
 
-                    if (helaMin === 0) {
-                      tidMin = 1;
-                    } else {
-                      tidMin = restSek > 30 ? helaMin + 1 : helaMin;
-                    }
-                  }
-                }
+  const grupper = {};
+  filtreradeFörAdress.forEach((r) => {
+    const id = r.adress_id || "okänd";
+    if (!grupper[id]) grupper[id] = [];
+    grupper[id].push(r);
+  });
 
-                const isFirstAfterPass =
-                  firstAfterPassIds.has(r.id);
+  const adressGrupper = Object.entries(grupper);
 
-                return (
-                  <tr key={r.id || idx}>
-                    <td style={{ padding: "4px 6px" }}>
-                      {isFirstAfterPass
-                        ? `⏱️ ${datumText}`
-                        : datumText}
-                    </td>
+  return adressGrupper.map(([id, list]) => {
 
-                    <td style={{ textAlign: "center" }}>
-                      {tidMin} ({formatTid(tidMin)})
-                    </td>
+    const totTidMin = list.reduce((sum, r) => {
+      const prevEndRaw = föregåendeJobbTidPerRapportId.get(r.id);
+      const thisEndRaw = r.jobb_tid || r.datum || null;
 
-                    <td style={{ textAlign: "center" }}>
-                      {r.antal_anstallda || 1}
-                    </td>
+      if (prevEndRaw && thisEndRaw) {
+        const start = new Date(prevEndRaw);
+        const end = new Date(thisEndRaw);
+        const diffMs = end.getTime() - start.getTime();
 
-                    <td style={{ textAlign: "center" }}>
-                      {r.sand_kg || 0}
-                    </td>
+        if (diffMs > 0) {
+          const totalSek = Math.floor(diffMs / 1000);
+          const helaMin = Math.floor(totalSek / 60);
+          const restSek = totalSek % 60;
+          const tid = helaMin === 0
+            ? 1
+            : restSek > 30
+              ? helaMin + 1
+              : helaMin;
+          return sum + tid;
+        }
+      }
 
-                    <td style={{ textAlign: "center" }}>
-                      {r.salt_kg || 0}
-                    </td>
+      return sum;
+    }, 0);
 
-                    <td style={{ textAlign: "center" }}>
-                      {r.team_namn}
-                    </td>
+    return (
+      <div key={id} style={{ marginTop: 16 }}>
+        <h4>📍 {list[0]?.adresser?.namn || "Okänd adress"}</h4>
+        <div>Summa: {totTidMin} min</div>
+      </div>
+    );
 
-                    <td>{r.syfte}</td>
-                  </tr>
-                );
-              })}
+  });
 
-              <tr style={{ backgroundColor: "#fef9c3", fontWeight: 600 }}>
-                <td>Summa</td>
-                <td>{totTidMin} ({formatTid(totTidMin)})</td>
-                <td>{totAnst}</td>
-                <td>{totGrus}</td>
-                <td>{totSalt}</td>
-                <td colSpan={2}></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      );
-    })}
-  </>
-)}
+})()}
 	
 {/* Arbetspass-Översikt – knapp */}
       <div style={{ marginTop: 16 }}>
