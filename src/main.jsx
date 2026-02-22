@@ -3807,7 +3807,29 @@ const filtreradeFörAdress = allaSort.filter(
   (r) => !(r.syfte && r.syfte.toUpperCase().includes("PASS-START"))
 );
 
-// 3️⃣ Gruppera per adress (utan PASS-START)
+// ✅ Bygg global tidsdiff-karta
+const dynamiskTidPerId = new Map();
+
+for (let i = 1; i < allaSort.length; i++) {
+  const prev = allaSort[i - 1];
+  const curr = allaSort[i];
+
+  if (
+    prev.jobb_tid &&
+    curr.jobb_tid &&
+    !(prev.syfte && prev.syfte.toUpperCase().includes("PASS-START"))
+  ) {
+    const start = new Date(prev.jobb_tid);
+    const end = new Date(curr.jobb_tid);
+    const diffMs = end.getTime() - start.getTime();
+
+    if (diffMs > 0) {
+      dynamiskTidPerId.set(curr.id, Math.round(diffMs / 60000));
+    }
+  }
+}
+
+// ✅ Gruppera per adress (utan PASS-START)
 const grupper = {};
 filtreradeFörAdress.forEach((r) => {
   const id = r.adress_id || "okänd";
@@ -3816,21 +3838,30 @@ filtreradeFörAdress.forEach((r) => {
 });
 
 const adressGrupper = Object.entries(grupper)
-  .map(([aid, list]) => ({
-    id: aid,
-    namn: list[0]?.adresser?.namn || "Okänd adress",
-    sortIndex:
-      list[0]?.adresser?.adresslista_sortering ??
-      list[0]?.adresser?.id ??
-      0,
-    rapporter: list
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(a.jobb_tid || a.datum).getTime() -
-          new Date(b.jobb_tid || b.datum).getTime()
-      ),
-  }))
+  .map(([aid, list]) => {
+
+    // ✅ Summera dynamisk tid per adress
+    const totalTid = list.reduce((sum, r) => {
+      return sum + (dynamiskTidPerId.get(r.id) || 0);
+    }, 0);
+
+    return {
+      id: aid,
+      namn: list[0]?.adresser?.namn || "Okänd adress",
+      sortIndex:
+        list[0]?.adresser?.adresslista_sortering ??
+        list[0]?.adresser?.id ??
+        0,
+      rapporter: list
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(a.jobb_tid || a.datum).getTime() -
+            new Date(b.jobb_tid || b.datum).getTime()
+        ),
+      totalTid, // ✅ använd denna istället för arbetstid_min
+    };
+  })
   .sort((a, b) => a.sortIndex - b.sortIndex);
 
 if (adressGrupper.length === 0) {
@@ -3847,27 +3878,28 @@ if (adressGrupper.length === 0) {
   );
 }
 
-            return adressGrupper.map((g) => {
-              const totTidMin = g.rapporter.reduce(
-                (s, r) => s + (r.arbetstid_min || 0),
-                0
-              );
-              const totAnst = g.rapporter.reduce(
-                (s, r) => s + (r.antal_anstallda || 1),
-                0
-              );
-              const totGrus = g.rapporter.reduce(
-                (s, r) => s + (parseInt(r.sand_kg) || 0),
-                0
-              );
-              const totSalt = g.rapporter.reduce(
-                (s, r) => s + (parseInt(r.salt_kg) || 0),
-                0
-              );
+return adressGrupper.map((g) => {
 
-              const ärFakturerad =
-                g.rapporter.length > 0 &&
-                g.rapporter.every((r) => r.fakturerat === true);
+  const totTidMin = g.totalTid; // ✅ dynamisk tid
+
+  const totAnst = g.rapporter.reduce(
+    (s, r) => s + (r.antal_anstallda || 1),
+    0
+  );
+
+  const totGrus = g.rapporter.reduce(
+    (s, r) => s + (parseInt(r.sand_kg) || 0),
+    0
+  );
+
+  const totSalt = g.rapporter.reduce(
+    (s, r) => s + (parseInt(r.salt_kg) || 0),
+    0
+  );
+
+  const ärFakturerad =
+    g.rapporter.length > 0 &&
+    g.rapporter.every((r) => r.fakturerat === true);
 
               return (
                 <div
