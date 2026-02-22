@@ -1798,9 +1798,26 @@ function onChangeValdEditId(nyttId) {
 
   setValdaEditId(rad.id);
 
+  let datumStr = "";
+  let tidStr = "";
+
+  if (rad.jobb_tid) {
+    const d = new Date(rad.jobb_tid); // ✅ konverterar UTC → lokal tid
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+
+    datumStr = `${year}-${month}-${day}`;
+    tidStr = `${hours}:${minutes}`;
+  }
+
   setEditForm({
-    datum: rad.jobb_tid.slice(0, 10),
-    tid: rad.jobb_tid.slice(11, 16), // ✅ TA DIREKT FRÅN ISO
+    datum: datumStr,
+    tid: tidStr,
     arbetstid_min: rad.arbetstid_min || "",
     sand_kg: rad.sand_kg ?? 0,
     salt_kg: rad.salt_kg ?? 0,
