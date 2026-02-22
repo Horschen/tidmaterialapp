@@ -1790,32 +1790,36 @@ async function raderaEnRapport(postId) {
   }
 
   function onChangeValdEditId(nyttId) {
-    const rad = editRapporter.find(
-      (r) => r.id === Number(nyttId) || r.id === nyttId
-    );
-    if (!rad) return;
+  const rad = editRapporter.find(
+    (r) => r.id === Number(nyttId) || r.id === nyttId
+  );
+  if (!rad) return;
 
-    const syfteSet = new Set(
-      (rad.syfte || "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-    );
+  const syfteSet = new Set(
+    (rad.syfte || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
 
-    setValdaEditId(rad.id);
-    setEditForm({
-      datum: rad.datum ? rad.datum.slice(0, 10) : "",
-      arbetstid_min: rad.arbetstid_min || "",
-      sand_kg: rad.sand_kg ?? 0,
-      salt_kg: rad.salt_kg ?? 0,
-      syfteOversyn: syfteSet.has("Översyn"),
-      syfteRojning: syfteSet.has("Röjning"),
-      syfteSaltning: syfteSet.has("Saltning"),
-      syfteGrusning: syfteSet.has("Grusning"),
-      antal_anstallda: rad.antal_anstallda || 1,
-      team_namn: rad.team_namn || "För hand",
-    });
-  }
+  setValdaEditId(rad.id);
+
+  setEditForm({
+    datum: rad.jobb_tid ? rad.jobb_tid.slice(0, 10) : "",
+    tid: rad.jobb_tid
+      ? new Date(rad.jobb_tid).toISOString().slice(11, 16)
+      : "",
+    arbetstid_min: rad.arbetstid_min || "",
+    sand_kg: rad.sand_kg ?? 0,
+    salt_kg: rad.salt_kg ?? 0,
+    syfteOversyn: syfteSet.has("Översyn"),
+    syfteRojning: syfteSet.has("Röjning"),
+    syfteSaltning: syfteSet.has("Saltning"),
+    syfteGrusning: syfteSet.has("Grusning"),
+    antal_anstallda: rad.antal_anstallda || 1,
+    team_namn: rad.team_namn || "För hand",
+  });
+}
 
   async function sparaEditRapport() {
     if (!valdaEditId) return;
