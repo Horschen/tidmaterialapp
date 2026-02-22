@@ -3736,13 +3736,16 @@ if (activeTab === "rapport") {
       </select>
 
       <button
-        style={{ ...secondaryButton, marginTop: 12 }}
-        onClick={hamtaRapporter}
-      >
-        Uppdatera översikt
-      </button>
+  style={{ ...secondaryButton, marginTop: 12 }}
+  onClick={async () => {
+    setVisaAllaJob(false);   // ✅ Stäng Job Per Adress
+    await hamtaRapporter();
+  }}
+>
+  Uppdatera översikt
+</button>
 
-     {(() => {
+{visaAllaJob && (() => {
             // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
 function formatIsoTillDatumOchTid(iso) {
   if (!iso) return "-";
