@@ -3696,18 +3696,22 @@ if (activeTab === "rapport") {
             // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
 function formatIsoTillDatumOchTid(iso) {
   if (!iso) return "-";
-  try {
-    const d = new Date(iso);
 
-    return d.toLocaleString("sv-SE", {
-      timeZone: "Europe/Stockholm",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).replace(" ", ", ");
+  try {
+    const utcDate = new Date(iso);
+
+    // ✅ Lägg till lokal tidszon-offset manuellt
+    const localDate = new Date(
+      utcDate.getTime() - utcDate.getTimezoneOffset() * 60000
+    );
+
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, "0");
+    const day = String(localDate.getDate()).padStart(2, "0");
+    const hours = String(localDate.getHours()).padStart(2, "0");
+    const minutes = String(localDate.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}, ${hours}:${minutes}`;
   } catch {
     return "-";
   }
