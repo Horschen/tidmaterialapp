@@ -104,43 +104,62 @@ function VeckoOversikt({
   });
 
   // === 2️⃣ Gruppera per adress ===
-  const grupperad = {};
-  sorterade.forEach((r) => {
-    const id = r.adress_id ?? "okänd";
-    const namn = r.adresser?.namn || "Okänd adress";
+const grupperad = {};
 
-    if (!grupperad[id]) {
-      grupperad[id] = {
-        adressId: id,
-        namn,
-        tid: 0,
-        grus: 0,
-        salt: 0,
-        antal: 0,
-        anstallda: 0,
-        syften: new Set(),
-        senasteJobbTid: null,
-        totalRader: 0,
-        skyddadRader: 0,
-      };
+sorterade.forEach((r) => {
+  const id = r.adress_id ?? "okänd";
+  const namn = r.adresser?.namn || "Okänd adress";
+
+  if (!grupperad[id]) {
+    grupperad[id] = {
+      adressId: id,
+      namn,
+      tid: 0,
+      grus: 0,
+      salt: 0,
+      antal: 0,
+      anstallda: 0,
+      syften: new Set(),
+      senasteJobbTid: null,
+      totalRader: 0,
+      skyddadRader: 0,
+    };
+  }
+
+  const g = grupperad[id];
+
+  // ✅ Dynamisk tidsberäkning
+  if (r.jobb_tid) {
+    const currentTid = new Date(r.jobb_tid);
+
+    if (g.senasteJobbTid) {
+      const prevTid = new Date(g.senasteJobbTid);
+      const diffMs = currentTid.getTime() - prevTid.getTime();
+
+      if (diffMs > 0) {
+        g.tid += Math.round(diffMs / 60000); // minuter
+      }
     }
 
-    const g = grupperad[id];
-    g.tid += r.arbetstid_min || 0;
-    g.grus += r.sand_kg || 0;
-    g.salt += r.salt_kg || 0;
-    g.antal++;
-    g.anstallda += r.antal_anstallda || 0;
-    g.totalRader++;
-    if (r.skyddad) g.skyddadRader++;
+    g.senasteJobbTid = r.jobb_tid;
+  }
 
-    if (r.syfte) {
-      r.syfte
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .forEach((s) => g.syften.add(s));
-    }
+  // ✅ Övriga summeringar
+  g.grus += r.sand_kg || 0;
+  g.salt += r.salt_kg || 0;
+  g.antal++;
+  g.anstallda += r.antal_anstallda || 0;
+  g.totalRader++;
+  if (r.skyddad) g.skyddadRader++;
+
+  if (r.syfte) {
+    r.syfte
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((s) => g.syften.add(s));
+  }
+});
 
     // Håll senaste jobb_tid per adress
     const jobbTid = r.jobb_tid || r.datum || null;
