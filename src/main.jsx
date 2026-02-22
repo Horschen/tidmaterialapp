@@ -560,17 +560,18 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   const [editRapporter, setEditRapporter] = useState([]);
   const [valdaEditId, setValdaEditId] = useState(null);
   const [editForm, setEditForm] = useState({
-    datum: "",
-    arbetstid_min: "",
-    sand_kg: "",
-    salt_kg: "",
-    syfteOversyn: false,
-    syfteRojning: false,
-    syfteSaltning: false,
-    syfteGrusning: false,
-    antal_anstallda: 1,
-    team_namn: "För hand",
-  });
+  datum: "",
+  tid: "",   
+  arbetstid_min: "",
+  sand_kg: "",
+  salt_kg: "",
+  syfteOversyn: false,
+  syfteRojning: false,
+  syfteSaltning: false,
+  syfteGrusning: false,
+  antal_anstallda: 1,
+  team_namn: "För hand",
+});
 
   // Kartflik
   const [kartaAdressId, setKartaAdressId] = useState("");
@@ -1791,7 +1792,7 @@ async function raderaEnRapport(postId) {
 
   function onChangeValdEditId(nyttId) {
   const rad = editRapporter.find(
-    (r) => r.id === Number(nyttId) || r.id === nyttId
+    (r) => r.id === Number(nyttId)
   );
   if (!rad) return;
 
@@ -1802,19 +1803,23 @@ async function raderaEnRapport(postId) {
       .filter(Boolean)
   );
 
-  setValdaEditId(rad.id);
-
-  // ✅ Konvertera till lokal tid korrekt
   let lokalTid = "";
+  let datumStr = "";
+
   if (rad.jobb_tid) {
     const d = new Date(rad.jobb_tid);
+
+    datumStr = rad.jobb_tid.slice(0, 10);
+
     const timmar = String(d.getHours()).padStart(2, "0");
     const minuter = String(d.getMinutes()).padStart(2, "0");
     lokalTid = `${timmar}:${minuter}`;
   }
 
+  setValdaEditId(rad.id);
+
   setEditForm({
-    datum: rad.jobb_tid ? rad.jobb_tid.slice(0, 10) : "",
+    datum: datumStr,
     tid: lokalTid,
     arbetstid_min: rad.arbetstid_min || "",
     sand_kg: rad.sand_kg ?? 0,
@@ -5990,7 +5995,7 @@ return (
       Editera rapport
     </h3>
 
-    <select
+   <select
   value={valdaEditId || ""}
   onChange={(e) => onChangeValdEditId(e.target.value)}
   style={{
@@ -6001,11 +6006,27 @@ return (
     border: "1px solid #d1d5db",
   }}
 >
-  {editRapporter.map((r) => (
-    <option key={r.id} value={r.id}>
-      {formatDatumTid(r.jobb_tid)} — {r.adresser?.namn || "Okänd adress"}
-    </option>
-  ))}
+  {editRapporter.map((r) => {
+    const d = r.jobb_tid ? new Date(r.jobb_tid) : null;
+
+    let text = "Okänd tid";
+
+    if (d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+
+      text = `${year}-${month}-${day}, ${hours}:${minutes}`;
+    }
+
+    return (
+      <option key={r.id} value={r.id}>
+        {text} — {r.adresser?.namn || "Okänd adress"}
+      </option>
+    );
+  })}
 </select>
 
     <div style={{ display: "grid", gap: 8 }}>
