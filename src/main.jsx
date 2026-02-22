@@ -4006,26 +4006,42 @@ if (adressGrupper.length === 0) {
                     <tbody>
                       {g.rapporter.map((r, idx) => {
 
-  // ✅ Dölj PASS‑START helt i "Job Per Adress"
-  if (r.syfte && r.syfte.toUpperCase().includes("PASS-START")) {
+  const isPassStart =
+    r.syfte && r.syfte.toUpperCase().includes("PASS-START");
+
+  // ✅ Dölj PASS-START som egen rad
+  if (isPassStart) {
     return null;
   }
 
   const thisEndRaw = r.jobb_tid || r.datum || null;
-
   const prevEndRaw =
     föregåendeJobbTidPerRapportId.get(r.id) || null;
 
-  let datumText = "";
+  let datumText = "-";
 
   if (prevEndRaw && thisEndRaw) {
-    datumText =
-      `${formatIsoTillDatumOchTid(prevEndRaw)} > ` +
-      `${formatIsoTillDatumOchTid(thisEndRaw)}`;
+
+    // ✅ Om detta är första riktiga jobbet (dvs föregående var PASS-START)
+    const prevRapport = g.rapporter.find(
+      x => x.jobb_tid === prevEndRaw
+    );
+
+    const isFirstAfterPass =
+      prevRapport &&
+      prevRapport.syfte &&
+      prevRapport.syfte.toUpperCase().includes("PASS-START");
+
+    const baseText =
+      `${formatDatumTid(prevEndRaw)} > ` +
+      `${formatDatumTid(thisEndRaw)}`;
+
+    datumText = isFirstAfterPass
+      ? `Start Pass: ${baseText}`
+      : baseText;
+
   } else if (thisEndRaw) {
-    datumText = formatIsoTillDatumOchTid(thisEndRaw);
-  } else {
-    datumText = "-";
+    datumText = formatDatumTid(thisEndRaw);
   }
 
   const tidMin = r.arbetstid_min || 0;
@@ -4043,57 +4059,27 @@ if (adressGrupper.length === 0) {
         {datumText}
       </td>
 
-      <td
-        style={{
-          textAlign: "center",
-          padding: "4px 6px",
-        }}
-      >
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
         {tidMin}
-        <span
-          style={{
-            color: "#6b7280",
-            fontSize: 12,
-          }}
-        >
+        <span style={{ color: "#6b7280", fontSize: 12 }}>
           {" "}
           ({formatTid(tidMin)})
         </span>
       </td>
 
-      <td
-        style={{
-          textAlign: "center",
-          padding: "4px 6px",
-        }}
-      >
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
         {r.antal_anstallda || 1}
       </td>
 
-      <td
-        style={{
-          textAlign: "center",
-          padding: "4px 6px",
-        }}
-      >
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
         {r.sand_kg || 0}
       </td>
 
-      <td
-        style={{
-          textAlign: "center",
-          padding: "4px 6px",
-        }}
-      >
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
         {r.salt_kg || 0}
       </td>
 
-      <td
-        style={{
-          textAlign: "center",
-          padding: "4px 6px",
-        }}
-      >
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
         {r.team_namn ||
           (r.arbetssatt === "hand"
             ? "För hand"
