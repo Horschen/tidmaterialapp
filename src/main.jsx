@@ -6503,105 +6503,74 @@ return (
     <div style={{ display: "flex", gap: 8 }}>
       <button
   onClick={async () => {
-    const metod = valdMetodTemp;
-    const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
+  const metod = valdMetodTemp;
+  const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
 
-    setVisaMetodValPopup(false);
-    setTeam(metodLabel);
+  setVisaMetodValPopup(false);
+  setTeam(metodLabel);
 
-    try {
-      const startTidIso = new Date().toISOString();
+  try {
+    const startTidIso = new Date().toISOString();
 
-      // 1️⃣ Skapa pass i tillstand_pass
-      const { data, error } = await supabase
-        .from("tillstand_pass")
-        .insert([
-          {
-            team_typ: metod,
-            start_tid: startTidIso,
-            aktiv: true,
-          },
-        ])
-        .select()
-        .single();
+    // ✅ 1. Skapa pass i tillstand_pass
+    const { data, error } = await supabase
+      .from("tillstand_pass")
+      .insert([
+        {
+          team_typ: metod,
+          start_tid: startTidIso,
+          aktiv: true,
+        },
+      ])
+      .select()
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
-      const { error: rapportError } = await supabase
-  .from("rapporter")
-  .insert([
-    {
-      datum: startTidIso,
-      jobb_tid: startTidIso,
-      adress_id: null, // ✅ Ingen adress
-      arbetstid_min: 0,
-      team_namn: metodLabel,
-      arbetssatt: metod,
-      sand_kg: 0,
-      salt_kg: 0,
-      syfte: `Start av Arbetspass ${metodLabel}`,
-      antal_anstallda: 1,
-      skyddad: false,
-    },
-  ]);
+    // ✅ 2. Skapa PASS-START i rapporter
+    const { error: rapportError } = await supabase
+      .from("rapporter")
+      .insert([
+        {
+          datum: startTidIso,
+          jobb_tid: startTidIso,
+          adress_id: null, // ✅ viktigt: ingen adress
+          arbetstid_min: 0,
+          team_namn: metodLabel,
+          arbetssatt: metod,
+          sand_kg: 0,
+          salt_kg: 0,
+          syfte: `Start av Arbetspass ${metodLabel}`,
+          antal_anstallda: 1,
+          skyddad: false,
+        },
+      ]);
 
-      if (rapportError) {
-        console.warn("⚠️ Kunde inte skapa pass-start-rapport:", rapportError);
-      }
+    if (rapportError) throw rapportError;
 
-      // 3️⃣ Sätt aktivt pass lokalt
-      const nyttPass = {
-        id: data.id,
-        startTid: data.start_tid,
-        metod,
-        team_typ: metod,
-      };
-      setAktivtPass(nyttPass);
-      localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+    // ✅ 3. Sätt aktivt pass lokalt
+    const nyttPass = {
+      id: data.id,
+      startTid: data.start_tid,
+      metod,
+      team_typ: metod,
+    };
 
-      setSenasteRapportTid(startTidIso); // 🔹 Sätt senaste rapporten till pass-start
-      setPaus(null);
-      setPausSekUnderIntervall(0);
+    setAktivtPass(nyttPass);
+    localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
 
-      setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
-      showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Kunde inte starta passet.", "error", 3000);
-      setStatus("❌ Fel vid start av pass: " + err.message);
-    }
-  }}
-  style={{
-    flex: 1,
-    padding: "10px 16px",
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#16a34a",
-    color: "#fff",
-    fontWeight: 600,
-  }}
->
-  Starta
-</button>
+    setSenasteRapportTid(startTidIso);
+    setPaus(null);
+    setPausSekUnderIntervall(0);
 
-      <button
-        onClick={() => setVisaMetodValPopup(false)}
-        style={{
-          flex: 1,
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#e5e7eb",
-          color: "#111827",
-          fontWeight: 500,
-        }}
-      >
-        Avbryt
-      </button>
-    </div>
-  </div>
-)}
+    setStatus(`⏱️ ${metodLabel}-pass startat.`);
+    showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
+
+  } catch (err) {
+    console.error("PASS-START ERROR:", err);
+    showPopup("❌ Kunde inte starta passet.", "error", 3000);
+  }
+}}
 
 
 {visaAdressEditPopup && editAdressData && (
