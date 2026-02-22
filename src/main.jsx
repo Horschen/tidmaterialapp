@@ -4135,13 +4135,11 @@ return adressGrupper.map((g) => {
     datumText = formatDatumTid(thisEndRaw);
   }
 
-  // ✅ Dynamisk beräkning med 30-sekundersregel
   let tidMin = 0;
 
   if (prevEndRaw && thisEndRaw) {
     const start = new Date(prevEndRaw);
     const end = new Date(thisEndRaw);
-
     const diffMs = end.getTime() - start.getTime();
 
     if (diffMs > 0) {
@@ -4150,7 +4148,7 @@ return adressGrupper.map((g) => {
       const restSek = totalSek % 60;
 
       if (helaMin === 0) {
-        tidMin = 1; // alltid minst 1 minut om tid finns
+        tidMin = 1;
       } else {
         tidMin = restSek > 30 ? helaMin + 1 : helaMin;
       }
@@ -4160,14 +4158,7 @@ return adressGrupper.map((g) => {
   const isFirstAfterPass = firstAfterPassIds.has(r.id);
 
   return (
-    <tr
-      key={r.id || idx}
-      style={{
-        backgroundColor:
-          idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-        borderBottom: "1px solid #e5e7eb",
-      }}
-    >
+    <tr key={r.id || idx}>
       <td
         style={{
           padding: "4px 6px",
@@ -4205,12 +4196,41 @@ return adressGrupper.map((g) => {
       </td>
 
       <td style={{ padding: "4px 6px" }}>
-  {r.syfte}
-</td>
-</tr>
-);
-})()}
+        {r.syfte}
+      </td>
+    </tr>
+  );
+})}
 
+<tr
+  style={{
+    backgroundColor: "#fef9c3",
+    fontWeight: 600,
+    borderTop: "2px solid #e5e7eb",
+  }}
+>
+  <td style={{ padding: "4px 6px" }}>
+    Summa (Totalt / adress)
+  </td>
+  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+    {totTidMin}
+    <span style={{ color: "#6b7280", fontSize: 12 }}>
+      {" "}
+      ({formatTid(totTidMin)})
+    </span>
+  </td>
+  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+    {totAnst}
+  </td>
+  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+    {totGrus}
+  </td>
+  <td style={{ textAlign: "center", padding: "4px 6px" }}>
+    {totSalt}
+  </td>
+  <td colSpan={2}></td>
+</tr>
+	
 {/* Arbetspass-Översikt – knapp */}
       <div style={{ marginTop: 16 }}>
         <button
