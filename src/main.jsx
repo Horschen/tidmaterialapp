@@ -1807,15 +1807,18 @@ async function raderaEnRapport(postId) {
   let lokalTid = "";
 
   if (rad.jobb_tid) {
-    datumStr = rad.jobb_tid.slice(0, 10);
+  datumStr = rad.jobb_tid.slice(0, 10);
 
-    lokalTid = new Date(rad.jobb_tid).toLocaleTimeString("sv-SE", {
-      timeZone: "Europe/Stockholm",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+  // ✅ Använd samma formattering som tabellen
+  const formatted = formatDatumTid(rad.jobb_tid);
+
+  // formatted är typ: "2026-02-22, 15:30"
+  // Vi tar bara tiden efter kommatecknet
+  const parts = formatted.split(",");
+  if (parts.length === 2) {
+    lokalTid = parts[1].trim();
   }
+}
 
   setValdaEditId(rad.id);
 
