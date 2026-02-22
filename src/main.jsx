@@ -1496,54 +1496,61 @@ async function sparaManuellRapport() {
     return;
   }
 
-  // ✅ Spara alltid korrekt UTC-tid
-  let datumIso;
-  try {
-    const datePart = manuellDatum; // "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00";
+  // ✅ Skapa korrekt UTC-tid från angiven lokal tid
+let datumIso;
 
-    const localDate = new Date(`${datePart}T${timePart}`);
-    datumIso = localDate.toISOString();
+try {
+  const datePart = manuellDatum; // "YYYY-MM-DD"
+  const timePart = manuellTid ? manuellTid : "12:00";
 
-  } catch (e) {
-    showPopup(
-      "👎 Ogiltigt datum eller tid för manuell registrering.",
-      "error",
-      3000
-    );
-    setStatus("Ogiltigt datum/tid för manuell registrering.");
-    return;
-  }
+  // Skapa lokal Date
+  const localDate = new Date(`${datePart}T${timePart}:00`);
 
-  setStatus("Sparar manuell rapport…");
+  // Justera manuellt till riktig UTC
+  const utcDate = new Date(
+    localDate.getTime() - localDate.getTimezoneOffset() * 60000
+  );
 
-  const { error } = await supabase.from("rapporter").insert([
-    {
-      datum: datumIso,
-      jobb_tid: datumIso,
-      adress_id: manuellAdressId,
-      arbetstid_min: arbetstidMin,
-      team_namn: manuellTeam,
-      arbetssatt: metod,
-      sand_kg: ärPassStart ? 0 : parseInt(manuellSand, 10) || 0,
-      salt_kg: ärPassStart ? 0 : parseInt(manuellSalt, 10) || 0,
-      syfte: syfteText,
-      antal_anstallda: ärPassStart ? 1 : manuellAntalAnstallda,
-      skyddad: true,
-    },
-  ]);
+  datumIso = utcDate.toISOString();
 
-  if (error) {
-    setStatus("❌ " + error.message);
-    showPopup("👎 Fel vid manuell sparning", "error", 3000);
-  } else {
-    setStatus("Manuell rapport sparad");
-showPopup("👍 Manuell rapport sparad", "success", 4000);
-resetManuellForm();
-setVisaManuellPopup(false);
+} catch (e) {
+  showPopup(
+    "👎 Ogiltigt datum eller tid för manuell registrering.",
+    "error",
+    3000
+  );
+  setStatus("Ogiltigt datum/tid för manuell registrering.");
+  return;
+}
 
-await hamtaRapporter();
-  }
+setStatus("Sparar manuell rapport…");
+
+const { error } = await supabase.from("rapporter").insert([
+  {
+    datum: datumIso,
+    jobb_tid: datumIso,
+    adress_id: manuellAdressId,
+    arbetstid_min: arbetstidMin,
+    team_namn: manuellTeam,
+    arbetssatt: metod,
+    sand_kg: ärPassStart ? 0 : parseInt(manuellSand, 10) || 0,
+    salt_kg: ärPassStart ? 0 : parseInt(manuellSalt, 10) || 0,
+    syfte: syfteText,
+    antal_anstallda: ärPassStart ? 1 : manuellAntalAnstallda,
+    skyddad: true,
+  },
+]);
+
+if (error) {
+  setStatus("❌ " + error.message);
+  showPopup("👎 Fel vid manuell sparning", "error", 3000);
+} else {
+  setStatus("Manuell rapport sparad");
+  showPopup("👍 Manuell rapport sparad", "success", 4000);
+  resetManuellForm();
+  setVisaManuellPopup(false);
+
+  await hamtaRapporter();
 }
   
  // ======= Starta pass (öppnar val-popup) =======
