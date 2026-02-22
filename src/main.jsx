@@ -1246,7 +1246,7 @@ async function hamtaRapporter() {
   const { data, error } = await supabase
     .from("rapporter")
     .select(
-      "id, datum, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, fakturerat, adress_id, adresser(namn)"
+  "id, datum, jobb_tid, arbetstid_min, sand_kg, salt_kg, arbetssatt, team_namn, syfte, antal_anstallda, skyddad, fakturerat, adress_id, adresser(namn)"
 )
     .order("datum", { ascending: false });
   if (error) {
