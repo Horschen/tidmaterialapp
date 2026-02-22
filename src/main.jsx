@@ -1546,6 +1546,7 @@ if (error) {
 
   await hamtaRapporter();
 }
+} // ✅ DENNA KLAMMER STÄNGER FUNKTIONEN sparaManuellRapport
   
  // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
