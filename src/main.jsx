@@ -50,21 +50,16 @@ function formatTid(minuter) {
 // ======= Hjälp: format datum/tid (UTC, exakt från databasen) =======
 function formatDatumTid(iso) {
   if (!iso) return "-";
-  try {
-    const d = new Date(iso);
 
-    return d.toLocaleString("sv-SE", {
-      timeZone: "Europe/Stockholm",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).replace(" ", " ");
-  } catch {
-    return "-";
-  }
+  return new Date(iso).toLocaleString("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 // ======= Hjälp: sekunder -> hh:mm:ss (för timers) =======
@@ -1496,26 +1491,27 @@ async function sparaManuellRapport() {
     return;
   }
 
-  // ✅ Spara alltid korrekt UTC-tid
-  let datumIso;
-  try {
-    const datePart = manuellDatum; // "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00";
+// ✅ Spara exakt den lokala svenska tiden som användaren anger
+let datumIso;
 
-    const localDate = new Date(`${datePart}T${timePart}`);
-    datumIso = localDate.toISOString();
+try {
+  const datePart = manuellDatum; // "YYYY-MM-DD"
+  const timePart = manuellTid ? manuellTid : "12:00";
 
-  } catch (e) {
-    showPopup(
-      "👎 Ogiltigt datum eller tid för manuell registrering.",
-      "error",
-      3000
-    );
-    setStatus("Ogiltigt datum/tid för manuell registrering.");
-    return;
-  }
+  // ✅ Ingen UTC-konvertering
+  datumIso = `${datePart}T${timePart}:00`;
 
-  setStatus("Sparar manuell rapport…");
+} catch (e) {
+  showPopup(
+    "👎 Ogiltigt datum eller tid för manuell registrering.",
+    "error",
+    3000
+  );
+  setStatus("Ogiltigt datum/tid för manuell registrering.");
+  return;
+}
+
+setStatus("Sparar manuell rapport…");
 
   const { error } = await supabase.from("rapporter").insert([
     {
@@ -1617,21 +1613,28 @@ async function stoppaPass() {
 }
   
   // ======= Start Paus =======
-  function startPaus() {
-    if (!aktivtPass) {
-      showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
-      setStatus("Inget aktivt pass att pausa.");
-      return;
-    }
-    if (paus) {
-      showPopup("👎 Paus är redan igång.", "error", 3000);
-      setStatus("En paus är redan igång.");
-      return;
-    }
-    const nuIso = new Date().toISOString();
-    setPaus({ startTid: nuIso });
-    setStatus("⏸️ Paus startad.");
+function startPaus() {
+  if (!aktivtPass) {
+    showPopup("👎 Inget aktivt pass att pausa.", "error", 3000);
+    setStatus("Inget aktivt pass att pausa.");
+    return;
   }
+
+  if (paus) {
+    showPopup("👎 Paus är redan igång.", "error", 3000);
+    setStatus("En paus är redan igång.");
+    return;
+  }
+
+  // ✅ Alltid spara paus-start i UTC
+  const nuIso = new Date().toISOString();
+
+  setPaus({
+    startTid: nuIso,
+  });
+
+  setStatus("⏸️ Paus startad.");
+}
 
   // ======= Stop Paus =======
   function stopPaus() {
@@ -1801,13 +1804,20 @@ function onChangeValdEditId(nyttId) {
   let datumStr = "";
   let tidStr = "";
 
-  if (rad.jobb_tid) {
-    const formatted = formatDatumTid(rad.jobb_tid);
-    const parts = formatted.split(" ");
+if (rad.jobb_tid) {
+  const d = new Date(rad.jobb_tid);
 
-    datumStr = parts[0];
-    tidStr = parts[1];
-  }
+  datumStr = d.toLocaleDateString("sv-SE", {
+    timeZone: "Europe/Stockholm",
+  });
+
+  tidStr = d.toLocaleTimeString("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
   setEditForm({
     datum: datumStr,
