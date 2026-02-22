@@ -1781,16 +1781,13 @@ let tidStr = "";
 if (första.jobb_tid) {
   const d = new Date(första.jobb_tid);
 
-  // ✅ Datum direkt från ISO (stabilt för input type="date")
+  // ✅ Datum direkt från ISO
   datumStr = första.jobb_tid.slice(0, 10);
 
-  // ✅ Lokal svensk tid korrekt
-  tidStr = d.toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  // ✅ Tid exakt i HH:MM format
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  tidStr = `${hours}:${minutes}`;
 }
 
 setEditForm({
