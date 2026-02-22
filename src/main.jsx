@@ -1290,40 +1290,47 @@ useEffect(() => {
 
   // ======= Validera fält för manuell registrering =======
 function validateManuellFields() {
+
   if (!manuellAdressId) {
     showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
     setStatus("Välj en adress för manuell registrering.");
     return false;
   }
 
-  const syfteText = buildManuellSyfteString();
-  if (!syfteText) {
-    showPopup("👎 Välj minst ett syfte (manuell).", "error", 3000);
-    setStatus("Välj minst ett syfte (manuell registrering).");
-    return false;
+  const ärPassStart = String(manuellAdressId) === "67";
+
+  // ✅ Hoppa över syfte-kontroll för PASS-START
+  if (!ärPassStart) {
+    const syfteText = buildManuellSyfteString();
+    if (!syfteText) {
+      showPopup("👎 Välj minst ett syfte (manuell).", "error", 3000);
+      setStatus("Välj minst ett syfte (manuell registrering).");
+      return false;
+    }
   }
 
-  const sandInt = parseInt(manuellSand, 10) || 0;
-  const saltInt = parseInt(manuellSalt, 10) || 0;
+  // ✅ Hoppa över material-kontroller för PASS-START
+  if (!ärPassStart) {
+    const sandInt = parseInt(manuellSand, 10) || 0;
+    const saltInt = parseInt(manuellSalt, 10) || 0;
 
-  if (manSyfteSaltning && saltInt === 0) {
-    showPopup(
-      "👎 Ange Salt (kg) när du väljer Saltning (manuell).",
-      "error",
-      3000
-    );
-    setStatus("Ange Salt (kg) om du väljer syfte Saltning (manuell).");
-    return false;
-  }
+    if (manSyfteSaltning && saltInt === 0) {
+      showPopup(
+        "👎 Ange Salt (kg) när du väljer Saltning (manuell).",
+        "error",
+        3000
+      );
+      return false;
+    }
 
-  if (manSyfteGrusning && sandInt === 0) {
-    showPopup(
-      "👎 Ange Grus (kg) när du väljer Grusning (manuell).",
-      "error",
-      3000
-    );
-    setStatus("Ange Grus (kg) om du väljer syfte Grusning (manuell).");
-    return false;
+    if (manSyfteGrusning && sandInt === 0) {
+      showPopup(
+        "👎 Ange Grus (kg) när du väljer Grusning (manuell).",
+        "error",
+        3000
+      );
+      return false;
+    }
   }
 
   if (!manuellDatum) {
