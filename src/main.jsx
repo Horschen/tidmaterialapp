@@ -1755,7 +1755,7 @@ async function raderaEnRapport(postId) {
     const raderFörAdress = filtreradeRapporter
   .filter((r) => r.adress_id === adressId)
   .sort((a, b) => new Date(b.datum) - new Date(a.datum))
-  .slice(0, 14);   // visar 14 senaste
+  .slice(0, 20);   // visar 20 senaste
 
     if (raderFörAdress.length === 0) {
       showPopup("👎 Inga rapporter att editera för denna adress.", "error", 3000);
@@ -1773,12 +1773,29 @@ async function raderaEnRapport(postId) {
         .filter(Boolean)
     );
 
-    setValdaEditId(första.id);
-   setEditForm({
-  datum: första.datum ? första.datum.slice(0, 10) : "",
-  tid: första.datum
-    ? new Date(första.datum).toISOString().slice(11, 16)
-    : "",
+   setValdaEditId(första.id);
+
+let datumStr = "";
+let tidStr = "";
+
+if (första.jobb_tid) {
+  const d = new Date(första.jobb_tid);
+
+  // ✅ Datum direkt från ISO (stabilt för input type="date")
+  datumStr = första.jobb_tid.slice(0, 10);
+
+  // ✅ Lokal svensk tid korrekt
+  tidStr = d.toLocaleTimeString("sv-SE", {
+    timeZone: "Europe/Stockholm",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+setEditForm({
+  datum: datumStr,
+  tid: tidStr,
   arbetstid_min: första.arbetstid_min || "",
   sand_kg: första.sand_kg ?? 0,
   salt_kg: första.salt_kg ?? 0,
@@ -1790,7 +1807,7 @@ async function raderaEnRapport(postId) {
   team_namn: första.team_namn || "För hand",
 });
 
-    setVisaEditPopup(true);
+setVisaEditPopup(true);
   }
 
 function onChangeValdEditId(nyttId) {
