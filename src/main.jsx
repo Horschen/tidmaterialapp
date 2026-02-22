@@ -6494,7 +6494,6 @@ return (
 
     <div style={{ display: "flex", gap: 8 }}>
       <button
-  <button
   onClick={async () => {
     console.log("START BUTTON CLICKED");
 
