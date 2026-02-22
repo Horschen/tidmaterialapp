@@ -1378,16 +1378,26 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
     // Dra bort paus‑sekunder (paus är redan total paus under intervallet)
     const sekEfterPaus = Math.max(råSek - (pausSekUnderIntervall || 0), 0);
 
-    // Konvertera till minuter med avrundning (samma logik som tidigare)
-    const minHeltal = Math.floor(sekEfterPaus / 60);
-    const restSek = sekEfterPaus % 60;
-    const diffMin = restSek > 25 ? minHeltal + 1 : minHeltal;
+    // ✅ Konvertera till minuter med korrekt avrundning
+const totalSek = Math.floor(sekEfterPaus); // sekunder totalt
+const helaMin = Math.floor(totalSek / 60);
+const restSek = totalSek % 60;
 
-    if (diffMin <= 0) {
-      showPopup("👎 För kort tid (eller bara paus).", "error", 3000);
-      setStatus("För kort intervall för auto-tid.");
-      return;
-    }
+// ✅ Avrunda upp först när sekunder > 30
+const diffMin = restSek > 30 ? helaMin + 1 : helaMin;
+
+// ✅ Säkerställ minimum 1 minut om det finns någon faktisk tid
+if (totalSek > 0 && diffMin === 0) {
+  arbetstidMin = 1;
+} else {
+  arbetstidMin = diffMin;
+}
+
+if (arbetstidMin <= 0) {
+  showPopup("👎 För kort tid (eller bara paus).", "error", 3000);
+  setStatus("För kort intervall för auto-tid.");
+  return;
+}
     arbetstidMin = diffMin;
   } else {
     const manu = parseInt(arbetstid, 10);
@@ -3849,10 +3859,13 @@ for (let i = 1; i < allaSort.length; i++) {
     const start = new Date(prev.jobb_tid);
     const end = new Date(curr.jobb_tid);
     const diffMs = end.getTime() - start.getTime();
+  if (diffMs > 0) {
+  const totalSek = Math.floor(diffMs / 1000);
+  const helaMin = Math.floor(totalSek / 60);
+  const restSek = totalSek % 60;
 
-    if (diffMs > 0) {
-      dynamiskTidPerId.set(curr.id, Math.round(diffMs / 60000));
-    }
+  tidMin = restSek > 30 ? helaMin + 1 : helaMin;
+}
   }
 }
 
