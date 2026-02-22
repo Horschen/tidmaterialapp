@@ -6494,86 +6494,57 @@ return (
 
     <div style={{ display: "flex", gap: 8 }}>
       <button
+  <button
   onClick={async () => {
+
+    alert("Start-knappen klickad");
+
     const metod = valdMetodTemp;
     const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
+    const startTidIso = new Date().toISOString();
 
-    setVisaMetodValPopup(false);
-    setTeam(metodLabel);
+    const passResult = await supabase
+      .from("tillstand_pass")
+      .insert([
+        {
+          team_typ: metod,
+          start_tid: startTidIso,
+          aktiv: true,
+        },
+      ]);
 
-    try {
-      const startTidIso = new Date().toISOString();
-
-      // 1️⃣ Skapa pass i tillstand_pass
-      const { data, error } = await supabase
-        .from("tillstand_pass")
-        .insert([
-          {
-            team_typ: metod,
-            start_tid: startTidIso,
-            aktiv: true,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
-      const passStartAdressId = 67; // 🔹 Byt till din faktiska start-adress-id
-
-      const { error: rapportError } = await supabase
-  .from("rapporter")
-  .insert([
-    {
-      datum: startTidIso,
-      jobb_tid: startTidIso,
-      adress_id: passStartAdressId,
-      arbetstid_min: 0,
-      team_namn: metodLabel,
-      arbetssatt: metod,
-      sand_kg: 0,
-      salt_kg: 0,
-      syfte: "Pass-start",
-      antal_anstallda: 1,
-      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
-    },
-  ]);
-
-      if (rapportError) {
-        console.warn("⚠️ Kunde inte skapa pass-start-rapport:", rapportError);
-      }
-
-      // 3️⃣ Sätt aktivt pass lokalt
-      const nyttPass = {
-        id: data.id,
-        startTid: data.start_tid,
-        metod,
-        team_typ: metod,
-      };
-      setAktivtPass(nyttPass);
-      localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
-
-      setSenasteRapportTid(startTidIso); // 🔹 Sätt senaste rapporten till pass-start
-      setPaus(null);
-      setPausSekUnderIntervall(0);
-
-      setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
-      showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
-    } catch (err) {
-      console.error(err);
-      showPopup("👎 Kunde inte starta passet.", "error", 3000);
-      setStatus("❌ Fel vid start av pass: " + err.message);
+    if (passResult.error) {
+      alert("Fel i tillstand_pass: " + passResult.error.message);
+      return;
+    } else {
+      alert("tillstand_pass sparad ✅");
     }
-  }}
-  style={{
-    flex: 1,
-    padding: "10px 16px",
-    borderRadius: 999,
-    border: "none",
-    backgroundColor: "#16a34a",
-    color: "#fff",
-    fontWeight: 600,
+
+    const rapportResult = await supabase
+      .from("rapporter")
+      .insert([
+        {
+          datum: startTidIso,
+          jobb_tid: startTidIso,
+          adress_id: 993,
+          arbetstid_min: 0,
+          team_namn: metodLabel,
+          arbetssatt: metod,
+          sand_kg: 0,
+          salt_kg: 0,
+          syfte: "Pass-start",
+          antal_anstallda: 1,
+          skyddad: false,
+        },
+      ]);
+
+    if (rapportResult.error) {
+      alert("Fel i rapporter: " + rapportResult.error.message);
+      return;
+    } else {
+      alert("Pass-start sparad i rapporter ✅");
+    }
+
   }}
 >
   Starta
