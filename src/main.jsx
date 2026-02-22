@@ -3900,7 +3900,7 @@ if (adressGrupper.length === 0) {
   );
 }
 
-return adressGrupper.map((g) => {
+return visaAllaJob && adressGrupper.map((g) => {
 
   const totTidMin = g.totalTid; // ✅ dynamisk tid
 
