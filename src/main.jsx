@@ -306,23 +306,30 @@ function VeckoOversikt({
                 </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>
-                  {r.namn}
-                  {r.redigerad && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                        backgroundColor: "#e0f2fe",
-                        color: "#0369a1",
-                        fontSize: 11,
-                        fontWeight: 600,
-                      }}
-                    >
-                      📝 ändrad
-                    </span>
-                  )}
-                </td>
+  {r.syften?.toLowerCase().includes("start av arbetspass") ? (
+    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+      ⏱️ {r.syften}
+    </span>
+  ) : (
+    r.namn
+  )}
+
+  {r.redigerad && (
+    <span
+      style={{
+        marginLeft: 6,
+        padding: "2px 6px",
+        borderRadius: 6,
+        backgroundColor: "#e0f2fe",
+        color: "#0369a1",
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
+      📝 ändrad
+    </span>
+  )}
+</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
@@ -6521,23 +6528,21 @@ return (
       if (error) throw error;
 
       // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
-      const passStartAdressId = 993; // 🔹 Byt till din faktiska start-adress-id
-
       const { error: rapportError } = await supabase
   .from("rapporter")
   .insert([
     {
       datum: startTidIso,
       jobb_tid: startTidIso,
-      adress_id: passStartAdressId,
+      adress_id: null, // ✅ Ingen adress
       arbetstid_min: 0,
       team_namn: metodLabel,
       arbetssatt: metod,
       sand_kg: 0,
       salt_kg: 0,
-      syfte: "Pass-start",
+      syfte: `Start av Arbetspass ${metodLabel}`,
       antal_anstallda: 1,
-      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
+      skyddad: false,
     },
   ]);
 
