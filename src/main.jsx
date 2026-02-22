@@ -3724,46 +3724,55 @@ function formatIsoTillDatumOchTid(iso) {
 }
 
            // 1️⃣ Global tidslinje: alla rapporter sorterade på jobb_tid (äldst → nyast)
-            const allaSort = [...filtreradeRapporter].sort(
-              (a, b) =>
-                new Date(a.jobb_tid || a.datum) -
-                new Date(b.jobb_tid || b.datum)
-            );
+const allaSort = [...filtreradeRapporter].sort(
+  (a, b) =>
+    new Date(a.jobb_tid || a.datum).getTime() -
+    new Date(b.jobb_tid || b.datum).getTime()
+);
 
-            // 🔹 Hitta alla pass-start för denna vecka
-            const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
+// 2️⃣ Bygg föregående-jobb-karta som bryts vid PASS-START
+const föregåendeJobbTidPerRapportId = new Map();
 
-            // 2️⃣ Bygg "föregående jobb"-karta: per rapport-id → föregående jobb_tid
-            const föregåendeJobbTidPerRapportId = new Map();
+let senasteTid = null;
 
-            // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
-            if (allaPassStart.length > 0) {
-              const senastePassStart = allaPassStart.at(-1);
-              const passStartTid = senastePassStart.jobb_tid || senastePassStart.datum;
+for (let i = 0; i < allaSort.length; i++) {
+  const r = allaSort[i];
+  const currentTid = r.jobb_tid || r.datum || null;
 
-              // Sätt pass-start som föregående tid för första jobbet
-              if (allaSort.length >= 2) {
-                const forstaRiktigaJobbet = allaSort.find(r => r.id !== senastePassStart.id);
-                if (forstaRiktigaJobbet) {
-                  föregåendeJobbTidPerRapportId.set(forstaRiktigaJobbet.id, passStartTid);
-                }
-              }
-            }
-            for (let i = 1; i < allaSort.length; i++) {
-              const prev = allaSort[i - 1];
-              const curr = allaSort[i];
-              const prevIso = prev.jobb_tid || prev.datum || null;
-              if (curr.id != null) {
-                föregåendeJobbTidPerRapportId.set(curr.id, prevIso);
-              }
-            }
+  if (r.syfte && r.syfte.toUpperCase().includes("PASS-START")) {
+    senasteTid = currentTid;
+    continue;
+  }
 
-           // ✅ Filtrera bort PASS‑START innan gruppering
+  if (senasteTid) {
+    föregåendeJobbTidPerRapportId.set(r.id, senasteTid);
+    senasteTid = currentTid;
+  }
+}
+
+// ✅ Identifiera första riktiga jobbet efter varje PASS-START
+const firstAfterPassIds = new Set();
+
+for (let i = 0; i < allaSort.length - 1; i++) {
+  const current = allaSort[i];
+  const next = allaSort[i + 1];
+
+  if (
+    current.syfte &&
+    current.syfte.toUpperCase().includes("PASS-START") &&
+    next &&
+    next.id
+  ) {
+    firstAfterPassIds.add(next.id);
+  }
+}
+
+// ✅ Filtrera bort PASS-START innan gruppering
 const filtreradeFörAdress = allaSort.filter(
   (r) => !(r.syfte && r.syfte.toUpperCase().includes("PASS-START"))
 );
 
-// 3️⃣ Gruppera per adress (utan PASS‑START)
+// 3️⃣ Gruppera per adress (utan PASS-START)
 const grupper = {};
 filtreradeFörAdress.forEach((r) => {
   const id = r.adress_id || "okänd";
@@ -3779,7 +3788,6 @@ const adressGrupper = Object.entries(grupper)
       list[0]?.adresser?.adresslista_sortering ??
       list[0]?.adresser?.id ??
       0,
-    // Inom adress: sortera också äldst → nyast (för visuell ordning)
     rapporter: list
       .slice()
       .sort(
@@ -4004,7 +4012,7 @@ if (adressGrupper.length === 0) {
                       </tr>
                     </thead>
                     <tbody>
-                     {g.rapporter.map((r, idx) => {
+                   {g.rapporter.map((r, idx) => {
 
   const thisEndRaw = r.jobb_tid || r.datum || null;
   const prevEndRaw =
@@ -4022,7 +4030,8 @@ if (adressGrupper.length === 0) {
 
   const tidMin = r.arbetstid_min || 0;
 
-  const isFirstAfterPass = idx === 0;
+  // ✅ Detta använder Set:en vi byggde tidigare
+  const isFirstAfterPass = firstAfterPassIds.has(r.id);
 
   return (
     <tr
@@ -4075,7 +4084,6 @@ if (adressGrupper.length === 0) {
     </tr>
   );
 })}
-
                       <tr
                         style={{
                           backgroundColor: "#fef9c3",
