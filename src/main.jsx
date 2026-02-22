@@ -115,6 +115,7 @@ const sorterade = [...(data || [])].sort((a, b) => {
 
 // === 2️⃣ Gruppera per adress ===
 const grupperad = {};
+
 sorterade.forEach((r) => {
   const id = r.adress_id ?? "okänd";
   const namn = r.adresser?.namn || "Okänd adress";
@@ -161,45 +162,6 @@ sorterade.forEach((r) => {
         new Date(g.senasteJobbTid).getTime())
   ) {
     g.senasteJobbTid = jobbTid;
-  }
-});
-
-  // ✅ Dynamisk tidsberäkning globalt men tilldelas aktuell adress
-const index = sorterade.indexOf(r);
-
-if (index > 0) {
-  const prev = sorterade[index - 1];
-
-  if (
-    prev.jobb_tid &&
-    !(prev.syfte && prev.syfte.toUpperCase().includes("PASS-START"))
-  ) {
-    const prevTid = new Date(prev.jobb_tid);
-    const currentTid = new Date(r.jobb_tid);
-    const diffMs = currentTid.getTime() - prevTid.getTime();
-
-    if (diffMs > 0) {
-      g.tid += Math.round(diffMs / 60000);
-    }
-  }
-}
-
-    g.senasteJobbTid = r.jobb_tid;
-  }
-
-  g.grus += r.sand_kg || 0;
-  g.salt += r.salt_kg || 0;
-  g.antal++;
-  g.anstallda += r.antal_anstallda || 0;
-  g.totalRader++;
-  if (r.skyddad) g.skyddadRader++;
-
-  if (r.syfte) {
-    r.syfte
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .forEach((s) => g.syften.add(s));
   }
 });
 
