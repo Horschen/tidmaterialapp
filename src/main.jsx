@@ -6502,7 +6502,6 @@ return (
 
     <div style={{ display: "flex", gap: 8 }}>
       <button
-<button
   onClick={async () => {
     const metod = valdMetodTemp;
     const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
