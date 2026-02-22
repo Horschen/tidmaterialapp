@@ -306,30 +306,23 @@ function VeckoOversikt({
                 </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>
-  {r.syften?.toLowerCase().includes("start av arbetspass") ? (
-    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
-      ⏱️ {r.syften}
-    </span>
-  ) : (
-    r.namn
-  )}
-
-  {r.redigerad && (
-    <span
-      style={{
-        marginLeft: 6,
-        padding: "2px 6px",
-        borderRadius: 6,
-        backgroundColor: "#e0f2fe",
-        color: "#0369a1",
-        fontSize: 11,
-        fontWeight: 600,
-      }}
-    >
-      📝 ändrad
-    </span>
-  )}
-</td>
+                  {r.namn}
+                  {r.redigerad && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        backgroundColor: "#e0f2fe",
+                        color: "#0369a1",
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      📝 ändrad
+                    </span>
+                  )}
+                </td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
@@ -1282,8 +1275,8 @@ useEffect(() => {
 
     return true;
   }
-
-	// ======= Validera fält för manuell registrering =======
+================================================================================================================================================
+  // ======= Validera fält för manuell registrering =======
 function validateManuellFields() {
   if (!manuellAdressId) {
     showPopup("👎 Välj en adress för manuell registrering.", "error", 3000);
@@ -2416,7 +2409,7 @@ function toggleRuttAdress(adressId, checked) {
     )
   );
 }
-
+=================================================================================================================================================
 
 // ======= Spara planerad rutt (innan pass) =======
 async function sparaPlaneradRutt() {
@@ -3544,7 +3537,7 @@ function avbrytRadering() {
         </section>
       );
     }    
-	
+	========================================================================================================================================
 	
     // === SLUT PÅ KARTA-FLIK ===
 if (activeTab === "rapport") {
@@ -4864,7 +4857,7 @@ if (activeTab === "rapport") {
     </section>
   );
 }
-
+=========================================================================================================================================
 
     if (activeTab === "rutt") {
   const nastaAdress = ruttAdresser.find((r) => !r.avklarad);
@@ -6225,7 +6218,7 @@ return (
 </div>
   </div>
 )}
-
+===========================================================================================================================================
       
 {visaManuellPopup && (
   <div
@@ -6512,6 +6505,7 @@ return (
     try {
       const startTidIso = new Date().toISOString();
 
+      // 1️⃣ Skapa pass i tillstand_pass
       const { data, error } = await supabase
         .from("tillstand_pass")
         .insert([
@@ -6526,46 +6520,51 @@ return (
 
       if (error) throw error;
 
+      // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
+      const passStartAdressId = 993; // 🔹 Byt till din faktiska start-adress-id
+
       const { error: rapportError } = await supabase
-        .from("rapporter")
-        .insert([
-          {
-            datum: startTidIso,
-            jobb_tid: startTidIso,
-            adress_id: null,
-            arbetstid_min: 0,
-            team_namn: metodLabel,
-            arbetssatt: metod,
-            sand_kg: 0,
-            salt_kg: 0,
-            syfte: `Start av Arbetspass ${metodLabel}`,
-            antal_anstallda: 1,
-            skyddad: false,
-          },
-        ]);
+  .from("rapporter")
+  .insert([
+    {
+      datum: startTidIso,
+      jobb_tid: startTidIso,
+      adress_id: passStartAdressId,
+      arbetstid_min: 0,
+      team_namn: metodLabel,
+      arbetssatt: metod,
+      sand_kg: 0,
+      salt_kg: 0,
+      syfte: "Pass-start",
+      antal_anstallda: 1,
+      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
+    },
+  ]);
 
-      if (rapportError) throw rapportError;
+      if (rapportError) {
+        console.warn("⚠️ Kunde inte skapa pass-start-rapport:", rapportError);
+      }
 
+      // 3️⃣ Sätt aktivt pass lokalt
       const nyttPass = {
         id: data.id,
         startTid: data.start_tid,
         metod,
         team_typ: metod,
       };
-
       setAktivtPass(nyttPass);
       localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
 
-      setSenasteRapportTid(startTidIso);
+      setSenasteRapportTid(startTidIso); // 🔹 Sätt senaste rapporten till pass-start
       setPaus(null);
       setPausSekUnderIntervall(0);
 
-      setStatus(`⏱️ ${metodLabel}-pass startat.`);
+      setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
       showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
-
     } catch (err) {
-      console.error("PASS-START ERROR:", err);
-      showPopup("❌ Kunde inte starta passet.", "error", 3000);
+      console.error(err);
+      showPopup("👎 Kunde inte starta passet.", "error", 3000);
+      setStatus("❌ Fel vid start av pass: " + err.message);
     }
   }}
   style={{
@@ -6580,6 +6579,25 @@ return (
 >
   Starta
 </button>
+
+      <button
+        onClick={() => setVisaMetodValPopup(false)}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#111827",
+          fontWeight: 500,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
+
 
 {visaAdressEditPopup && editAdressData && (
   <div
@@ -7119,7 +7137,7 @@ return (
     </div>
   </div>
 )}
-
+========================================================================================================================================
 
 {visaStartPunktPopup && (
   <div
