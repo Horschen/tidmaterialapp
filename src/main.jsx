@@ -4019,25 +4019,26 @@ if (adressGrupper.length === 0) {
     föregåendeJobbTidPerRapportId.get(r.id) || null;
 
   let datumText = "-";
+  let isFirstAfterPass = false;
 
   if (prevEndRaw && thisEndRaw) {
 
-    // ✅ Om detta är första riktiga jobbet (dvs föregående var PASS-START)
+    // ✅ Kontrollera om föregående rapport var PASS-START
     const prevRapport = g.rapporter.find(
-      x => x.jobb_tid === prevEndRaw
+      x =>
+        x.jobb_tid === prevEndRaw &&
+        x.syfte &&
+        x.syfte.toUpperCase().includes("PASS-START")
     );
 
-    const isFirstAfterPass =
-      prevRapport &&
-      prevRapport.syfte &&
-      prevRapport.syfte.toUpperCase().includes("PASS-START");
+    isFirstAfterPass = !!prevRapport;
 
     const baseText =
       `${formatDatumTid(prevEndRaw)} > ` +
       `${formatDatumTid(thisEndRaw)}`;
 
     datumText = isFirstAfterPass
-      ? `Start Pass: ${baseText}`
+      ? `⏱️ Start Pass: ${baseText}`
       : baseText;
 
   } else if (thisEndRaw) {
@@ -4051,11 +4052,15 @@ if (adressGrupper.length === 0) {
       key={r.id || idx}
       style={{
         backgroundColor:
-          idx % 2 === 0 ? "#ffffff" : "#f9fafb",
+          isFirstAfterPass
+            ? "#f0f9ff"   // ✅ svagt blå markering för första raden
+            : idx % 2 === 0
+            ? "#ffffff"
+            : "#f9fafb",
         borderBottom: "1px solid #e5e7eb",
       }}
     >
-      <td style={{ padding: "4px 6px" }}>
+      <td style={{ padding: "4px 6px", fontWeight: isFirstAfterPass ? 600 : 400 }}>
         {datumText}
       </td>
 
