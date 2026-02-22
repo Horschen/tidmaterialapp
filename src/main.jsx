@@ -5999,7 +5999,7 @@ return (
       Editera rapport
     </h3>
 
-   <select
+<select
   value={valdaEditId || ""}
   onChange={(e) => onChangeValdEditId(e.target.value)}
   style={{
@@ -6011,22 +6011,9 @@ return (
   }}
 >
   {editRapporter.map((r) => {
-
-    let text = "Okänd tid";
-
-    if (r.jobb_tid) {
-      const d = new Date(r.jobb_tid);
-
-      text = d.toLocaleString("sv-SE", {
-        timeZone: "Europe/Stockholm",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).replace(" ", ", ");
-    }
+    const text = r.jobb_tid
+      ? formatDatumTid(r.jobb_tid)
+      : "Okänd tid";
 
     return (
       <option key={r.id} value={r.id}>
