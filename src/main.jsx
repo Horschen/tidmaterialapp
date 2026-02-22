@@ -4205,13 +4205,13 @@ return adressGrupper.map((g) => {
       </td>
 
       <td style={{ padding: "4px 6px" }}>
-        {r.syfte}
-      </td>
-    </tr>
-  );
-})}
+  {r.syfte}
+</td>
+</tr>
+);
+})()}
 
-       {/* Arbetspass-Översikt – knapp */}
+{/* Arbetspass-Översikt – knapp */}
       <div style={{ marginTop: 16 }}>
         <button
           onClick={async () => {
