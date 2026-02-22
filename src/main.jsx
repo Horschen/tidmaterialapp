@@ -3753,24 +3753,40 @@ const allaSort = [...filtreradeRapporter].sort(
     new Date(b.jobb_tid || b.datum).getTime()
 );
 
-// 2️⃣ Bygg föregående-jobb-karta som bryts vid PASS-START
+// 2️⃣ Bygg föregående-jobb-karta som bryts vid PASS-START och ny dag
 const föregåendeJobbTidPerRapportId = new Map();
 
 let senasteTid = null;
+let aktuellDag = null;
 
 for (let i = 0; i < allaSort.length; i++) {
   const r = allaSort[i];
   const currentTid = r.jobb_tid || r.datum || null;
 
+  if (!currentTid) continue;
+
+  const currentDateObj = new Date(currentTid);
+  const currentDagStr = currentDateObj.toISOString().split("T")[0];
+
+  // ✅ Om ny dag → nollställ kedjan
+  if (aktuellDag && aktuellDag !== currentDagStr) {
+    senasteTid = null;
+  }
+
+  aktuellDag = currentDagStr;
+
+  // ✅ Om PASS-START → börja nytt pass
   if (r.syfte && r.syfte.toUpperCase().includes("PASS-START")) {
     senasteTid = currentTid;
     continue;
   }
 
+  // ✅ Om vi har en startpunkt → koppla föregående
   if (senasteTid) {
     föregåendeJobbTidPerRapportId.set(r.id, senasteTid);
-    senasteTid = currentTid;
   }
+
+  senasteTid = currentTid;
 }
 
 // ✅ Identifiera första riktiga jobbet efter varje PASS-START
@@ -3789,7 +3805,6 @@ for (let i = 0; i < allaSort.length - 1; i++) {
     firstAfterPassIds.add(next.id);
   }
 }
-
 // ✅ Filtrera bort PASS-START innan gruppering
 const filtreradeFörAdress = allaSort.filter(
   (r) => !(r.syfte && r.syfte.toUpperCase().includes("PASS-START"))
