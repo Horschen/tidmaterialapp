@@ -115,7 +115,6 @@ const sorterade = [...(data || [])].sort((a, b) => {
 
 // === 2️⃣ Gruppera per adress ===
 const grupperad = {};
-
 sorterade.forEach((r) => {
   const id = r.adress_id ?? "okänd";
   const namn = r.adresser?.namn || "Okänd adress";
@@ -137,6 +136,33 @@ sorterade.forEach((r) => {
   }
 
   const g = grupperad[id];
+
+  g.tid += r.arbetstid_min || 0;
+  g.grus += r.sand_kg || 0;
+  g.salt += r.salt_kg || 0;
+  g.antal++;
+  g.anstallda += r.antal_anstallda || 0;
+  g.totalRader++;
+  if (r.skyddad) g.skyddadRader++;
+
+  if (r.syfte) {
+    r.syfte
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((s) => g.syften.add(s));
+  }
+
+  const jobbTid = r.jobb_tid || r.datum || null;
+  if (
+    jobbTid &&
+    (!g.senasteJobbTid ||
+      new Date(jobbTid).getTime() >
+        new Date(g.senasteJobbTid).getTime())
+  ) {
+    g.senasteJobbTid = jobbTid;
+  }
+});
 
   // ✅ Dynamisk tidsberäkning globalt men tilldelas aktuell adress
 const index = sorterade.indexOf(r);
