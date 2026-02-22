@@ -1885,23 +1885,28 @@ if (rad.jobb_tid) {
     const teamNamn = editForm.team_namn || "För hand";
     const arbetssatt = teamNamn === "För hand" ? "hand" : "maskin";
 
-    // ---- Datum/tid-hantering (sparas i lokal tid) ----
-    let jobbTidIso;
-    try {
-      const nyttDatum = editForm.datum?.trim();  // yyyy-mm-dd
-      const nyTid = editForm.tid?.trim() || "12:00"; // hh:mm
+    // ---- Datum/tid-hantering (UTC korrekt) ----
+let jobbTidIso;
 
-      if (!nyttDatum) {
-        showPopup("👎 Ange datum.", "error", 3000);
-        return;
-      }
+try {
+  const nyttDatum = editForm.datum?.trim();
+  const nyTid = editForm.tid?.trim() || "12:00";
 
-      // 🔸 Behåll tiden exakt som användaren skrev den (utan UTC‑justering)
-      jobbTidIso = `${nyttDatum}T${nyTid}:00`;
-    } catch {
-      showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
-      return;
-    }
+  if (!nyttDatum) {
+    showPopup("👎 Ange datum.", "error", 3000);
+    return;
+  }
+
+  // ✅ Skapa lokal tid
+  const localDate = new Date(`${nyttDatum}T${nyTid}:00`);
+
+  // ✅ Konvertera korrekt till UTC
+  jobbTidIso = localDate.toISOString();
+
+} catch {
+  showPopup("👎 Ogiltigt datum/tid.", "error", 3000);
+  return;
+}
 
     setStatus("Uppdaterar rapport…");
 
