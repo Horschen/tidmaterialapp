@@ -3719,42 +3719,43 @@ if (activeTab === "rapport") {
       </button>
 
       {/* Knapp: Alla Job Per Adress */}
-      <button
-        onClick={() => setVisaAllaJob((prev) => !prev)}
-        style={{
-          ...secondaryButton,
-          backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
-          color: visaAllaJob ? "#fff" : "#111827",
-          marginBottom: 8,
-        }}
-      >
-        {visaAllaJob
-          ? "🔽 Dölj Alla Job Per Adress"
-          : "📋 Alla Job Per Adress"}
-      </button>
+<button
+  onClick={() => setVisaAllaJob((prev) => !prev)}
+  style={{
+    ...secondaryButton,
+    backgroundColor: visaAllaJob ? "#16a34a" : "#e5e7eb",
+    color: visaAllaJob ? "#fff" : "#111827",
+    marginBottom: 8,
+  }}
+>
+  {visaAllaJob
+    ? "🔽 Dölj Alla Job Per Adress"
+    : "📋 Alla Job Per Adress"}
+</button>
 
-      {/* Filter på metod */}
-      <label style={labelStyle}>Filtrera på metod</label>
-      <select
-        value={filterMetod}
-        onChange={(e) => setFilterMetod(e.target.value)}
-        style={selectStyle}
-      >
-        <option value="alla">Alla</option>
-        <option value="hand">Endast För hand</option>
-        <option value="maskin">Endast Maskin</option>
-      </select>
+{/* Filter på metod */}
+<label style={labelStyle}>Filtrera på metod</label>
+<select
+  value={filterMetod}
+  onChange={(e) => setFilterMetod(e.target.value)}
+  style={selectStyle}
+>
+  <option value="alla">Alla</option>
+  <option value="hand">Endast För hand</option>
+  <option value="maskin">Endast Maskin</option>
+</select>
 
-      <button
+<button
   style={{ ...secondaryButton, marginTop: 12 }}
   onClick={async () => {
-    setVisaAllaJob(false);   // ✅ Stäng Job Per Adress
+    setVisaAllaJob(false);
     await hamtaRapporter();
   }}
 >
   Uppdatera översikt
 </button>
 
+{/* ✅ ALLA JOB PER ADRESS */}
 {visaAllaJob && (
   <>
     {adressGrupper.map((g) => {
@@ -3773,22 +3774,9 @@ if (activeTab === "rapport") {
         0
       );
 
-      const ärFakturerad =
-        g.rapporter.length > 0 &&
-        g.rapporter.every((r) => r.fakturerat === true);
-
       return (
-        <div
-          key={g.id}
-          style={{
-            borderTop: "2px solid #e5e7eb",
-            padding: "8px 12px 4px",
-            backgroundColor: ärFakturerad
-              ? "rgba(134,239,172,0.35)"
-              : "rgba(254,202,202,0.35)",
-          }}
-        >
-          <h4 style={{ margin: "6px 0 8px", fontSize: 15 }}>
+        <div key={g.id} style={{ marginTop: 16 }}>
+          <h4 style={{ fontSize: 15, marginBottom: 8 }}>
             📍 {g.namn}
           </h4>
 
@@ -3898,12 +3886,7 @@ if (activeTab === "rapport") {
                 );
               })}
 
-              <tr
-                style={{
-                  backgroundColor: "#fef9c3",
-                  fontWeight: 600,
-                }}
-              >
+              <tr style={{ backgroundColor: "#fef9c3", fontWeight: 600 }}>
                 <td>Summa</td>
                 <td>{totTidMin} ({formatTid(totTidMin)})</td>
                 <td>{totAnst}</td>
