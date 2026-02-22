@@ -90,6 +90,14 @@ function VeckoOversikt({
   onToggleSkyddad,
   onOpenEdit,
 }) {
+
+  const metodText =
+    filterMetod === "hand"
+      ? "Endast För hand"
+      : filterMetod === "maskin"
+      ? "Endast Maskin"
+      : "Alla jobb";
+  
   // === 1️⃣ Sortera rådata direkt på jobb_tid (UTC) ===
   const sorterade = [...(data || [])].sort((a, b) => {
     const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : a.datum ? Date.parse(a.datum) : 0;
