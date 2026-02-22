@@ -306,30 +306,23 @@ function VeckoOversikt({
                 </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
                 <td>
-  {r.namn === "Pass-Start" ? (
-    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
-      ⏱️ Pass‑Start
-    </span>
-  ) : (
-    r.namn
-  )}
-
-  {r.redigerad && (
-    <span
-      style={{
-        marginLeft: 6,
-        padding: "2px 6px",
-        borderRadius: 6,
-        backgroundColor: "#e0f2fe",
-        color: "#0369a1",
-        fontSize: 11,
-        fontWeight: 600,
-      }}
-    >
-      📝 ändrad
-    </span>
-  )}
-</td>
+                  {r.namn}
+                  {r.redigerad && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                        backgroundColor: "#e0f2fe",
+                        color: "#0369a1",
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                    >
+                      📝 ändrad
+                    </span>
+                  )}
+                </td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
@@ -3722,25 +3715,33 @@ if (activeTab === "rapport") {
                 new Date(b.jobb_tid || b.datum)
             );
 
-            // 2️⃣ Bygg tidskedja som bryts vid Pass-start
-const föregåendeJobbTidPerRapportId = new Map();
+            // 🔹 Hitta alla pass-start för denna vecka
+            const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
 
-let aktuellStartTid = null;
+            // 2️⃣ Bygg "föregående jobb"-karta: per rapport-id → föregående jobb_tid
+            const föregåendeJobbTidPerRapportId = new Map();
 
-for (let i = 0; i < allaSort.length; i++) {
-  const r = allaSort[i];
-  const currentTid = r.jobb_tid || r.datum || null;
+            // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
+            if (allaPassStart.length > 0) {
+              const senastePassStart = allaPassStart.at(-1);
+              const passStartTid = senastePassStart.jobb_tid || senastePassStart.datum;
 
-  if (r.syfte === "Pass-start") {
-    aktuellStartTid = currentTid;
-    continue;
-  }
-
-  if (aktuellStartTid) {
-    föregåendeJobbTidPerRapportId.set(r.id, aktuellStartTid);
-    aktuellStartTid = currentTid;
-  }
-}
+              // Sätt pass-start som föregående tid för första jobbet
+              if (allaSort.length >= 2) {
+                const forstaRiktigaJobbet = allaSort.find(r => r.id !== senastePassStart.id);
+                if (forstaRiktigaJobbet) {
+                  föregåendeJobbTidPerRapportId.set(forstaRiktigaJobbet.id, passStartTid);
+                }
+              }
+            }
+            for (let i = 1; i < allaSort.length; i++) {
+              const prev = allaSort[i - 1];
+              const curr = allaSort[i];
+              const prevIso = prev.jobb_tid || prev.datum || null;
+              if (curr.id != null) {
+                föregåendeJobbTidPerRapportId.set(curr.id, prevIso);
+              }
+            }
 
             // 3️⃣ Gruppera per adress som tidigare (för rubriker/summor)
             const grupper = {};
@@ -6494,61 +6495,108 @@ return (
 
     <div style={{ display: "flex", gap: 8 }}>
       <button
-  <button
   onClick={async () => {
-
-    alert("Start-knappen klickad");
-
     const metod = valdMetodTemp;
     const metodLabel = metod === "maskin" ? "Maskin" : "För hand";
-    const startTidIso = new Date().toISOString();
 
-    const passResult = await supabase
-      .from("tillstand_pass")
-      .insert([
-        {
-          team_typ: metod,
-          start_tid: startTidIso,
-          aktiv: true,
-        },
-      ]);
+    setVisaMetodValPopup(false);
+    setTeam(metodLabel);
 
-    if (passResult.error) {
-      alert("Fel i tillstand_pass: " + passResult.error.message);
-      return;
-    } else {
-      alert("tillstand_pass sparad ✅");
+    try {
+      const startTidIso = new Date().toISOString();
+
+      // 1️⃣ Skapa pass i tillstand_pass
+      const { data, error } = await supabase
+        .from("tillstand_pass")
+        .insert([
+          {
+            team_typ: metod,
+            start_tid: startTidIso,
+            aktiv: true,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // 2️⃣ Skapa en "pass-start"-rapport i rapporter-tabellen
+      const passStartAdressId = 993; // 🔹 Byt till din faktiska start-adress-id
+
+      const { error: rapportError } = await supabase
+  .from("rapporter")
+  .insert([
+    {
+      datum: startTidIso,
+      jobb_tid: startTidIso,
+      adress_id: passStartAdressId,
+      arbetstid_min: 0,
+      team_namn: metodLabel,
+      arbetssatt: metod,
+      sand_kg: 0,
+      salt_kg: 0,
+      syfte: "Pass-start",
+      antal_anstallda: 1,
+      skyddad: false, // 🔹 Kan editeras och raderas precis som andra jobb
+    },
+  ]);
+
+      if (rapportError) {
+        console.warn("⚠️ Kunde inte skapa pass-start-rapport:", rapportError);
+      }
+
+      // 3️⃣ Sätt aktivt pass lokalt
+      const nyttPass = {
+        id: data.id,
+        startTid: data.start_tid,
+        metod,
+        team_typ: metod,
+      };
+      setAktivtPass(nyttPass);
+      localStorage.setItem("snöjour_aktivt_pass", JSON.stringify(nyttPass));
+
+      setSenasteRapportTid(startTidIso); // 🔹 Sätt senaste rapporten till pass-start
+      setPaus(null);
+      setPausSekUnderIntervall(0);
+
+      setStatus(`⏱️ ${metodLabel}-pass startat och sparat i molnet.`);
+      showPopup(`✅ ${metodLabel}-pass startat!`, "success", 3000);
+    } catch (err) {
+      console.error(err);
+      showPopup("👎 Kunde inte starta passet.", "error", 3000);
+      setStatus("❌ Fel vid start av pass: " + err.message);
     }
-
-    const rapportResult = await supabase
-      .from("rapporter")
-      .insert([
-        {
-          datum: startTidIso,
-          jobb_tid: startTidIso,
-          adress_id: 993,
-          arbetstid_min: 0,
-          team_namn: metodLabel,
-          arbetssatt: metod,
-          sand_kg: 0,
-          salt_kg: 0,
-          syfte: "Pass-start",
-          antal_anstallda: 1,
-          skyddad: false,
-        },
-      ]);
-
-    if (rapportResult.error) {
-      alert("Fel i rapporter: " + rapportResult.error.message);
-      return;
-    } else {
-      alert("Pass-start sparad i rapporter ✅");
-    }
-
+  }}
+  style={{
+    flex: 1,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "none",
+    backgroundColor: "#16a34a",
+    color: "#fff",
+    fontWeight: 600,
   }}
 >
   Starta
 </button>
+
+      <button
+        onClick={() => setVisaMetodValPopup(false)}
+        style={{
+          flex: 1,
+          padding: "10px 16px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: "#e5e7eb",
+          color: "#111827",
+          fontWeight: 500,
+        }}
+      >
+        Avbryt
+      </button>
+    </div>
+  </div>
+)}
 
 
 {visaAdressEditPopup && editAdressData && (
