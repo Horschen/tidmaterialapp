@@ -1790,53 +1790,28 @@ async function raderaEnRapport(postId) {
     setVisaEditPopup(true);
   }
 
- function onChangeValdEditId(nyttId) {
+function onChangeValdEditId(nyttId) {
   const rad = editRapporter.find(
     (r) => r.id === Number(nyttId)
   );
   if (!rad) return;
 
-  const syfteSet = new Set(
-    (rad.syfte || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-  );
-
-  let datumStr = "";
-  let lokalTid = "";
-
-  if (rad.jobb_tid) {
-  datumStr = rad.jobb_tid.slice(0, 10);
-
-  // ✅ Använd samma formattering som tabellen
-  const formatted = formatDatumTid(rad.jobb_tid);
-
-  // formatted är typ: "2026-02-22, 15:30"
-  // Vi tar bara tiden efter kommatecknet
-  const parts = formatted.split(",");
-  if (parts.length === 2) {
-    lokalTid = parts[1].trim();
-  }
-}
-
   setValdaEditId(rad.id);
 
   setEditForm({
-    datum: datumStr,
-    tid: lokalTid,
+    datum: rad.jobb_tid.slice(0, 10),
+    tid: rad.jobb_tid.slice(11, 16), // ✅ TA DIREKT FRÅN ISO
     arbetstid_min: rad.arbetstid_min || "",
     sand_kg: rad.sand_kg ?? 0,
     salt_kg: rad.salt_kg ?? 0,
-    syfteOversyn: syfteSet.has("Översyn"),
-    syfteRojning: syfteSet.has("Röjning"),
-    syfteSaltning: syfteSet.has("Saltning"),
-    syfteGrusning: syfteSet.has("Grusning"),
+    syfteOversyn: false,
+    syfteRojning: false,
+    syfteSaltning: false,
+    syfteGrusning: false,
     antal_anstallda: rad.antal_anstallda || 1,
     team_namn: rad.team_namn || "För hand",
   });
-
-}  // ✅ DEN HÄR KLAMMERN SAKNAS HOS DIG
+}
 
   async function sparaEditRapport() {
     if (!valdaEditId) return;
