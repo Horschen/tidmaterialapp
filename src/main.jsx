@@ -97,11 +97,21 @@ function VeckoOversikt({
   onOpenEdit,
 }) {
   // === 1️⃣ Sortera rådata direkt på jobb_tid (UTC) ===
-  const sorterade = [...(data || [])].sort((a, b) => {
-    const tA = a.jobb_tid ? Date.parse(a.jobb_tid) : a.datum ? Date.parse(a.datum) : 0;
-    const tB = b.jobb_tid ? Date.parse(b.jobb_tid) : b.datum ? Date.parse(b.datum) : 0;
-    return tB - tA; // nyast först
-  });
+const sorterade = [...(data || [])].sort((a, b) => {
+  const tA = a.jobb_tid
+    ? Date.parse(a.jobb_tid)
+    : a.datum
+    ? Date.parse(a.datum)
+    : 0;
+
+  const tB = b.jobb_tid
+    ? Date.parse(b.jobb_tid)
+    : b.datum
+    ? Date.parse(b.datum)
+    : 0;
+
+  return tA - tB; // ✅ äldst först
+});
 
   // === 2️⃣ Gruppera per adress ===
 const grupperad = {};
