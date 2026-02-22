@@ -1790,7 +1790,7 @@ async function raderaEnRapport(postId) {
     setVisaEditPopup(true);
   }
 
-  function onChangeValdEditId(nyttId) {
+ function onChangeValdEditId(nyttId) {
   const rad = editRapporter.find(
     (r) => r.id === Number(nyttId)
   );
@@ -1804,34 +1804,36 @@ async function raderaEnRapport(postId) {
   );
 
   let datumStr = "";
-let lokalTid = "";
+  let lokalTid = "";
 
-if (rad.jobb_tid) {
-  datumStr = rad.jobb_tid.slice(0, 10);
+  if (rad.jobb_tid) {
+    datumStr = rad.jobb_tid.slice(0, 10);
 
-  lokalTid = new Date(rad.jobb_tid).toLocaleTimeString("sv-SE", {
-    timeZone: "Europe/Stockholm",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+    lokalTid = new Date(rad.jobb_tid).toLocaleTimeString("sv-SE", {
+      timeZone: "Europe/Stockholm",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
+
+  setValdaEditId(rad.id);
+
+  setEditForm({
+    datum: datumStr,
+    tid: lokalTid,
+    arbetstid_min: rad.arbetstid_min || "",
+    sand_kg: rad.sand_kg ?? 0,
+    salt_kg: rad.salt_kg ?? 0,
+    syfteOversyn: syfteSet.has("Översyn"),
+    syfteRojning: syfteSet.has("Röjning"),
+    syfteSaltning: syfteSet.has("Saltning"),
+    syfteGrusning: syfteSet.has("Grusning"),
+    antal_anstallda: rad.antal_anstallda || 1,
+    team_namn: rad.team_namn || "För hand",
   });
-}
 
-setValdaEditId(rad.id);
-
-setEditForm({
-  datum: datumStr,
-  tid: lokalTid,
-  arbetstid_min: rad.arbetstid_min || "",
-  sand_kg: rad.sand_kg ?? 0,
-  salt_kg: rad.salt_kg ?? 0,
-  syfteOversyn: syfteSet.has("Översyn"),
-  syfteRojning: syfteSet.has("Röjning"),
-  syfteSaltning: syfteSet.has("Saltning"),
-  syfteGrusning: syfteSet.has("Grusning"),
-  antal_anstallda: rad.antal_anstallda || 1,
-  team_namn: rad.team_namn || "För hand",
-});
+}  // ✅ DEN HÄR KLAMMERN SAKNAS HOS DIG
 
   async function sparaEditRapport() {
     if (!valdaEditId) return;
