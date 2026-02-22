@@ -4356,11 +4356,16 @@ return (
               .filter((p) => p.aktiv)
               .map((p) => (
                 <option key={p.id} value={p.id}>
-  📅 {formatDatumTid(p.start_tid)} |{" "}
-  {p.team_typ === "hand" ? "För hand" : "Maskin"}
-  {p.sluttid &&
-    ` | Slut: ${formatDatumTid(p.sluttid)}`}
-</option>
+                  🟢 Pågående:{" "}
+                  {p.team_typ === "hand" ? "För hand" : "Maskin"} (startad{" "}
+                  {new Date(p.start_tid).toLocaleString("sv-SE", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  )
+                </option>
               ))}
 
             {passHistorik
@@ -4389,22 +4394,31 @@ return (
             <div>
               {/* Sammanfattning */}
               <div
-  style={{
-    fontSize: 14,
-    fontWeight: 600,
-    marginBottom: 8,
-  }}
->
-  📅 Start: {formatDatumTid(passDetaljer.pass.start_tid)} |{" "}
-  {passDetaljer.pass.team_typ === "hand"
-    ? "För hand"
-    : "Maskin"}
-  {passDetaljer.pass.sluttid && (
-    <> | Slut: {formatDatumTid(passDetaljer.pass.sluttid)}</>
-  )}
-  {" | "}
-  {passDetaljer.sammanfattning.antalAdresser} adresser
-</div>
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e5e7eb",
+                  marginBottom: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    marginBottom: 8,
+                  }}
+                >
+                  📅{" "}
+                  {new Date(
+                    passDetaljer.pass.start_tid
+                  ).toLocaleDateString("sv-SE")}{" "}
+                  |{" "}
+                  {passDetaljer.pass.team_typ === "hand"
+                    ? "För hand"
+                    : "Maskin"}{" "}
+                  | {passDetaljer.sammanfattning.antalAdresser} adresser
+                </div>
 
                 <div
                   style={{
