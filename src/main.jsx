@@ -111,7 +111,7 @@ const sorterade = [...(data || [])].sort((a, b) => {
 // === 2️⃣ Gruppera per adress ===
 const grupperad = {};
 
-sorterade.forEach((r) => {
+sorterade.forEach((r, index) => {
   const id = r.adress_id ?? "okänd";
   const namn = r.adresser?.namn || "Okänd adress";
 
@@ -133,7 +133,38 @@ sorterade.forEach((r) => {
 
   const g = grupperad[id];
 
-  g.tid += r.arbetstid_min || 0;
+  // ✅ Dynamisk tidsberäkning (Från → Till)
+  if (index > 0) {
+    const prev = sorterade[index - 1];
+
+    if (
+      prev.jobb_tid &&
+      r.jobb_tid &&
+      !(prev.syfte && prev.syfte.toUpperCase().includes("PASS-START"))
+    ) {
+      const start = new Date(prev.jobb_tid);
+      const end = new Date(r.jobb_tid);
+      const diffMs = end.getTime() - start.getTime();
+
+      if (diffMs > 0) {
+        const totalSek = Math.floor(diffMs / 1000);
+        const helaMin = Math.floor(totalSek / 60);
+        const restSek = totalSek % 60;
+
+        let tidMin;
+
+        if (helaMin === 0) {
+          tidMin = 1;
+        } else {
+          tidMin = restSek > 30 ? helaMin + 1 : helaMin;
+        }
+
+        g.tid += tidMin;
+      }
+    }
+  }
+
+  // ✅ Övriga summeringar
   g.grus += r.sand_kg || 0;
   g.salt += r.salt_kg || 0;
   g.antal++;
