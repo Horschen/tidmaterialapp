@@ -138,18 +138,25 @@ sorterade.forEach((r) => {
 
   const g = grupperad[id];
 
-  // ✅ Dynamisk tidsberäkning
-  if (r.jobb_tid) {
+  // ✅ Dynamisk tidsberäkning globalt men tilldelas aktuell adress
+const index = sorterade.indexOf(r);
+
+if (index > 0) {
+  const prev = sorterade[index - 1];
+
+  if (
+    prev.jobb_tid &&
+    !(prev.syfte && prev.syfte.toUpperCase().includes("PASS-START"))
+  ) {
+    const prevTid = new Date(prev.jobb_tid);
     const currentTid = new Date(r.jobb_tid);
+    const diffMs = currentTid.getTime() - prevTid.getTime();
 
-    if (g.senasteJobbTid) {
-      const prevTid = new Date(g.senasteJobbTid);
-      const diffMs = currentTid.getTime() - prevTid.getTime();
-
-      if (diffMs > 0) {
-        g.tid += Math.round(diffMs / 60000);
-      }
+    if (diffMs > 0) {
+      g.tid += Math.round(diffMs / 60000);
     }
+  }
+}
 
     g.senasteJobbTid = r.jobb_tid;
   }
