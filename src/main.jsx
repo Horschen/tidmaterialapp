@@ -5984,22 +5984,22 @@ return (
     </h3>
 
     <select
-      value={valdaEditId || ""}
-      onChange={(e) => onChangeValdEditId(e.target.value)}
-      style={{
-        width: "100%",
-        marginBottom: 12,
-        padding: "8px",
-        borderRadius: 8,
-        border: "1px solid #d1d5db",
-      }}
-    >
-      {editRapporter.map((r) => (
-        <option key={r.id} value={r.id}>
-  {formatDatumTid(r.jobb_tid)} — {r.adresser?.namn || "Okänd adress"}
-</option>
-      ))}
-    </select>
+  value={valdaEditId || ""}
+  onChange={(e) => onChangeValdEditId(e.target.value)}
+  style={{
+    width: "100%",
+    marginBottom: 12,
+    padding: "8px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+  }}
+>
+  {editRapporter.map((r) => (
+    <option key={r.id} value={r.id}>
+      {formatDatumTid(r.jobb_tid)} — {r.adresser?.namn || "Okänd adress"}
+    </option>
+  ))}
+</select>
 
     <div style={{ display: "grid", gap: 8 }}>
       <label>
