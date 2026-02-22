@@ -133,15 +133,11 @@ sorterade.forEach((r, index) => {
 
   const g = grupperad[id];
 
-  // ✅ Dynamisk tidsberäkning (Från → Till)
+  // ✅ Dynamisk tidsberäkning inklusive PASS-START
   if (index > 0) {
     const prev = sorterade[index - 1];
 
-    if (
-      prev.jobb_tid &&
-      r.jobb_tid &&
-      !(prev.syfte && prev.syfte.toUpperCase().includes("PASS-START"))
-    ) {
+    if (prev.jobb_tid && r.jobb_tid) {
       const start = new Date(prev.jobb_tid);
       const end = new Date(r.jobb_tid);
       const diffMs = end.getTime() - start.getTime();
@@ -164,7 +160,6 @@ sorterade.forEach((r, index) => {
     }
   }
 
-  // ✅ Övriga summeringar
   g.grus += r.sand_kg || 0;
   g.salt += r.salt_kg || 0;
   g.antal++;
