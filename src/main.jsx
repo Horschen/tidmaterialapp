@@ -1637,15 +1637,21 @@ async function stoppaPass() {
     return veckaOK && årOK;
   });
 
-  const filtreradeRapporter = veckansRapporter.filter((r) => {
-    const metodOK =
-  filterMetod === "alla"
-    ? true
-    : (r.arbetssatt === filterMetod) ||
-      (filterMetod === "hand" && r.team_namn === "För hand") ||
-      (filterMetod === "maskin" && r.team_namn === "Maskin");
-    return metodOK;
-  });
+ const filtreradeRapporter = veckansRapporter.filter((r) => {
+  // ✅ Pass-start ska alltid inkluderas för korrekt tidskedja
+  if (r.syfte && r.syfte.toLowerCase().includes("pass-start")) {
+    return true;
+  }
+
+  const metodOK =
+    filterMetod === "alla"
+      ? true
+      : (r.arbetssatt === filterMetod) ||
+        (filterMetod === "hand" && r.team_namn === "För hand") ||
+        (filterMetod === "maskin" && r.team_namn === "Maskin");
+
+  return metodOK;
+});
 
   const totalMaskinMin = veckansRapporter
   .filter((r) => r.arbetssatt === "maskin" || r.team_namn === "Maskin")
