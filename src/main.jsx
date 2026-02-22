@@ -492,6 +492,7 @@ const [aktivPassPopup, setAktivPassPopup] = useState(null);
   
   // Manuell Registrering (Veckorapport – popup)
   const [manuellAdressId, setManuellAdressId] = useState("");
+  const ärPassStart = String(manuellAdressId) === "67";
   const [manuellTeam, setManuellTeam] = useState("För hand");
   const [manuellAntalAnstallda, setManuellAntalAnstallda] =
     useState(1);
@@ -1451,14 +1452,22 @@ if (error) {
 async function sparaManuellRapport() {
   if (!validateManuellFields()) return;
 
-  // 🔧 Säker metod‑identifiering oavsett mellanslag, stora/små bokstäver
   const cleanTeam = manuellTeam.replace(/\s/g, "").toLowerCase();
   const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
 
-  const syfteText = buildManuellSyfteString();
+  const ärPassStart = String(manuellAdressId) === "67";
 
-  const tidMin = parseInt(manuellTidMin, 10);
-  if (!tidMin || tidMin <= 0) {
+  // ✅ Syfte automatiskt för PASS-START
+  const syfteText = ärPassStart
+    ? "PASS-START"
+    : buildManuellSyfteString();
+
+  // ✅ Arbetstid automatiskt 0 för PASS-START
+  const arbetstidMin = ärPassStart
+    ? 0
+    : parseInt(manuellTidMin, 10);
+
+  if (!ärPassStart && (!arbetstidMin || arbetstidMin <= 0)) {
     showPopup(
       "👎 Ange arbetstid (minuter) för manuell registrering.",
       "error",
@@ -1468,19 +1477,15 @@ async function sparaManuellRapport() {
     return;
   }
 
-  // Spara ren tid mellan två jobb, inte multiplicerat med antal anställda
-  const arbetstidMin = tidMin;
-  
-
-  // 🕓 Skapa korrekt datum-/tidsstämpling (utan felaktig offsetjustering)
-  let datumIso, jobbIso;
+  // ✅ Spara alltid korrekt UTC-tid
+  let datumIso;
   try {
     const datePart = manuellDatum; // "YYYY-MM-DD"
-    const timePart = manuellTid ? manuellTid : "12:00"; // "HH:mm"
+    const timePart = manuellTid ? manuellTid : "12:00";
 
-    // 🔸 Spara som lokal tid (utan zonkonvertering)
-    datumIso = `${datePart}T${timePart}:00`;
-    jobbIso = datumIso;
+    const localDate = new Date(`${datePart}T${timePart}`);
+    datumIso = localDate.toISOString();
+
   } catch (e) {
     showPopup(
       "👎 Ogiltigt datum eller tid för manuell registrering.",
@@ -1496,15 +1501,15 @@ async function sparaManuellRapport() {
   const { error } = await supabase.from("rapporter").insert([
     {
       datum: datumIso,
-      jobb_tid: jobbIso,
+      jobb_tid: datumIso,
       adress_id: manuellAdressId,
       arbetstid_min: arbetstidMin,
-      team_namn: manuellTeam,  // 📋 UI-fält – "För hand" / "Maskin"
-      arbetssatt: metod,       // ⚙️ filtrerings-fält – "hand" / "maskin"
-      sand_kg: parseInt(manuellSand, 10) || 0,
-      salt_kg: parseInt(manuellSalt, 10) || 0,
+      team_namn: manuellTeam,
+      arbetssatt: metod,
+      sand_kg: ärPassStart ? 0 : parseInt(manuellSand, 10) || 0,
+      salt_kg: ärPassStart ? 0 : parseInt(manuellSalt, 10) || 0,
       syfte: syfteText,
-      antal_anstallda: manuellAntalAnstallda,
+      antal_anstallda: ärPassStart ? 1 : manuellAntalAnstallda,
       skyddad: true,
     },
   ]);
@@ -1520,7 +1525,6 @@ async function sparaManuellRapport() {
     if (visaOversikt) hamtaRapporter();
   }
 }
-
   
  // ======= Starta pass (öppnar val-popup) =======
 async function startaPass() {
@@ -6305,7 +6309,8 @@ return (
       ))}
     </select>
 
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+    {!ärPassStart && (
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
       {[
         ["manSyfteOversyn", "Översyn"],
         ["manSyfteRojning", "Röjning"],
@@ -6338,6 +6343,7 @@ return (
         </label>
       ))}
     </div>
+	)}
 
     <label>Datum:</label>
     <input
@@ -6368,6 +6374,8 @@ return (
 />
 
     
+    {!ärPassStart && (
+  <>
     <label>Arbetstid (minuter)</label>
     <input
       type="number"
@@ -6421,35 +6429,39 @@ return (
         </option>
       ))}
     </select>
+  </>
+)}
 
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <button
-        onClick={sparaManuellRapport}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#16a34a",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        Spara manuellt
-      </button>
-      <button
-        onClick={closeManuellPopup}
-        style={{
-          padding: "10px 16px",
-          borderRadius: 999,
-          border: "none",
-          backgroundColor: "#dc2626",
-          color: "#ffffff",
-          fontWeight: 600,
-        }}
-      >
-        Avbryt
-      </button>
-    </div>
+<div style={{ display: "flex", justifyContent: "space-between" }}>
+  <button
+    onClick={sparaManuellRapport}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#16a34a",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Spara manuellt
+  </button>
+
+  <button
+    onClick={closeManuellPopup}
+    style={{
+      padding: "10px 16px",
+      borderRadius: 999,
+      border: "none",
+      backgroundColor: "#dc2626",
+      color: "#ffffff",
+      fontWeight: 600,
+    }}
+  >
+    Avbryt
+  </button>
+</div>
+	  
   </div>
 )}
 
