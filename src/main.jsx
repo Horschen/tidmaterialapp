@@ -3742,28 +3742,6 @@ for (let i = 0; i < allaSort.length; i++) {
   }
 }
 
-            // 🔹 Om det finns en pass-start, sätt den som föregående tid för första jobbet
-            if (allaPassStart.length > 0) {
-              const senastePassStart = allaPassStart.at(-1);
-              const passStartTid = senastePassStart.jobb_tid || senastePassStart.datum;
-
-              // Sätt pass-start som föregående tid för första jobbet
-              if (allaSort.length >= 2) {
-                const forstaRiktigaJobbet = allaSort.find(r => r.id !== senastePassStart.id);
-                if (forstaRiktigaJobbet) {
-                  föregåendeJobbTidPerRapportId.set(forstaRiktigaJobbet.id, passStartTid);
-                }
-              }
-            }
-            for (let i = 1; i < allaSort.length; i++) {
-              const prev = allaSort[i - 1];
-              const curr = allaSort[i];
-              const prevIso = prev.jobb_tid || prev.datum || null;
-              if (curr.id != null) {
-                föregåendeJobbTidPerRapportId.set(curr.id, prevIso);
-              }
-            }
-
             // 3️⃣ Gruppera per adress som tidigare (för rubriker/summor)
             const grupper = {};
             allaSort.forEach((r) => {
