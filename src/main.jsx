@@ -6007,18 +6007,21 @@ return (
   }}
 >
   {editRapporter.map((r) => {
-    const d = r.jobb_tid ? new Date(r.jobb_tid) : null;
 
     let text = "Okänd tid";
 
-    if (d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
+    if (r.jobb_tid) {
+      const d = new Date(r.jobb_tid);
 
-      text = `${year}-${month}-${day}, ${hours}:${minutes}`;
+      text = d.toLocaleString("sv-SE", {
+        timeZone: "Europe/Stockholm",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).replace(" ", ", ");
     }
 
     return (
