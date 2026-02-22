@@ -51,11 +51,17 @@ function formatTid(minuter) {
 function formatDatumTid(iso) {
   if (!iso) return "-";
   try {
-    // Exempel: "2026-01-27T00:46:00+00:00" → "2026-01-27 00:46"
-    const [datePart, timePart] = iso.split("T");
-    if (!timePart) return datePart;
-    const tid = timePart.replace(/Z|(\+.*)/, "").slice(0, 5);
-    return `${datePart} ${tid}`;
+    const d = new Date(iso);
+
+    return d.toLocaleString("sv-SE", {
+      timeZone: "Europe/Stockholm",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).replace(" ", " ");
   } catch {
     return "-";
   }
