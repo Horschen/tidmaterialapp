@@ -3731,11 +3731,14 @@ if (activeTab === "rapport") {
       </select>
 
       <button
-        style={{ ...secondaryButton, marginTop: 12 }}
-        onClick={hamtaRapporter}
-      >
-        Uppdatera översikt
-      </button>
+  style={{ ...secondaryButton, marginTop: 12 }}
+  onClick={async () => {
+    setVisaAllaJob(false);   // ✅ STÄNGER Job Per Adress
+    await hamtaRapporter();
+  }}
+>
+  Uppdatera översikt
+</button>
 
      {(() => {
             // Hjälp: formatera ISO-sträng till "YYYY-MM-DD, HH:MM"
