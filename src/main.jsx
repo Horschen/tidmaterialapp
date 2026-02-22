@@ -1526,10 +1526,11 @@ async function sparaManuellRapport() {
     showPopup("👎 Fel vid manuell sparning", "error", 3000);
   } else {
     setStatus("Manuell rapport sparad");
-    showPopup("👍 Manuell rapport sparad", "success", 4000);
-    resetManuellForm();
-    setVisaManuellPopup(false);
-    if (visaOversikt) hamtaRapporter();
+showPopup("👍 Manuell rapport sparad", "success", 4000);
+resetManuellForm();
+setVisaManuellPopup(false);
+
+await hamtaRapporter();
   }
 }
   
