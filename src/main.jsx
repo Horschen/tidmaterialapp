@@ -165,19 +165,23 @@ function VeckoOversikt({
         g.senasteJobbTid &&
         new Date(g.senasteJobbTid) > new Date(Date.now() - 10 * 60 * 1000),
     }))
-    .sort((a, b) => {
-      const toMs = (v) => (v ? Math.floor(new Date(v).getTime() / 1000) * 1000 : 0);
-      const tA = toMs(a.senasteDatumTid);
-      const tB = toMs(b.senasteDatumTid);
-      return tB - tA;
-    });
+   .sort((a, b) => {
 
-  const metodText =
-    filterMetod === "hand"
-      ? "Endast För hand"
-      : filterMetod === "maskin"
-      ? "Endast Maskin"
-      : "Alla jobb";
+  // ✅ Pass-start ska alltid visas överst
+  const aIsPass = a.syften?.toLowerCase().includes("pass-start");
+  const bIsPass = b.syften?.toLowerCase().includes("pass-start");
+
+  if (aIsPass && !bIsPass) return -1;
+  if (!aIsPass && bIsPass) return 1;
+
+  const toMs = (v) =>
+    v ? Math.floor(new Date(v).getTime() / 1000) * 1000 : 0;
+
+  const tA = toMs(a.senasteDatumTid);
+  const tB = toMs(b.senasteDatumTid);
+
+  return tB - tA;
+});
 
   // === 4️⃣ Rendera tabellen ===
   return (
@@ -305,24 +309,32 @@ function VeckoOversikt({
                   />
                 </td>
                 <td>{formatDatumTid(r.senasteDatumTid)}</td>
-                <td>
-                  {r.namn}
-                  {r.redigerad && (
-                    <span
-                      style={{
-                        marginLeft: 6,
-                        padding: "2px 6px",
-                        borderRadius: 6,
-                        backgroundColor: "#e0f2fe",
-                        color: "#0369a1",
-                        fontSize: 11,
-                        fontWeight: 600,
-                      }}
-                    >
-                      📝 ändrad
-                    </span>
-                  )}
-                </td>
+
+  <td>
+  {r.syften?.toLowerCase().includes("pass-start") ? (
+    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+      ⏱️ Arbetspass Start
+    </span>
+  ) : (
+    r.namn
+  )}
+
+  {r.redigerad && (
+    <span
+      style={{
+        marginLeft: 6,
+        padding: "2px 6px",
+        borderRadius: 6,
+        backgroundColor: "#e0f2fe",
+        color: "#0369a1",
+        fontSize: 11,
+        fontWeight: 600,
+      }}
+    >
+      📝 ändrad
+    </span>
+  )}
+</td>
                 <td style={{ textAlign: "center" }}>{r.antal}</td>
                 <td style={{ textAlign: "center" }}>{r.anstallda}</td>
                 <td style={{ textAlign: "right" }}>{formatTid(r.tid)}</td>
@@ -1637,8 +1649,9 @@ async function stoppaPass() {
     return veckaOK && årOK;
   });
 
- const filtreradeRapporter = veckansRapporter.filter((r) => {
-  // ✅ Pass-start ska alltid inkluderas för korrekt tidskedja
+const filtreradeRapporter = veckansRapporter.filter((r) => {
+
+  // ✅ PASS-START ska alltid inkluderas
   if (r.syfte && r.syfte.toLowerCase().includes("pass-start")) {
     return true;
   }
@@ -3721,26 +3734,32 @@ if (activeTab === "rapport") {
             // 🔹 Hitta alla pass-start för denna vecka
             const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
 
-            // 2️⃣ Bygg "föregående jobb"-karta men nollställ vid varje PASS-START
-              const föregåendeJobbTidPerRapportId = new Map();
-             let senasteTid = null;
-             for (let i = 0; i < allaSort.length; i++) {
-             const r = allaSort[i];
-             const currentTid = r.jobb_tid || r.datum || null;
+            // Sortera äldst → nyast
+const allaSort = [...filtreradeRapporter].sort(
+  (a, b) =>
+    new Date(a.jobb_tid || a.datum) -
+    new Date(b.jobb_tid || b.datum)
+);
 
-  // Om detta är pass-start → börja ny kedja
-  if (r.syfte === "Pass-start" || r.syfte === "PASS-START") {
-    senasteTid = currentTid;
+const föregåendeJobbTidPerRapportId = new Map();
+
+let aktuellPassStartTid = null;
+
+for (let i = 0; i < allaSort.length; i++) {
+  const r = allaSort[i];
+  const currentTid = r.jobb_tid || r.datum || null;
+
+  // ✅ När vi hittar PASS-START → börja nytt passblock
+  if (r.syfte && r.syfte.toLowerCase().includes("pass-start")) {
+    aktuellPassStartTid = currentTid;
     continue;
   }
 
-  // Om vi har en startpunkt → sätt den som "från"
-  if (senasteTid && r.id != null) {
-    föregåendeJobbTidPerRapportId.set(r.id, senasteTid);
+  // ✅ Om vi är inne i ett pass
+  if (aktuellPassStartTid) {
+    föregåendeJobbTidPerRapportId.set(r.id, aktuellPassStartTid);
+    aktuellPassStartTid = currentTid;
   }
-
-  // Uppdatera senasteTid till denna posts sluttid
-  senasteTid = currentTid;
 }
 
             // 3️⃣ Gruppera per adress som tidigare (för rubriker/summor)
