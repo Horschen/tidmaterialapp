@@ -1496,30 +1496,28 @@ async function sparaManuellRapport() {
     return;
   }
 
-  // ✅ Skapa korrekt UTC-tid från angiven lokal tid
-  let datumIso;
+  // ✅ Skapa korrekt UTC från angiven lokal tid
+let datumIso;
 
-  try {
-    const datePart = manuellDatum;
-    const timePart = manuellTid ? manuellTid : "12:00";
+try {
+  const datePart = manuellDatum;
+  const timePart = manuellTid ? manuellTid : "12:00";
 
-    const localDate = new Date(`${datePart}T${timePart}:00`);
+  // Skapa lokal tid
+  const localDate = new Date(`${datePart}T${timePart}:00`);
 
-    const utcDate = new Date(
-      localDate.getTime() - localDate.getTimezoneOffset() * 60000
-    );
+  // ✅ Låt JS konvertera korrekt till UTC
+  datumIso = localDate.toISOString();
 
-    datumIso = utcDate.toISOString();
-
-  } catch (e) {
-    showPopup(
-      "👎 Ogiltigt datum eller tid för manuell registrering.",
-      "error",
-      3000
-    );
-    setStatus("Ogiltigt datum/tid för manuell registrering.");
-    return;
-  }
+} catch (e) {
+  showPopup(
+    "👎 Ogiltigt datum eller tid för manuell registrering.",
+    "error",
+    3000
+  );
+  setStatus("Ogiltigt datum/tid för manuell registrering.");
+  return;
+}
 
   setStatus("Sparar manuell rapport…");
 
