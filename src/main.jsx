@@ -5996,8 +5996,8 @@ return (
     >
       {editRapporter.map((r) => (
         <option key={r.id} value={r.id}>
-          {formatDatumTid(r.datum)} — {r.adresser?.namn || "Okänd adress"}
-        </option>
+  {formatDatumTid(r.jobb_tid)} — {r.adresser?.namn || "Okänd adress"}
+</option>
       ))}
     </select>
 
@@ -6020,7 +6020,7 @@ return (
       </label>
 
 <label>
-  Tid:
+  Slut Tid (När du avslutade jobbet) :
   <input
     type="time"
     value={editForm.tid || ""}
