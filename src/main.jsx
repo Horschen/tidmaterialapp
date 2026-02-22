@@ -3748,46 +3748,51 @@ if (activeTab === "rapport") {
               }
             }
 
-            // 3️⃣ Gruppera per adress som tidigare (för rubriker/summor)
-            const grupper = {};
-            allaSort.forEach((r) => {
-              const id = r.adress_id || "okänd";
-              if (!grupper[id]) grupper[id] = [];
-              grupper[id].push(r);
-            });
+           // ✅ Filtrera bort PASS‑START innan gruppering
+const filtreradeFörAdress = allaSort.filter(
+  (r) => !(r.syfte && r.syfte.toUpperCase().includes("PASS-START"))
+);
 
-            const adressGrupper = Object.entries(grupper)
-              .map(([aid, list]) => ({
-                id: aid,
-                namn: list[0]?.adresser?.namn || "Okänd adress",
-                sortIndex:
-                  list[0]?.adresser?.adresslista_sortering ??
-                  list[0]?.adresser?.id ??
-                  0,
-                // Inom adress: sortera också äldst → nyast (för visuell ordning)
-                rapporter: list
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      new Date(a.jobb_tid || a.datum).getTime() -
-                      new Date(b.jobb_tid || b.datum).getTime()
-                  ),
-              }))
-              .sort((a, b) => a.sortIndex - b.sortIndex);
+// 3️⃣ Gruppera per adress (utan PASS‑START)
+const grupper = {};
+filtreradeFörAdress.forEach((r) => {
+  const id = r.adress_id || "okänd";
+  if (!grupper[id]) grupper[id] = [];
+  grupper[id].push(r);
+});
 
-            if (adressGrupper.length === 0) {
-              return (
-                <div
-                  style={{
-                    padding: 12,
-                    textAlign: "center",
-                    fontSize: 14,
-                  }}
-                >
-                  Inga jobb hittades för vald vecka och metod.
-                </div>
-              );
-            }
+const adressGrupper = Object.entries(grupper)
+  .map(([aid, list]) => ({
+    id: aid,
+    namn: list[0]?.adresser?.namn || "Okänd adress",
+    sortIndex:
+      list[0]?.adresser?.adresslista_sortering ??
+      list[0]?.adresser?.id ??
+      0,
+    // Inom adress: sortera också äldst → nyast (för visuell ordning)
+    rapporter: list
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.jobb_tid || a.datum).getTime() -
+          new Date(b.jobb_tid || b.datum).getTime()
+      ),
+  }))
+  .sort((a, b) => a.sortIndex - b.sortIndex);
+
+if (adressGrupper.length === 0) {
+  return (
+    <div
+      style={{
+        padding: 12,
+        textAlign: "center",
+        fontSize: 14,
+      }}
+    >
+      Inga jobb hittades för vald vecka och metod.
+    </div>
+  );
+}
 
             return adressGrupper.map((g) => {
               const totTidMin = g.rapporter.reduce(
