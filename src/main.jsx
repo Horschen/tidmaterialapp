@@ -3779,379 +3779,252 @@ for (let i = 0; i < allaSort.length; i++) {
                   list[0]?.adresser?.adresslista_sortering ??
                   list[0]?.adresser?.id ??
                   0,
-                // Inom adress: sortera också äldst → nyast (för visuell ordning)
-                rapporter: list
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      new Date(a.jobb_tid || a.datum).getTime() -
-                      new Date(b.jobb_tid || b.datum).getTime()
-                  ),
-              }))
-              .sort((a, b) => a.sortIndex - b.sortIndex);
 
-            if (adressGrupper.length === 0) {
-              return (
-                <div
-                  style={{
-                    padding: 12,
-                    textAlign: "center",
-                    fontSize: 14,
-                  }}
-                >
-                  Inga jobb hittades för vald vecka och metod.
-                </div>
-              );
+                // Inom adress: sortera också äldst → nyast (för visuell ordning)
+rapporter: list
+  .slice()
+  .sort(
+    (a, b) =>
+      new Date(a.jobb_tid || a.datum).getTime() -
+      new Date(b.jobb_tid || b.datum).getTime()
+  ),
+}))
+.sort((a, b) => a.sortIndex - b.sortIndex);
+
+if (adressGrupper.length === 0) {
+  return (
+    <div
+      style={{
+        padding: 12,
+        textAlign: "center",
+        fontSize: 14,
+      }}
+    >
+      Inga jobb hittades för vald vecka och metod.
+    </div>
+  );
+}
+
+return adressGrupper.map((g) => {
+  const totTidMin = g.rapporter.reduce(
+    (s, r) => s + (r.arbetstid_min || 0),
+    0
+  );
+
+  const totAnst = g.rapporter.reduce(
+    (s, r) => s + (r.antal_anstallda || 1),
+    0
+  );
+
+  const totGrus = g.rapporter.reduce(
+    (s, r) => s + (parseInt(r.sand_kg) || 0),
+    0
+  );
+
+  const totSalt = g.rapporter.reduce(
+    (s, r) => s + (parseInt(r.salt_kg) || 0),
+    0
+  );
+
+  const ärFakturerad =
+    g.rapporter.length > 0 &&
+    g.rapporter.every((r) => r.fakturerat === true);
+
+  return (
+    <div
+      key={g.id}
+      style={{
+        borderTop: "2px solid #e5e7eb",
+        padding: "8px 12px 4px",
+        backgroundColor: ärFakturerad
+          ? "rgba(134,239,172,0.35)"
+          : "rgba(254,202,202,0.35)",
+        transition: "background-color 0.3s ease",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <h4
+          style={{
+            margin: "6px 0 8px",
+            fontSize: 15,
+            color: "#1e3a8a",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {g.rapporter.some(r =>
+            r.syfte && r.syfte.toLowerCase().includes("pass-start")
+          ) ? (
+            <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+              ⏱️ Arbetspass Start
+            </span>
+          ) : (
+            <>📍 {g.namn}</>
+          )}
+
+          {ärFakturerad && (
+            <span
+              style={{
+                padding: "2px 8px",
+                borderRadius: 999,
+                backgroundColor: "#16a34a",
+                color: "#ffffff",
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              FAKTURERAD
+            </span>
+          )}
+        </h4>
+      </div>
+
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          tableLayout: "fixed",
+          fontSize: 13,
+        }}
+      >
+        <thead>
+          <tr style={{ backgroundColor: "#f3f4f6" }}>
+            <th style={{ textAlign: "left", padding: "4px 6px", width: "28%" }}>
+              Datum (från → till)
+            </th>
+            <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
+              Tid (min)
+            </th>
+            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+              Anst (#)
+            </th>
+            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+              Grus (kg)
+            </th>
+            <th style={{ textAlign: "center", padding: "4px 6px", width: "10%" }}>
+              Salt (kg)
+            </th>
+            <th style={{ textAlign: "center", padding: "4px 6px", width: "12%" }}>
+              Team
+            </th>
+            <th style={{ textAlign: "left", padding: "4px 6px" }}>
+              Syfte
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {g.rapporter.map((r, idx) => {
+
+            const isPassStart =
+              r.syfte && r.syfte.toLowerCase().includes("pass-start");
+
+            const thisEndRaw = r.jobb_tid || r.datum || null;
+
+            let datumText = "-";
+
+            if (isPassStart) {
+              datumText = formatIsoTillDatumOchTid(thisEndRaw);
+            } else {
+              const prevEndRaw =
+                föregåendeJobbTidPerRapportId.get(r.id) || null;
+
+              if (prevEndRaw && thisEndRaw) {
+                datumText = `${formatIsoTillDatumOchTid(prevEndRaw)} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
+              } else if (thisEndRaw) {
+                datumText = formatIsoTillDatumOchTid(thisEndRaw);
+              }
             }
 
-            return adressGrupper.map((g) => {
-              const totTidMin = g.rapporter.reduce(
-                (s, r) => s + (r.arbetstid_min || 0),
-                0
-              );
-              const totAnst = g.rapporter.reduce(
-                (s, r) => s + (r.antal_anstallda || 1),
-                0
-              );
-              const totGrus = g.rapporter.reduce(
-                (s, r) => s + (parseInt(r.sand_kg) || 0),
-                0
-              );
-              const totSalt = g.rapporter.reduce(
-                (s, r) => s + (parseInt(r.salt_kg) || 0),
-                0
-              );
+            const tidMin = r.arbetstid_min || 0;
 
-              const ärFakturerad =
-                g.rapporter.length > 0 &&
-                g.rapporter.every((r) => r.fakturerat === true);
+            return (
+              <tr
+                key={r.id || idx}
+                style={{
+                  backgroundColor: isPassStart
+                    ? "#d1fae5"
+                    : idx % 2 === 0
+                    ? "#ffffff"
+                    : "#f9fafb",
+                  borderBottom: "1px solid #e5e7eb",
+                }}
+              >
+                <td style={{ padding: "4px 6px" }}>
+                  {datumText}
+                </td>
 
-              return (
-                <div
-                  key={g.id}
-                  style={{
-                    borderTop: "2px solid #e5e7eb",
-                    padding: "8px 12px 4px",
-                    backgroundColor: ärFakturerad
-                      ? "rgba(134,239,172,0.35)"
-                      : "rgba(254,202,202,0.35)",
-                    transition: "background-color 0.3s ease",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <h4
-                      style={{
-                        margin: "6px 0 8px",
-                        fontSize: 15,
-                        color: "#1e3a8a",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      📍 {g.namn}
-                      {ärFakturerad && (
-                        <span
-                          style={{
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            backgroundColor: "#16a34a",
-                            color: "#ffffff",
-                            fontSize: 11,
-                            fontWeight: 700,
-                          }}
-                        >
-                          FAKTURERAD
-                        </span>
-                      )}
-                    </h4>
+                <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                  {tidMin}
+                  <span style={{ color: "#6b7280", fontSize: 12 }}>
+                    {" "}
+                    ({formatTid(tidMin)})
+                  </span>
+                </td>
 
-                    <label
-                      style={{
-                        fontSize: 13,
-                        color: ärFakturerad ? "#166534" : "#991b1b",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        cursor: "pointer",
-                        fontWeight: 600,
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={ärFakturerad}
-                        onChange={async (e) => {
-                          const nyttVarde = e.target.checked;
-                          try {
-                            const rapportIds = g.rapporter.map((r) => r.id);
-                            if (rapportIds.length === 0) return;
+                <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                  {r.antal_anstallda || 1}
+                </td>
 
-                            const { error } = await supabase
-                              .from("rapporter")
-                              .update({ fakturerat: nyttVarde })
-                              .in("id", rapportIds);
+                <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                  {r.sand_kg || 0}
+                </td>
 
-                            if (error) throw error;
+                <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                  {r.salt_kg || 0}
+                </td>
 
-                            setRapporter((prev) =>
-                              prev.map((r) =>
-                                rapportIds.includes(r.id)
-                                  ? { ...r, fakturerat: nyttVarde }
-                                  : r
-                              )
-                            );
+                <td style={{ textAlign: "center", padding: "4px 6px" }}>
+                  {r.team_namn ||
+                    (r.arbetssatt === "hand" ? "För hand" : "Maskin")}
+                </td>
 
-                            showPopup(
-                              nyttVarde
-                                ? "✅ Markerad som fakturerad (denna vecka)."
-                                : "🔴 Markerad som ej fakturerad (denna vecka).",
-                              "success",
-                              2000
-                            );
-                          } catch (err) {
-                            console.error(err);
-                            showPopup(
-                              "👎 Fel vid uppdatering av fakturerad‑status.",
-                              "error",
-                              3000
-                            );
-                          }
-                        }}
-                        style={{ transform: "scale(1.2)" }}
-                      />
-                      Fakturerad
-                    </label>
-                  </div>
+                <td style={{ padding: "4px 6px" }}>
+                  {r.syfte}
+                </td>
+              </tr>
+            );
+          })}
 
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      tableLayout: "fixed",
-                      fontSize: 13,
-                    }}
-                  >
-                    <thead>
-                      <tr style={{ backgroundColor: "#f3f4f6" }}>
-                        <th
-                          style={{
-                            textAlign: "left",
-                            padding: "4px 6px",
-                            width: "28%",
-                          }}
-                        >
-                          Datum (från → till)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                            width: "12%",
-                          }}
-                        >
-                          Tid (min)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                            width: "10%",
-                          }}
-                        >
-                          Anst (#)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                            width: "10%",
-                          }}
-                        >
-                          Grus (kg)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                            width: "10%",
-                          }}
-                        >
-                          Salt (kg)
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                            width: "12%",
-                          }}
-                        >
-                          Team
-                        </th>
-                        <th
-                          style={{
-                            textAlign: "left",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          Syfte
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {g.rapporter.map((r, idx) => {
-                        const thisEndRaw = r.jobb_tid || r.datum || null;
-                        const prevEndRaw =
-                          (r.id != null &&
-                            föregåendeJobbTidPerRapportId.get(r.id)) ||
-                          null;
-                         let datumText = "-";
-
-                        if (prevEndRaw && thisEndRaw) {
-                       datumText = `${formatIsoTillDatumOchTid(prevEndRaw)} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
-                       } else if (thisEndRaw) {datumText = formatIsoTillDatumOchTid(thisEndRaw);}
-
-                        const tidMin = r.arbetstid_min || 0;
-                        const ärPassStart =
-                          r.syfte === "PASS-START" ||
-                          r.syfte === "Pass-start";
-
-                        return (
-                          <tr
-                            key={r.id || idx}
-                            style={{
-                              backgroundColor: ärPassStart
-                                ? "#d1fae5"
-                                : idx % 2 === 0
-                                ? "#ffffff"
-                                : "#f9fafb",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <td style={{ padding: "4px 6px" }}>
-                              {datumText}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {tidMin}
-                              <span
-                                style={{
-                                  color: "#6b7280",
-                                  fontSize: 12,
-                                }}
-                              >
-                                {" "}
-                                ({formatTid(tidMin)})
-                              </span>
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.antal_anstallda || 1}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.sand_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.salt_kg || 0}
-                            </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "4px 6px",
-                              }}
-                            >
-                              {r.team_namn ||
-                                (r.arbetssatt === "hand"
-                                  ? "För hand"
-                                  : "Maskin")}
-                            </td>
-                            <td style={{ padding: "4px 6px" }}>{r.syfte}</td>
-                          </tr>
-                        );
-                      })}
-
-                      <tr
-                        style={{
-                          backgroundColor: "#fef9c3",
-                          fontWeight: 600,
-                          borderTop: "2px solid #e5e7eb",
-                        }}
-                      >
-                        <td style={{ padding: "4px 6px" }}>
-                          Summa (Totalt / adress)
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totTidMin}
-                          <span
-                            style={{
-                              color: "#6b7280",
-                              fontSize: 12,
-                            }}
-                          >
-                            {" "}
-                            ({formatTid(totTidMin)})
-                          </span>
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totAnst}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totGrus}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: "center",
-                            padding: "4px 6px",
-                          }}
-                        >
-                          {totSalt}
-                        </td>
-                        <td colSpan={2}></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              );
-            });
-          })()}
+          <tr
+            style={{
+              backgroundColor: "#fef9c3",
+              fontWeight: 600,
+              borderTop: "2px solid #e5e7eb",
+            }}
+          >
+            <td style={{ padding: "4px 6px" }}>
+              Summa (Totalt / adress)
+            </td>
+            <td style={{ textAlign: "center", padding: "4px 6px" }}>
+              {totTidMin}
+              <span style={{ color: "#6b7280", fontSize: 12 }}>
+                {" "}
+                ({formatTid(totTidMin)})
+              </span>
+            </td>
+            <td style={{ textAlign: "center", padding: "4px 6px" }}>
+              {totAnst}
+            </td>
+            <td style={{ textAlign: "center", padding: "4px 6px" }}>
+              {totGrus}
+            </td>
+            <td style={{ textAlign: "center", padding: "4px 6px" }}>
+              {totSalt}
+            </td>
+            <td colSpan={2}></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+});
 
        {/* Arbetspass-Översikt – knapp */}
       <div style={{ marginTop: 16 }}>
