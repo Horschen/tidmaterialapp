@@ -1378,37 +1378,37 @@ const metod = cleanTeam.includes("förhand") ? "hand" : "maskin";
     // Dra bort paus‑sekunder (paus är redan total paus under intervallet)
     const sekEfterPaus = Math.max(råSek - (pausSekUnderIntervall || 0), 0);
 
-    // ✅ Konvertera till minuter med korrekt avrundning
+// ✅ Konvertera till minuter med korrekt avrundning
 const totalSek = Math.floor(sekEfterPaus); // sekunder totalt
 const helaMin = Math.floor(totalSek / 60);
 const restSek = totalSek % 60;
 
 // ✅ Avrunda upp först när sekunder > 30
-const diffMin = restSek > 30 ? helaMin + 1 : helaMin;
+let diffMin = restSek > 30 ? helaMin + 1 : helaMin;
 
-// ✅ Säkerställ minimum 1 minut om det finns någon faktisk tid
+// ✅ Säkerställ minimum 1 minut om det finns faktisk tid
 if (totalSek > 0 && diffMin === 0) {
-  arbetstidMin = 1;
-} else {
-  arbetstidMin = diffMin;
+  diffMin = 1;
 }
 
-if (arbetstidMin <= 0) {
+if (diffMin <= 0) {
   showPopup("👎 För kort tid (eller bara paus).", "error", 3000);
   setStatus("För kort intervall för auto-tid.");
   return;
 }
-    arbetstidMin = diffMin;
-  } else {
-    const manu = parseInt(arbetstid, 10);
-    if (!manu || manu <= 0) {
-      showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
-      setStatus("Ange arbetstid (minuter).");
-      return;
-    }
-    // Manuell tid är nu också “ren” tid, utan multiplikation med antal anställda
-    arbetstidMin = manu;
+
+arbetstidMin = diffMin;
+
+} else {
+  const manu = parseInt(arbetstid, 10);
+  if (!manu || manu <= 0) {
+    showPopup("👎 Ange arbetstid (minuter).", "error", 3000);
+    setStatus("Ange arbetstid (minuter).");
+    return;
   }
+
+  arbetstidMin = manu; // ✅ säkerställ att manuell tid sätts korrekt
+}
 
  // — Tidsstämplar —
 // ✅ Spara alltid i UTC för att undvika tidszonproblem
