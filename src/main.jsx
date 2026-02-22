@@ -3734,14 +3734,7 @@ if (activeTab === "rapport") {
             // 🔹 Hitta alla pass-start för denna vecka
             const allaPassStart = allaSort.filter(r => r.syfte === "Pass-start" || r.syfte === "PASS-START");
 
-            // Sortera äldst → nyast
-const allaSort = [...filtreradeRapporter].sort(
-  (a, b) =>
-    new Date(a.jobb_tid || a.datum) -
-    new Date(b.jobb_tid || b.datum)
-);
-
-const föregåendeJobbTidPerRapportId = new Map();
+           const föregåendeJobbTidPerRapportId = new Map();
 
 let aktuellPassStartTid = null;
 
