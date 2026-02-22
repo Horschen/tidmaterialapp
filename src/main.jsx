@@ -4010,20 +4010,11 @@ for (let i = 0; i < allaSort.length; i++) {
                           (r.id != null &&
                             föregåendeJobbTidPerRapportId.get(r.id)) ||
                           null;
+                         let datumText = "-";
 
-                        const thisEndRaw = r.jobb_tid || r.datum || null;
-const prevEndRaw =
-  (r.id != null &&
-    föregåendeJobbTidPerRapportId.get(r.id)) ||
-  null;
-
-let datumText = "-";
-
-if (prevEndRaw && thisEndRaw) {
-  datumText = `${formatIsoTillDatumOchTid(prevEndRaw)} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
-} else if (thisEndRaw) {
-  datumText = formatIsoTillDatumOchTid(thisEndRaw);
-}
+                        if (prevEndRaw && thisEndRaw) {
+                       datumText = `${formatIsoTillDatumOchTid(prevEndRaw)} > ${formatIsoTillDatumOchTid(thisEndRaw)}`;
+                       } else if (thisEndRaw) {datumText = formatIsoTillDatumOchTid(thisEndRaw);}
 
                         const tidMin = r.arbetstid_min || 0;
                         const ärPassStart =
