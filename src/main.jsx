@@ -1775,9 +1775,33 @@ function startPaus() {
     return metodOK;
   });
 
- // Hjälpfunktion: är detta en Vecko-Regga-rad?
+// Hjälpfunktion: är detta en Vecko-Regga-rad? (kollar både rapportens relation och adresslistan)
 function arVeckoReggaRad(r) {
-  return (r.adresser?.namn || "").toLowerCase() === "vecko-regg";
+  // Försök 1: kolla direkt i rapportens adress-relation
+  const namnFranRapport = r.adresser?.namn;
+  if (namnFranRapport) {
+    return namnFranRapport.toLowerCase().trim() === "vecko-regg";
+  }
+  
+  // Försök 2: slå upp i adresslistan via adress_id
+  if (r.adress_id && adresser && adresser.length > 0) {
+    const adr = adresser.find(a => a.id === r.adress_id);
+    if (adr && adr.namn) {
+      return adr.namn.toLowerCase().trim() === "vecko-regg";
+    }
+  }
+  
+  return false;
+}
+
+// Debug: räkna ut hur mycket som exkluderas (tas bort när det funkar)
+const veckoReggaMinuter = veckansRapporter
+  .filter(r => (r.arbetssatt === "hand" || r.team_namn === "För hand"))
+  .filter(arVeckoReggaRad)
+  .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
+
+if (veckoReggaMinuter > 0) {
+  console.log(`Exkluderar ${veckoReggaMinuter} minuter från Vecko-Regga i totalen`);
 }
 
 const totalMaskinMin = veckansRapporter
