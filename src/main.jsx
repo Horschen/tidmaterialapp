@@ -1775,7 +1775,7 @@ function startPaus() {
     return metodOK;
   });
 
-  // Hjälpfunktion: är detta en Vecko-Regga-rad?
+ // Hjälpfunktion: är detta en Vecko-Regga-rad?
 function arVeckoReggaRad(r) {
   return (r.adresser?.namn || "").toLowerCase() === "vecko-regg";
 }
@@ -1793,9 +1793,6 @@ const totalHandMin = veckansRapporter
       (r.arbetssatt === "hand" || r.team_namn === "För hand") &&
       !arVeckoReggaRad(r)              // ❌ räkna inte med Vecko-Regga
   )
-  .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-const totalHandMin = veckansRapporter
-  .filter((r) => r.arbetssatt === "hand" || r.team_namn === "För hand")
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
