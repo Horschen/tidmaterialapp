@@ -1487,6 +1487,68 @@ if (error) {
   setPaus(null);
   setPausSekUnderIntervall(0);
 }   // ✅ avslutar sparaRapport
+
+// ======= Automatisk "Vecko regga" =======
+async function laggTillVeckoRegga() {
+  try {
+    // 1. Hitta adressen "Vecko-Regg" i den befintliga adresslistan
+    const veckoadress = adresser.find(
+      (a) => (a.namn || "").toLowerCase() === "vecko-regg"
+    );
+
+    if (!veckoadress) {
+      showPopup(
+        '👎 Hittar ingen adress med namn "Vecko-Regg". Skapa den först under Karta → Adress-Admin.',
+        "error",
+        5000
+      );
+      setStatus(
+        'Ingen adress med namn "Vecko-Regg" hittades. Lägg till den i Adress-Admin.'
+      );
+      return;
+    }
+
+    // 2. Skapa tidsstämpel (nu, UTC)
+    const nowIso = new Date().toISOString();
+
+    // 3. Lägg in rapporten i Supabase
+    const { error } = await supabase.from("rapporter").insert([
+      {
+        datum: nowIso,
+        jobb_tid: nowIso,
+        adress_id: veckoadress.id,
+        arbetstid_min: 1,          // 1 minut
+        team_namn: "För hand",     // Arbetstyp
+        arbetssatt: "hand",        // intern kod
+        sand_kg: 0,
+        salt_kg: 0,
+        syfte: "Översyn",          // Syfte
+        antal_anstallda: 1,
+        skyddad: true,             // skydda mot radering
+      },
+    ]);
+
+    if (error) {
+      console.error(error);
+      showPopup("👎 Kunde inte spara vecko-regga.", "error", 4000);
+      setStatus("❌ Fel vid vecko-regga: " + error.message);
+      return;
+    }
+
+    // 4. Klart
+    showPopup("👍 Vecko-regga registrerad.", "success", 3000);
+    setStatus("Vecko-regga (1 min, Översyn) registrerad på 'Vecko-Regg'.");
+
+    // Om veckoöversikt är öppen kan vi uppdatera den
+    if (visaOversikt) {
+      await hamtaRapporter();
+    }
+  } catch (err) {
+    console.error(err);
+    showPopup("👎 Tekniskt fel vid vecko-regga.", "error", 4000);
+    setStatus("❌ Tekniskt fel vid vecko-regga: " + (err.message || "Okänt fel"));
+  }
+}
   
 // ======= Spara manuell rapport (popup) =======
 async function sparaManuellRapport() {
@@ -2951,250 +3013,276 @@ function avbrytRadering() {
 
   // ====== INNEHÅLL PER FLIK =======
   function renderContent() {
-    if (activeTab === "registrera") {
-      return (
-        <section style={sectionStyle}>
-          {paus && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#f97316",
-                color: "#ffffff",
-                fontSize: 14,
-              }}
-            >
-              Paus pågår –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
-            </div>
-          )}
+  if (activeTab === "registrera") {
+    return (
+      <section style={sectionStyle}>
+        {paus && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: "8px 12px",
+              borderRadius: 12,
+              backgroundColor: "#f97316",
+              color: "#ffffff",
+              fontSize: 14,
+            }}
+          >
+            Paus pågår –{" "}
+            <strong>{formatSekTillHhMmSs(pågåendePausSek)}</strong>
+          </div>
+        )}
 
-          {!paus && pausSekUnderIntervall > 0 && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#fed7aa",
-                color: "#7c2d12",
-                fontSize: 13,
-              }}
-            >
-              Registrerad paus för denna adress/resa:{" "}
-              <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
-              (dras av när du sparar rapport)
-            </div>
-          )}
+        {!paus && pausSekUnderIntervall > 0 && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: "8px 12px",
+              borderRadius: 12,
+              backgroundColor: "#fed7aa",
+              color: "#7c2d12",
+              fontSize: 13,
+            }}
+          >
+            Registrerad paus för denna adress/resa:{" "}
+            <strong>{formatSekTillHhMmSs(pausSekUnderIntervall)}</strong>{" "}
+            (dras av när du sparar rapport)
+          </div>
+        )}
 
-          {aktivtPass && (
-            <div
-              style={{
-                marginBottom: 12,
-                padding: "8px 12px",
-                borderRadius: 12,
-                backgroundColor: "#eef2ff",
-                color: "#1d4ed8",
-                fontSize: 14,
-              }}
-            >
-              Pågående adress/resa (
-              {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
-              <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
-            </div>
-          )}
+        {aktivtPass && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: "8px 12px",
+              borderRadius: 12,
+              backgroundColor: "#eef2ff",
+              color: "#1d4ed8",
+              fontSize: 14,
+            }}
+          >
+            Pågående adress/resa (
+            {aktivtPass.metod === "hand" ? "För hand" : "Maskin"}) –{" "}
+            <strong>{formatSekTillHhMmSs(pågåendePassSek)}</strong>
+          </div>
+        )}
 
+        {/* Rubrik + Vecko-regga-knapp på samma rad */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
           <h2
             style={{
               fontSize: 18,
               marginTop: 0,
-              marginBottom: 12,
+              marginBottom: 0,
             }}
           >
             Registrera jobb
           </h2>
 
-          <label style={labelStyle}>Adress (för rapport)</label>
-<select
-  value={valda}
-  onChange={(e) => setValda(e.target.value)}
-  style={selectStyle}
->
-  <option value="">-- Välj adress --</option>
-  {[...adresser]
-    .filter((a) => a.aktiv !== false)  // ← LÄGG TILL DENNA RAD
-    .sort(
-      (a, b) =>
-        (Number(a.adresslista_sortering) || Number(a.id)) -
-        (Number(b.adresslista_sortering) || Number(b.id))
-    )
-    .map((a) => (
-      <option
-        key={a.id}
-        value={a.id}
-        style={{
-          backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
-        }}
-      >
-        {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
-      </option>
-    ))}
-</select>
-
-          <div
+          <button
+            onClick={laggTillVeckoRegga}
             style={{
-              marginTop: 6,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#10b981",
+              color: "#ffffff",
               fontSize: 12,
-              color: "#4b5563",
+              fontWeight: 600,
+              cursor: "pointer",
             }}
           >
-            Adresser märkta (MASKIN) är maskin‑möjliga.
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Arbetstyp (Team / metod)</label>
-            <select
-              value={team}
-              onChange={(e) => setTeam(e.target.value)}
-              style={selectStyle}
-            >
-              <option>För hand</option>
-              <option>Maskin</option>
-            </select>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Antal anställda</label>
-            <select
-              value={antalAnstallda}
-              onChange={(e) => setAntalAnstallda(Number(e.target.value))}
-              style={selectStyle}
-            >
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Syfte med arbetsuppgift</label>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                fontSize: 15,
-              }}
-            >
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteOversyn}
-                  onChange={(e) => setSyfteOversyn(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Översyn
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteRojning}
-                  onChange={(e) => setSyfteRojning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Röjning
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteSaltning}
-                  onChange={(e) => setSyfteSaltning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Saltning
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={syfteGrusning}
-                  onChange={(e) => setSyfteGrusning(e.target.checked)}
-                  style={{ marginRight: 6 }}
-                />
-                Grusning
-              </label>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>
-              Arbetstid (minuter) – används bara om inget pass är aktivt
-            </label>
-            <input
-              type="number"
-              value={arbetstid}
-              onChange={(e) => setArbetstid(e.target.value)}
-              style={inputStyle}
-              inputMode="numeric"
-            />
-          </div>
-
-          <button style={secondaryButton} onClick={sparaRapport}>
-            Spara rapport
+            Vecko regga
           </button>
+        </div>
 
-          <div style={{ marginTop: 16 }}>
-            <label style={labelStyle}>Grus (kg)</label>
-            <select
-              value={sand}
-              onChange={(e) => setSand(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="0">0</option>
-              {[...Array(51)].map((_, i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </div>
+        <label style={labelStyle}>Adress (för rapport)</label>
+        <select
+          value={valda}
+          onChange={(e) => setValda(e.target.value)}
+          style={selectStyle}
+        >
+          <option value="">-- Välj adress --</option>
+          {[...adresser]
+            .filter((a) => a.aktiv !== false)
+            .sort(
+              (a, b) =>
+                (Number(a.adresslista_sortering) || Number(a.id)) -
+                (Number(b.adresslista_sortering) || Number(b.id))
+            )
+            .map((a) => (
+              <option
+                key={a.id}
+                value={a.id}
+                style={{
+                  backgroundColor: a.maskin_mojlig ? "#ffedd5" : "white",
+                }}
+              >
+                {a.namn} {a.maskin_mojlig ? "(MASKIN)" : "(HAND)"}
+              </option>
+            ))}
+        </select>
 
-          <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Salt (kg)</label>
-            <select
-              value={salt}
-              onChange={(e) => setSalt(e.target.value)}
-              style={selectStyle}
-            >
-              <option value="0">0</option>
-              {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {status && (
-        <p
+        <div
           style={{
-            marginTop: 8,
-            fontSize: 13,
-            color: status.startsWith("✅")
-              ? "#16a34a"
-              : status.startsWith("❌")
-              ? "#dc2626"
-              : "#4b5563",
-            textAlign: "center",
+            marginTop: 6,
+            fontSize: 12,
+            color: "#4b5563",
           }}
         >
-          {status}
-        </p>
-      )}
-    </section>
-  );
-}
+          Adresser märkta (MASKIN) är maskin‑möjliga.
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={labelStyle}>Arbetstyp (Team / metod)</label>
+          <select
+            value={team}
+            onChange={(e) => setTeam(e.target.value)}
+            style={selectStyle}
+          >
+            <option>För hand</option>
+            <option>Maskin</option>
+          </select>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={labelStyle}>Antal anställda</label>
+          <select
+            value={antalAnstallda}
+            onChange={(e) => setAntalAnstallda(Number(e.target.value))}
+            style={selectStyle}
+          >
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <label style={labelStyle}>Syfte med arbetsuppgift</label>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              fontSize: 15,
+            }}
+          >
+            <label>
+              <input
+                type="checkbox"
+                checked={syfteOversyn}
+                onChange={(e) => setSyfteOversyn(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              Översyn
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={syfteRojning}
+                onChange={(e) => setSyfteRojning(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              Röjning
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={syfteSaltning}
+                onChange={(e) => setSyfteSaltning(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              Saltning
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={syfteGrusning}
+                onChange={(e) => setSyfteGrusning(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              Grusning
+            </label>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={labelStyle}>
+            Arbetstid (minuter) – används bara om inget pass är aktivt
+          </label>
+          <input
+            type="number"
+            value={arbetstid}
+            onChange={(e) => setArbetstid(e.target.value)}
+            style={inputStyle}
+            inputMode="numeric"
+          />
+        </div>
+
+        <button style={secondaryButton} onClick={sparaRapport}>
+          Spara rapport
+        </button>
+
+        <div style={{ marginTop: 16 }}>
+          <label style={labelStyle}>Grus (kg)</label>
+          <select
+            value={sand}
+            onChange={(e) => setSand(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="0">0</option>
+            {[...Array(51)].map((_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginTop: 12 }}>
+          <label style={labelStyle}>Salt (kg)</label>
+          <select
+            value={salt}
+            onChange={(e) => setSalt(e.target.value)}
+            style={selectStyle}
+          >
+            <option value="0">0</option>
+            {Array.from({ length: 41 }, (_, i) => i * 5).map((v) => (
+              <option key={v} value={v}>
+                {v}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {status && (
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              color: status.startsWith("✅")
+                ? "#16a34a"
+                : status.startsWith("❌")
+                ? "#dc2626"
+                : "#4b5563",
+              textAlign: "center",
+            }}
+          >
+            {status}
+          </p>
+        )}
+      </section>
+    );
+  }
 
     // === KARTA‑FLIK ===
     if (activeTab === "karta") {
