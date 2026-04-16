@@ -1775,10 +1775,25 @@ function startPaus() {
     return metodOK;
   });
 
-  const totalMaskinMin = veckansRapporter
-  .filter((r) => r.arbetssatt === "maskin" || r.team_namn === "Maskin")
+  // Hjälpfunktion: är detta en Vecko-Regga-rad?
+function arVeckoReggaRad(r) {
+  return (r.adresser?.namn || "").toLowerCase() === "vecko-regg";
+}
+
+const totalMaskinMin = veckansRapporter
+  .filter(
+    (r) =>
+      (r.arbetssatt === "maskin" || r.team_namn === "Maskin")
+  )
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
+const totalHandMin = veckansRapporter
+  .filter(
+    (r) =>
+      (r.arbetssatt === "hand" || r.team_namn === "För hand") &&
+      !arVeckoReggaRad(r)              // ❌ räkna inte med Vecko-Regga
+  )
+  .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 const totalHandMin = veckansRapporter
   .filter((r) => r.arbetssatt === "hand" || r.team_namn === "För hand")
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
