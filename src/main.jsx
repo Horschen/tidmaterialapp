@@ -1819,6 +1819,12 @@ const totalHandMin = veckansRapporter
   )
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
+	// Tillfällig debug - visa vad som finns i första rapporten
+if (veckansRapporter.length > 0) {
+  console.log("Första rapporten:", veckansRapporter[0]);
+  console.log("Adressnamn:", veckansRapporter[0].adresser?.namn);
+}
+
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
     const rapportIds = filtreradeRapporter
