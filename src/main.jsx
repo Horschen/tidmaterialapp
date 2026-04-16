@@ -1525,6 +1525,7 @@ async function laggTillVeckoRegga() {
         syfte: "Översyn",          // Syfte
         antal_anstallda: 1,
         skyddad: true,             // skydda mot radering
+        fakturerat: true,          // ✅ markera som fakturerad direkt
       },
     ]);
 
@@ -1537,7 +1538,9 @@ async function laggTillVeckoRegga() {
 
     // 4. Klart
     showPopup("👍 Vecko-regga registrerad.", "success", 3000);
-    setStatus("Vecko-regga (1 min, Översyn) registrerad på 'Vecko-Regg'.");
+    setStatus(
+      "Vecko-regga (1 min, Översyn) registrerad på 'Vecko-Regg' och markerad som fakturerad."
+    );
 
     // Om veckoöversikt är öppen kan vi uppdatera den
     if (visaOversikt) {
@@ -4237,7 +4240,6 @@ return visaAllaJob && adressGrupper.map((g) => {
                     </thead>
                     <tbody>
                    {g.rapporter.map((r, idx) => {
-
   const thisEndRaw = r.jobb_tid || r.datum || null;
   const prevEndRaw =
     föregåendeJobbTidPerRapportId.get(r.id) || null;
@@ -4253,71 +4255,79 @@ return visaAllaJob && adressGrupper.map((g) => {
   }
 
   // ✅ Räkna arbetstid dynamiskt från Från → Till
-let tidMin = r.arbetstid_min || 0;
+  let tidMin = r.arbetstid_min || 0;
 
-if (prevEndRaw && thisEndRaw) {
-  const start = new Date(prevEndRaw);
-  const end = new Date(thisEndRaw);
+  if (prevEndRaw && thisEndRaw) {
+    const start = new Date(prevEndRaw);
+    const end = new Date(thisEndRaw);
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs > 0) {
-    tidMin = Math.round(diffMs / 60000); // minuter
+    const diffMs = end.getTime() - start.getTime();
+    if (diffMs > 0) {
+      tidMin = Math.round(diffMs / 60000); // minuter
+    }
   }
-}
 
-// ✅ Detta använder Set:en vi byggde tidigare
-const isFirstAfterPass = firstAfterPassIds.has(r.id);
+  // ✅ Detta använder Set:en vi byggde tidigare
+  const isFirstAfterPass = firstAfterPassIds.has(r.id);
 
-return (
-  <tr
-    key={r.id || idx}
-    style={{
-      backgroundColor:
-        idx % 2 === 0 ? "#ffffff" : "#f9fafb",
-      borderBottom: "1px solid #e5e7eb",
-    }}
-  >
-    <td
+  // 🔴 Är detta en Vecko-Regga-rad? (adressnamn "Vecko-Regg")
+  const ärVeckoReggaRad =
+    (r.adresser?.namn || "").toLowerCase() === "vecko-regg";
+
+  return (
+    <tr
+      key={r.id || idx}
       style={{
-        padding: "4px 6px",
-        fontWeight: isFirstAfterPass ? 600 : 400,
+        backgroundColor: ärVeckoReggaRad
+          ? "#fee2e2" // ljusröd bakgrund för Vecko-Regga
+          : idx % 2 === 0
+          ? "#ffffff"
+          : "#f9fafb",
+        color: ärVeckoReggaRad ? "#991b1b" : "#111827",
+        borderBottom: "1px solid #e5e7eb",
       }}
     >
-      {isFirstAfterPass ? `⏱️ ${datumText}` : datumText}
-    </td>
+      <td
+        style={{
+          padding: "4px 6px",
+          fontWeight: isFirstAfterPass || ärVeckoReggaRad ? 600 : 400,
+        }}
+      >
+        {isFirstAfterPass ? `⏱️ ${datumText}` : datumText}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {tidMin}
-      <span style={{ color: "#6b7280", fontSize: 12 }}>
-        {" "}
-        ({formatTid(tidMin)})
-      </span>
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {tidMin}
+        <span style={{ color: "#6b7280", fontSize: 12 }}>
+          {" "}
+          ({formatTid(tidMin)})
+        </span>
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.antal_anstallda || 1}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.antal_anstallda || 1}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.sand_kg || 0}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.sand_kg || 0}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.salt_kg || 0}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.salt_kg || 0}
+      </td>
 
-    <td style={{ textAlign: "center", padding: "4px 6px" }}>
-      {r.team_namn ||
-        (r.arbetssatt === "hand"
-          ? "För hand"
-          : "Maskin")}
-    </td>
+      <td style={{ textAlign: "center", padding: "4px 6px" }}>
+        {r.team_namn ||
+          (r.arbetssatt === "hand"
+            ? "För hand"
+            : "Maskin")}
+      </td>
 
-    <td style={{ padding: "4px 6px" }}>
-      {r.syfte}
-    </td>
-  </tr>
-);
+      <td style={{ padding: "4px 6px" }}>
+        {r.syfte}
+      </td>
+    </tr>
+  );
 })}
                       <tr
                         style={{
