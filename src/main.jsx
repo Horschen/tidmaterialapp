@@ -5518,7 +5518,9 @@ if (activeTab === "info") {
       <p style={{ fontSize: 14, lineHeight: 1.6 }}>
         Längst upp till höger i fliken <strong>Registrera</strong> finns knappen{" "}
         <strong>"Vecko regga"</strong>. Den används för att snabbt lägga in en
-        standard‑registrering för veckan, utan att du behöver fylla i alla fält.
+        standard‑registrering för veckan, för att på så sätt hålla databaser ajour och aktiva, annars 
+		slutar databasen att fungera på grund av inaktivitet. Tryck på knappen så behöver du inte fylla i alla fält
+		manuellt.
         <br /><br />
         När du trycker på <strong>Vecko regga</strong> händer följande automatiskt:
       </p>
@@ -5547,10 +5549,7 @@ if (activeTab === "info") {
         </li>
       </ul>
       <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-        Det här är praktiskt om du t.ex. vill markera att en viss vecka har blivit
-        kontrollerad/avstämd, utan att koppla den till ett specifikt jobb på en klient.
-        Vecko‑Regga‑posterna dyker upp i Veckorapporten precis som andra rapporter,
-        men med den fasta adressen <strong>"Vecko‑Regg"</strong> och 1 minuts Översyn.
+        En snabb-knapp för att göra en smidig "tom" rapport <strong>"Vecko‑Regg"</strong> 
       </p>
 
       <h4 style={{ marginTop: 16 }}>👷‍♂️ Teamets arbetsgång (enkelt förklarat)</h4>
