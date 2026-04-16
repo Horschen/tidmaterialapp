@@ -1775,33 +1775,22 @@ function startPaus() {
     return metodOK;
   });
 
-// Hjälpfunktion: är detta en Vecko-Regga-rad? (kollar både rapportens relation och adresslistan)
+// Hjälpfunktion: är detta en Vecko-Regga-rad?
 function arVeckoReggaRad(r) {
-  // Försök 1: kolla direkt i rapportens adress-relation
-  const namnFranRapport = r.adresser?.namn;
-  if (namnFranRapport) {
-    return namnFranRapport.toLowerCase().trim() === "vecko-regg";
+  // Hitta adressen i den lokala listan baserat på adress_id
+  const adressObj = adresser.find(a => a.id === r.adress_id);
+  
+  if (!adressObj || !adressObj.namn) return false;
+  
+  const namn = adressObj.namn.toLowerCase().trim();
+  const arVeckoRegg = namn === "vecko-regg";
+  
+  // Debug - visa i konsolen när vi hittar en
+  if (arVeckoRegg) {
+    console.log("Hittade Vecko-Regga-rad:", r.id, "Tid:", r.arbetstid_min);
   }
   
-  // Försök 2: slå upp i adresslistan via adress_id
-  if (r.adress_id && adresser && adresser.length > 0) {
-    const adr = adresser.find(a => a.id === r.adress_id);
-    if (adr && adr.namn) {
-      return adr.namn.toLowerCase().trim() === "vecko-regg";
-    }
-  }
-  
-  return false;
-}
-
-// Debug: räkna ut hur mycket som exkluderas (tas bort när det funkar)
-const veckoReggaMinuter = veckansRapporter
-  .filter(r => (r.arbetssatt === "hand" || r.team_namn === "För hand"))
-  .filter(arVeckoReggaRad)
-  .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
-
-if (veckoReggaMinuter > 0) {
-  console.log(`Exkluderar ${veckoReggaMinuter} minuter från Vecko-Regga i totalen`);
+  return arVeckoRegg;
 }
 
 const totalMaskinMin = veckansRapporter
@@ -1811,19 +1800,22 @@ const totalMaskinMin = veckansRapporter
   )
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
+// Debug: visa alla hand-rapporter innan filtrering
+const allaHandRapporter = veckansRapporter.filter(
+  r => r.arbetssatt === "hand" || r.team_namn === "För hand"
+);
+console.log("Alla hand-rapporter denna vecka:", allaHandRapporter.length);
+console.log("Vecko-Regga-rader:", allaHandRapporter.filter(arVeckoReggaRad).length);
+
 const totalHandMin = veckansRapporter
   .filter(
     (r) =>
       (r.arbetssatt === "hand" || r.team_namn === "För hand") &&
-      !arVeckoReggaRad(r)              // ❌ räkna inte med Vecko-Regga
+      !arVeckoReggaRad(r)
   )
   .reduce((sum, r) => sum + (r.arbetstid_min || 0), 0);
 
-	// Tillfällig debug - visa vad som finns i första rapporten
-if (veckansRapporter.length > 0) {
-  console.log("Första rapporten:", veckansRapporter[0]);
-  console.log("Adressnamn:", veckansRapporter[0].adresser?.namn);
-}
+console.log("Total Hand (exkl. Vecko-Regga):", totalHandMin);
 
   // ======= Toggla skydd (kryssruta) för en adress i aktuell vy =======
   async function toggleSkyddadForAdress(adressId, newValue) {
