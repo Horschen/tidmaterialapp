@@ -5512,7 +5512,47 @@ if (activeTab === "info") {
         <strong> Manuell Registrering</strong> i "Veckorapport"‑fliken – den fungerar
         precis som registreringsvyn men utan aktiv timer.
       </p>
-      
+
+      {/* NYTT AVSNITT: Vecko-Regga */}
+      <h4 style={{ marginTop: 12 }}>🔁 Vecko‑Regga (snabb veckoregistrering)</h4>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Längst upp till höger i fliken <strong>Registrera</strong> finns knappen{" "}
+        <strong>"Vecko regga"</strong>. Den används för att snabbt lägga in en
+        standard‑registrering för veckan, utan att du behöver fylla i alla fält.
+        <br /><br />
+        När du trycker på <strong>Vecko regga</strong> händer följande automatiskt:
+      </p>
+      <ul style={{ fontSize: 14, lineHeight: 1.6, marginTop: 0 }}>
+        <li>
+          En rapport skapas på adressen <strong>"Vecko‑Regg"</strong>{" "}
+          (adressen måste finnas i adresslistan i systemet).
+        </li>
+        <li>
+          <strong>Arbetstyp:</strong> sätts till <strong>För hand</strong>.
+        </li>
+        <li>
+          <strong>Syfte:</strong> sätts till <strong>Översyn</strong>.
+        </li>
+        <li>
+          <strong>Arbetstid:</strong> sätts till <strong>1 minut</strong>.
+        </li>
+        <li>
+          <strong>Material (Grus/Salt):</strong> sätts till <strong>0</strong>.
+        </li>
+        <li>
+          <strong>Antal anställda:</strong> sätts till <strong>1</strong>.
+        </li>
+        <li>
+          Rapporten markeras som <strong>skyddad</strong> (kan inte raderas av misstag).
+        </li>
+      </ul>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        Det här är praktiskt om du t.ex. vill markera att en viss vecka har blivit
+        kontrollerad/avstämd, utan att koppla den till ett specifikt jobb på en klient.
+        Vecko‑Regga‑posterna dyker upp i Veckorapporten precis som andra rapporter,
+        men med den fasta adressen <strong>"Vecko‑Regg"</strong> och 1 minuts Översyn.
+      </p>
+
       <h4 style={{ marginTop: 16 }}>👷‍♂️ Teamets arbetsgång (enkelt förklarat)</h4>
       <p style={{ fontSize: 14, lineHeight: 1.6 }}>
         <strong>Så här fungerar ett arbetspass när flera i laget jobbar samtidigt:</strong><br /><br />
@@ -5566,153 +5606,153 @@ if (activeTab === "info") {
       </p>
       
       <h3 style={{ marginTop: 16 }}>🚗 Rutt (optimerad körordning)</h3>
-<p style={{ fontSize: 14, lineHeight: 1.6 }}>
-  <strong>Rutt-funktionen</strong> hjälper dig att planera och köra så effektivt som möjligt
-  genom att automatiskt beräkna den <strong>kortaste vägen</strong> mellan alla adresser.
-  Google Maps optimerar ordningen åt dig baserat på avstånd och restid.
-  <br /><br />
-  
-  <strong>🏠 Fasta bostadsrutter (snabbval):</strong><br />
-  I Rutt-fliken finns två gröna snabbknappar för bostäder:<br /><br />
-  
-  <strong>⬇️ Uppifrån-Ner Bostad:</strong><br />
-  Hämtar alla adresser märkta som "Bostad" i databasen och sorterar dem i 
-  <strong> stigande ordning</strong> efter kolumnen <em>adresslista_sortering</em>.
-  Det betyder att adressen med lägst sorteringsnummer kommer först. 
-  Perfekt om din rutt börjar i norr och slutar i söder, eller om du vill följa 
-  listan "uppifrån och ner" som den är sparad i systemet.
-  <br /><br />
-  
-  <strong>⬆️ Nerifrån-Upp Bostad:</strong><br />
-  Hämtar samma bostadsadresser men sorterar dem i <strong>fallande ordning</strong> 
-  – alltså den med högst sorteringsnummer först. Använd denna om du börjar 
-  i söder och kör norrut, eller vill köra listan "nerifrån och upp".
-  <br /><br />
-  
-  Båda knapparna visar efteråt:<br />
-  • Antal bostäder i rutten<br />
-  • Total körsträcka (km) från Google Maps<br />
-  • Uppskattad total tid (arbete + transport)<br />
-  <br />
-  
-  <strong>📋 Planera egen rutt (före passet):</strong><br />
-  1. Gå till fliken <strong>Rutt</strong><br />
-  2. Tryck <strong>"Välj adresser & planera rutt"</strong><br />
-  3. Kryssa i alla adresser du ska köra under passet<br />
-  4. Tryck <strong>"💾 Spara som planerad rutt"</strong><br />
-  5. ✅ Rutten sparas i systemet – alla användare som loggar in ser nu samma planerade rutt<br />
-  <br />
-  
-  <strong>✅ Aktivera rutten (när passet startar):</strong><br />
-  1. Starta ditt arbetspass i <strong>Start/Stop</strong>-fliken<br />
-  2. Gå till <strong>Rutt</strong> → Tryck <strong>"✅ Aktivera rutt nu"</strong><br />
-  3. Tillåt GPS-åtkomst om appen frågar (se instruktioner nedan)<br />
-  4. <strong>Om GPS fungerar:</strong> Rutten optimeras från din faktiska position<br />
-  5. <strong>Om GPS saknas/nekas:</strong> Rutten beräknas från första adressen i listan<br />
-  6. Google Maps beräknar automatiskt kortaste vägen mellan alla stopp<br />
-  <br />
-  
-  <strong>📍 Arbeta enligt rutten:</strong><br />
-  – Högst upp i <strong>Rutt</strong>-fliken ser du <strong>"🚗 Nästa stopp"</strong> – dit ska du åka nu<br />
-  – Under rutt-listan visas en <strong>tidssummering</strong> med:<br />
-  &nbsp;&nbsp;• 🚗 <strong>Körsträcka:</strong> Total körsträcka i km och uppskattad körtid<br />
-  &nbsp;&nbsp;• 🔧 <strong>Arbetstid:</strong> Summa av uppskattad arbetstid för alla adresser<br />
-  &nbsp;&nbsp;• ⏱️ <strong>Total uppskattad tid:</strong> Körtid + arbetstid = hur lång tid rutten beräknas ta<br />
-  – Varje adress i listan visar:<br />
-  &nbsp;&nbsp;• 🔧 Uppskattad arbetstid för just den adressen<br />
-  &nbsp;&nbsp;• 🚗 Körtid och avstånd till <em>nästa</em> adress<br />
-  – Gå till <strong>Registrera</strong>-fliken och fyll i uppgifter för jobbet<br />
-  – När du sparar rapporten bockas adressen automatiskt av i rutten (✅)<br />
-  – Nästa adress i ordningen visas direkt som "Nästa stopp"<br />
-  – Tryck <strong>"🗺️ Öppna rutt i Google Maps"</strong> för turn-by-turn vägbeskrivning<br />
-  <br />
-  
-  <strong>🔴 Adresser utan GPS-koordinater:</strong><br />
-  – Visas med <strong>röd bakgrund</strong> och märket <strong>"(Ingen GPS)"</strong><br />
-  – Läggs automatiskt <strong>sist i rutten</strong> (efter alla optimerade stopp)<br />
-  – Du kan fortfarande registrera jobb på dem – avbockning fungerar normalt<br />
-  – Uppdatera GPS-koordinater i Supabase för att inkludera dem i optimeringen<br />
-  <br />
-  
-  <strong>🔄 Uppdatera eller ändra rutt:</strong><br />
-  – <strong>"Uppdatera adresser"</strong> – Hämtar senaste GPS-data från databasen<br />
-  – <strong>"🗑️ Radera"</strong> (gul ruta) – Tar bort planerad rutt innan aktivering<br />
-  – <strong>"🗑️ Rensa rutt"</strong> (röd knapp) – Tar bort aktiv rutt och börjar om<br />
-  <br />
-  
-  <strong>💡 Smarta tips:</strong><br />
-  – <strong>Planera kvällen innan</strong> – då är allt klart när passet startar på morgonen<br />
-  – <strong>Teamsamordning</strong> – alla som loggar in ser samma planerade rutt (perfekt för koordinering)<br />
-  – <strong>Adresslistan sorteras alltid i samma ordning</strong> – lätt att hitta rätt adress<br />
-  – <strong>Rutten sparas tills någon aktiverar den</strong> – kan ligga och vänta flera dagar<br />
-  – <strong>GPS valfri</strong> – rutten fungerar även utan GPS-åtkomst (startar från första adressen)<br />
-  <br />
-  
-  <strong>📱 GPS-åtkomst (iPhone/Safari):</strong><br />
-  Om appen frågar om GPS-tillstånd och du nekar av misstag:<br />
-  1. Öppna <strong>Inställningar</strong> på din iPhone<br />
-  2. Scrolla ner och välj <strong>Safari</strong><br />
-  3. Tryck på <strong>"Plats"</strong><br />
-  4. Välj <strong>"Tillåt"</strong> eller <strong>"Fråga"</strong><br />
-  5. Ladda om sidan och tryck "Aktivera rutt nu" igen<br />
-  <br />
-  
-  <strong>🎯 Exempel på arbetsflöde:</strong><br />
-  <em>Kväll före passet:</em> Planera rutt med 8 adresser → Spara<br />
-  <em>Morgon, 06:00:</em> Starta pass → Aktivera rutt → GPS hämtas → Rutt optimerad från din position<br />
-  <em>Stopp 1:</em> Registrera → Spara → Bockas av ✅<br />
-  <em>Stopp 2:</em> Visas som "Nästa stopp" → Öppna Google Maps för vägbeskrivning<br />
-  <em>...och så vidare tills alla 8 stopp är klara!</em>
-</p>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        <strong>Rutt-funktionen</strong> hjälper dig att planera och köra så effektivt som möjligt
+        genom att automatiskt beräkna den <strong>kortaste vägen</strong> mellan alla adresser.
+        Google Maps optimerar ordningen åt dig baserat på avstånd och restid.
+        <br /><br />
+        
+        <strong>🏠 Fasta bostadsrutter (snabbval):</strong><br />
+        I Rutt-fliken finns två gröna snabbknappar för bostäder:<br /><br />
+        
+        <strong>⬇️ Uppifrån-Ner Bostad:</strong><br />
+        Hämtar alla adresser märkta som "Bostad" i databasen och sorterar dem i 
+        <strong> stigande ordning</strong> efter kolumnen <em>adresslista_sortering</em>.
+        Det betyder att adressen med lägst sorteringsnummer kommer först. 
+        Perfekt om din rutt börjar i norr och slutar i söder, eller om du vill följa 
+        listan "uppifrån och ner" som den är sparad i systemet.
+        <br /><br />
+        
+        <strong>⬆️ Nerifrån-Upp Bostad:</strong><br />
+        Hämtar samma bostadsadresser men sorterar dem i <strong>fallande ordning</strong> 
+        – alltså den med högst sorteringsnummer först. Använd denna om du börjar 
+        i söder och kör norrut, eller vill köra listan "nerifrån och upp".
+        <br /><br />
+        
+        Båda knapparna visar efteråt:<br />
+        • Antal bostäder i rutten<br />
+        • Total körsträcka (km) från Google Maps<br />
+        • Uppskattad total tid (arbete + transport)<br />
+        <br />
+        
+        <strong>📋 Planera egen rutt (före passet):</strong><br />
+        1. Gå till fliken <strong>Rutt</strong><br />
+        2. Tryck <strong>"Välj adresser & planera rutt"</strong><br />
+        3. Kryssa i alla adresser du ska köra under passet<br />
+        4. Tryck <strong>"💾 Spara som planerad rutt"</strong><br />
+        5. ✅ Rutten sparas i systemet – alla användare som loggar in ser nu samma planerade rutt<br />
+        <br />
+        
+        <strong>✅ Aktivera rutten (när passet startar):</strong><br />
+        1. Starta ditt arbetspass i <strong>Start/Stop</strong>-fliken<br />
+        2. Gå till <strong>Rutt</strong> → Tryck <strong>"✅ Aktivera rutt nu"</strong><br />
+        3. Tillåt GPS-åtkomst om appen frågar (se instruktioner nedan)<br />
+        4. <strong>Om GPS fungerar:</strong> Rutten optimeras från din faktiska position<br />
+        5. <strong>Om GPS saknas/nekas:</strong> Rutten beräknas från första adressen i listan<br />
+        6. Google Maps beräknar automatiskt kortaste vägen mellan alla stopp<br />
+        <br />
+        
+        <strong>📍 Arbeta enligt rutten:</strong><br />
+        – Högst upp i <strong>Rutt</strong>-fliken ser du <strong>"🚗 Nästa stopp"</strong> – dit ska du åka nu<br />
+        – Under rutt-listan visas en <strong>tidssummering</strong> med:<br />
+        &nbsp;&nbsp;• 🚗 <strong>Körsträcka:</strong> Total körsträcka i km och uppskattad körtid<br />
+        &nbsp;&nbsp;• 🔧 <strong>Arbetstid:</strong> Summa av uppskattad arbetstid för alla adresser<br />
+        &nbsp;&nbsp;• ⏱️ <strong>Total uppskattad tid:</strong> Körtid + arbetstid = hur lång tid rutten beräknas ta<br />
+        – Varje adress i listan visar:<br />
+        &nbsp;&nbsp;• 🔧 Uppskattad arbetstid för just den adressen<br />
+        &nbsp;&nbsp;• 🚗 Körtid och avstånd till <em>nästa</em> adress<br />
+        – Gå till <strong>Registrera</strong>-fliken och fyll i uppgifter för jobbet<br />
+        – När du sparar rapporten bockas adressen automatiskt av i rutten (✅)<br />
+        – Nästa adress i ordningen visas direkt som "Nästa stopp"<br />
+        – Tryck <strong>"🗺️ Öppna rutt i Google Maps"</strong> för turn-by-turn vägbeskrivning<br />
+        <br />
+        
+        <strong>🔴 Adresser utan GPS-koordinater:</strong><br />
+        – Visas med <strong>röd bakgrund</strong> och märket <strong>"(Ingen GPS)"</strong><br />
+        – Läggs automatiskt <strong>sist i rutten</strong> (efter alla optimerade stopp)<br />
+        – Du kan fortfarande registrera jobb på dem – avbockning fungerar normalt<br />
+        – Uppdatera GPS-koordinater i Supabase för att inkludera dem i optimeringen<br />
+        <br />
+        
+        <strong>🔄 Uppdatera eller ändra rutt:</strong><br />
+        – <strong>"Uppdatera adresser"</strong> – Hämtar senaste GPS-data från databasen<br />
+        – <strong>"🗑️ Radera"</strong> (gul ruta) – Tar bort planerad rutt innan aktivering<br />
+        – <strong>"🗑️ Rensa rutt"</strong> (röd knapp) – Tar bort aktiv rutt och börjar om<br />
+        <br />
+        
+        <strong>💡 Smarta tips:</strong><br />
+        – <strong>Planera kvällen innan</strong> – då är allt klart när passet startar på morgonen<br />
+        – <strong>Teamsamordning</strong> – alla som loggar in ser samma planerade rutt (perfekt för koordinering)<br />
+        – <strong>Adresslistan sorteras alltid i samma ordning</strong> – lätt att hitta rätt adress<br />
+        – <strong>Rutten sparas tills någon aktiverar den</strong> – kan ligga och vänta flera dagar<br />
+        – <strong>GPS valfri</strong> – rutten fungerar även utan GPS-åtkomst (startar från första adressen)<br />
+        <br />
+        
+        <strong>📱 GPS-åtkomst (iPhone/Safari):</strong><br />
+        Om appen frågar om GPS-tillstånd och du nekar av misstag:<br />
+        1. Öppna <strong>Inställningar</strong> på din iPhone<br />
+        2. Scrolla ner och välj <strong>Safari</strong><br />
+        3. Tryck på <strong>"Plats"</strong><br />
+        4. Välj <strong>"Tillåt"</strong> eller <strong>"Fråga"</strong><br />
+        5. Ladda om sidan och tryck "Aktivera rutt nu" igen<br />
+        <br />
+        
+        <strong>🎯 Exempel på arbetsflöde:</strong><br />
+        <em>Kväll före passet:</em> Planera rutt med 8 adresser → Spara<br />
+        <em>Morgon, 06:00:</em> Starta pass → Aktivera rutt → GPS hämtas → Rutt optimerad från din position<br />
+        <em>Stopp 1:</em> Registrera → Spara → Bockas av ✅<br />
+        <em>Stopp 2:</em> Visas som "Nästa stopp" → Öppna Google Maps för vägbeskrivning<br />
+        <em>...och så vidare tills alla 8 stopp är klara!</em>
+      </p>
 
-<h4 style={{ marginTop: 16 }}>⚙️ Hur Rutt-funktionen fungerar (tekniskt)</h4>
-<p style={{ fontSize: 14, lineHeight: 1.6 }}>
-  <strong>Så beräknas tiderna i Rutt-funktionen:</strong><br /><br />
-  
-  <strong>1. Fasta bostadsrutter (snabbval):</strong><br />
-  • När du trycker <strong>⬇️ Uppifrån-Ner Bostad</strong> eller <strong>⬆️ Nerifrån-Upp Bostad</strong>
-  hämtas alla adresser från databasen som har <code>Bostad_Företag = "Bostad"</code> och <code>aktiv = true</code>.<br />
-  • Adresserna sorteras efter kolumnen <code>adresslista_sortering</code> – stigande för "Uppifrån-Ner", 
-  fallande för "Nerifrån-Upp".<br />
-  • Rutten sparas direkt i <code>aktiv_rutt</code>-tabellen utan GPS-optimering (ordningen följer sorteringen).<br />
-  • Därefter anropas Google Maps Distance Matrix API för att hämta <strong>körtider</strong> mellan varje adresspar.<br />
-  <br />
-  
-  <strong>2. Planerad rutt (manuellt val):</strong><br />
-  • Valda adresser sparas i <code>vantande_rutt</code>-tabellen.<br />
-  • Vid aktivering hämtas GPS-position (om tillåtet).<br />
-  • Google Directions API anropas med <code>optimize:true</code> för att hitta kortaste vägen.<br />
-  • Adresser <strong>utan GPS-koordinater</strong> sorteras inte av Google utan läggs sist i rutten.<br />
-  • Den optimerade rutten sparas i <code>aktiv_rutt</code>-tabellen.<br />
-  <br />
-  
-  <strong>3. Tidsberäkning:</strong><br />
-  • <strong>Uppskattad arbetstid per adress:</strong> Hämtas från kolumnen <code>uppskattad_tid_min</code> 
-  i <code>adresser</code>-tabellen. Om värdet saknas används 10 minuter som standard.<br />
-  • <strong>Körtid mellan adresser:</strong> Hämtas från Google Maps Distance Matrix API och sparas i 
-  <code>ruttKortider</code>-listan. Varje post innehåller:<br />
-  &nbsp;&nbsp;– <code>duration_sek</code>: Körtid i sekunder<br />
-  &nbsp;&nbsp;– <code>duration_text</code>: Läsbar körtid (t.ex. "5 min")<br />
-  &nbsp;&nbsp;– <code>distance_m</code>: Avstånd i meter<br />
-  &nbsp;&nbsp;– <code>distance_text</code>: Läsbart avstånd (t.ex. "3.2 km")<br />
-  • <strong>Total uppskattad tid:</strong> Summan av alla arbetstider + summan av alla körtider.<br />
-  <br />
-  
-  <strong>4. Avbockning av adresser:</strong><br />
-  • När du sparar en rapport i <strong>Registrera</strong>-fliken anropas funktionen <code>bockAvAdressIRutt()</code>.<br />
-  • Denna funktion uppdaterar <code>aktiv_rutt</code>-tabellen och sätter <code>avklarad = true</code> för den adressen.<br />
-  • Rutt-listan uppdateras automatiskt och visar nästa ej avklarade adress som "Nästa stopp".<br />
-  <br />
-  
-  <strong>5. Rutt-informationen visas:</strong><br />
-  • I Rutt-fliken visas en gul ruta med:<br />
-  &nbsp;&nbsp;– 📍 Antal avklarade / totalt antal adresser<br />
-  &nbsp;&nbsp;– 🚗 Total körsträcka och körtid<br />
-  &nbsp;&nbsp;– 🔧 Total uppskattad arbetstid<br />
-  &nbsp;&nbsp;– ⏱️ Total uppskattad tid (arbete + transport)<br />
-  • Varje adress i listan visar sin egen arbetstid och körtid till nästa stopp.<br />
-  • Avklarade adresser visas med grön bakgrund och ✅.
-</p>
+      <h4 style={{ marginTop: 16 }}>⚙️ Hur Rutt-funktionen fungerar (tekniskt)</h4>
+      <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+        <strong>Så beräknas tiderna i Rutt-funktionen:</strong><br /><br />
+        
+        <strong>1. Fasta bostadsrutter (snabbval):</strong><br />
+        • När du trycker <strong>⬇️ Uppifrån-Ner Bostad</strong> eller <strong>⬆️ Nerifrån-Upp Bostad</strong>
+        hämtas alla adresser från databasen som har <code>Bostad_Företag = "Bostad"</code> och <code>aktiv = true</code>.<br />
+        • Adresserna sorteras efter kolumnen <code>adresslista_sortering</code> – stigande för "Uppifrån-Ner", 
+        fallande för "Nerifrån-Upp".<br />
+        • Rutten sparas direkt i <code>aktiv_rutt</code>-tabellen utan GPS-optimering (ordningen följer sorteringen).<br />
+        • Därefter anropas Google Maps Distance Matrix API för att hämta <strong>körtider</strong> mellan varje adresspar.<br />
+        <br />
+        
+        <strong>2. Planerad rutt (manuellt val):</strong><br />
+        • Valda adresser sparas i <code>vantande_rutt</code>-tabellen.<br />
+        • Vid aktivering hämtas GPS-position (om tillåtet).<br />
+        • Google Directions API anropas med <code>optimize:true</code> för att hitta kortaste vägen.<br />
+        • Adresser <strong>utan GPS-koordinater</strong> sorteras inte av Google utan läggs sist i rutten.<br />
+        • Den optimerade rutten sparas i <code>aktiv_rutt</code>-tabellen.<br />
+        <br />
+        
+        <strong>3. Tidsberäkning:</strong><br />
+        • <strong>Uppskattad arbetstid per adress:</strong> Hämtas från kolumnen <code>uppskattad_tid_min</code> 
+        i <code>adresser</code>-tabellen. Om värdet saknas används 10 minuter som standard.<br />
+        • <strong>Körtid mellan adresser:</strong> Hämtas från Google Maps Distance Matrix API och sparas i 
+        <code>ruttKortider</code>-listan. Varje post innehåller:<br />
+        &nbsp;&nbsp;– <code>duration_sek</code>: Körtid i sekunder<br />
+        &nbsp;&nbsp;– <code>duration_text</code>: Läsbar körtid (t.ex. "5 min")<br />
+        &nbsp;&nbsp;– <code>distance_m</code>: Avstånd i meter<br />
+        &nbsp;&nbsp;– <code>distance_text</code>: Läsbart avstånd (t.ex. "3.2 km")<br />
+        • <strong>Total uppskattad tid:</strong> Summan av alla arbetstider + summan av alla körtider.<br />
+        <br />
+        
+        <strong>4. Avbockning av adresser:</strong><br />
+        • När du sparar en rapport i <strong>Registrera</strong>-fliken anropas funktionen <code>bockAvAdressIRutt()</code>.<br />
+        • Denna funktion uppdaterar <code>aktiv_rutt</code>-tabellen och sätter <code>avklarad = true</code> för den adressen.<br />
+        • Rutt-listan uppdateras automatiskt och visar nästa ej avklarade adress som "Nästa stopp".<br />
+        <br />
+        
+        <strong>5. Rutt-informationen visas:</strong><br />
+        • I Rutt-fliken visas en gul ruta med:<br />
+        &nbsp;&nbsp;– 📍 Antal avklarade / totalt antal adresser<br />
+        &nbsp;&nbsp;– 🚗 Total körsträcka och körtid<br />
+        &nbsp;&nbsp;– 🔧 Total uppskattad arbetstid<br />
+        &nbsp;&nbsp;– ⏱️ Total uppskattad tid (arbete + transport)<br />
+        • Varje adress i listan visar sin egen arbetstid och körtid till nästa stopp.<br />
+        • Avklarade adresser visas med grön bakgrund och ✅.
+      </p>
 
       <h3 style={{ marginTop: 16 }}>📅 Veckorapport</h3>
       <p style={{ fontSize: 14, lineHeight: 1.6 }}>
